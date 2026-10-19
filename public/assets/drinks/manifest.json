@@ -1,0 +1,21 @@
+{
+  "notice": "Representative AI-generated photos for the 15 non-wine drink cards plus one shared, unbranded Wine-category image. Wine item cards are intentionally text-only; no bottle labels or exact brand packaging are depicted.",
+  "images": [
+    { "id": "soda", "file": "soda.jpg" },
+    { "id": "ambo", "file": "ambo.jpg" },
+    { "id": "tea", "file": "tea.jpg" },
+    { "id": "peanut-tea", "file": "peanut-tea.jpg" },
+    { "id": "keshir-ginger-tea", "file": "keshir-ginger-tea.jpg" },
+    { "id": "special-tea", "file": "special-tea.jpg" },
+    { "id": "lemon-tea", "file": "lemon-tea.jpg" },
+    { "id": "macchiato", "file": "macchiato.jpg" },
+    { "id": "coffee", "file": "coffee.jpg" },
+    { "id": "spiris", "file": "spiris.jpg" },
+    { "id": "cappuccino", "file": "cappuccino.jpg" },
+    { "id": "milk", "file": "milk.jpg" },
+    { "id": "draft-beer", "file": "draft-beer.jpg" },
+    { "id": "beer", "file": "beer.jpg" },
+    { "id": "special-beer", "file": "special-beer.jpg" },
+    { "id": "wine-category", "file": "wine-category.jpg" }
+  ]
+}

@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cloud L Restaurant – Master Checklist</title>
+<style>
+  :root {
+    --navy: #1a2332;
+    --peach: #c4785a;
+    --cream: #f7f3ee;
+    --light: #faf8f5;
+    --text: #2c3e50;
+    --muted: #6b7c8a;
+    --border: #e8e0d5;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--cream);
+    color: var(--text);
+    line-height: 1.6;
+    padding: 0;
+  }
+  header {
+    background: var(--navy);
+    color: white;
+    padding: 2rem 1.5rem;
+    text-align: center;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+  }
+  header h1 {
+    font-size: 1.6rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+  header p {
+    margin-top: 0.4rem;
+    opacity: 0.85;
+    font-size: 0.95rem;
+  }
+  .controls {
+    background: white;
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: center;
+    position: sticky;
+    top: 88px;
+    z-index: 90;
+  }
+  .controls label {
+    font-size: 0.85rem;
+    color: var(--muted);
+    margin-right: 0.25rem;
+  }
+  select, input[type="search"] {
+    padding: 0.45rem 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 0.9rem;
+    background: var(--light);
+  }
+  select:focus, input:focus { outline: 2px solid var(--peach); }
+  .stats {
+    margin-left: auto;
+    font-size: 0.85rem;
+    color: var(--muted);
+  }
+  .design-rule {
+    background: #fff8f0;
+    border-left: 4px solid var(--peach);
+    padding: 1rem 1.25rem;
+    margin: 1.5rem;
+    border-radius: 0 8px 8px 0;
+    font-size: 0.95rem;
+  }
+  .design-rule strong { color: var(--peach); }
+  main { max-width: 900px; margin: 0 auto; padding: 1.5rem; }
+  .priority {
+    background: white;
+    border-radius: 12px;
+    margin-bottom: 1.25rem;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+  .priority-header {
+    background: var(--navy);
+    color: white;
+    padding: 1rem 1.25rem;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    user-select: none;
+  }
+  .priority-header:hover { background: #243044; }
+  .priority-header h2 {
+    font-size: 1.1rem;
+    font-weight: 600;
+  }
+  .priority-header .meta {
+    font-size: 0.8rem;
+    opacity: 0.8;
+  }
+  .priority-body {
+    display: none;
+    padding: 0.5rem 0;
+  }
+  .priority.open .priority-body { display: block; }
+  .priority.open .priority-header { background: #243044; }
+  .item {
+    padding: 0.85rem 1.25rem;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    gap: 0.75rem;
+    align-items: flex-start;
+  }
+  .item:last-child { border-bottom: none; }
+  .item-num {
+    background: var(--cream);
+    color: var(--peach);
+    font-weight: 600;
+    font-size: 0.8rem;
+    min-width: 2.2rem;
+    height: 1.6rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    flex-shrink: 0;
+  }
+  .item-content { flex: 1; }
+  .item-title {
+    font-weight: 600;
+    font-size: 0.95rem;
+    margin-bottom: 0.25rem;
+  }
+  .item-detail {
+    font-size: 0.88rem;
+    color: var(--muted);
+  }
+  .item-detail .design-note {
+    color: var(--peach);
+    font-style: italic;
+    margin-top: 0.3rem;
+    display: block;
+  }
+  footer {
+    text-align: center;
+    padding: 2rem;
+    color: var(--muted);
+    font-size: 0.85rem;
+  }
+  @media (max-width: 600px) {
+    header h1 { font-size: 1.3rem; }
+    .controls { top: 100px; }
+    .stats { width: 100%; margin-left: 0; margin-top: 0.5rem; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Cloud L Restaurant</h1>
+  <p>Master Checklist – 235 Items · Prioritized · Design-First</p>
+</header>
+
+<div class="controls">
+  <label>Filter:</label>
+  <select id="priorityFilter">
+    <option value="all">All Priorities</option>
+    <option value="0">Priority 0 – Content Fixes</option>
+    <option value="1">Priority 1 – Ordering + Payments</option>
+    <option value="2">Priority 2 – Customer Experience</option>
+    <option value="3">Priority 3 – Menu Intelligence</option>
+    <option value="4">Priority 4 – Payments Expansion</option>
+    <option value="5">Priority 5 – Staff & Kitchen</option>
+    <option value="6">Priority 6 – Analytics</option>
+    <option value="7">Priority 7 – Reservations</option>
+    <option value="8">Priority 8 – Loyalty & Growth</option>
+    <option value="9">Priority 9 – Accessibility</option>
+    <option value="10">Priority 10 – Advanced</option>
+    <option value="11">Priority 11 – Technical</option>
+    <option value="12">Priority 12 – Completeness</option>
+  </select>
+  <input type="search" id="searchBox" placeholder="Search items...">
+  <div class="stats" id="stats">235 items</div>
+</div>
+
+<div class="design-rule">
+  <strong>Core Design Rule:</strong> Every new element must match the existing elegant design of Cloud L (deep navy + warm terracotta/peach, same fonts, spacing, and border radius). Nothing should look forced, loud, or like a later addition. Buttons, cart, payment sections and filters must feel premium and seamless.
+</div>
+
+<main id="checklist">
+
+  <!-- PRIORITY 0 -->
+  <div class="priority open" data-priority="0">
+    <div class="priority-header" onclick="toggle(this)">
+      <h2>Priority 0 – Critical Content & Trust Fixes</h2>
+      <span class="meta">Items 1–15 · Do first</span>
+    </div>
+    <div class="priority-body">
+      <div class="item"><div class="item-num">1</div><div class="item-content"><div class="item-title">Add “ETB” or “Birr” next to every price</div><div class="item-detail">Change every price from “500” to “500 ETB”. Keep the same elegant typography and spacing.<span class="design-note">Preserve existing type hierarchy.</span></div></div></div>
+      <div class="item"><div class="item-num">2</div><div class="item-content"><div class="item-title">Fix and reorganize menu categories</div><div class="item-detail">Move Special Ful, Special Fatira, Fish Goulash and any non-American items out of “American Foods”. Create correct categories. Keep clean visual hierarchy.</div></div></div>
+      <div class="item"><div class="item-num">3</div><div class="item-content"><div class="item-title">Standardize spelling</div><div class="item-detail">Choose one spelling (Fatira or Fetira) and replace every occurrence so only one version exists.</div></div></div>
+      <div class="item"><div class="item-num">4</div><div class="item-content"><div class="item-title">Verify and correct “Keshir Ginger Tea”</div><div class="item-detail">Confirm the real name with the kitchen and rename it correctly on the site.</div></div></div>
+      <div class="item"><div class="item-num">5</div><div class="item-content"><div class="item-title">Write short descriptions for every dish</div><div class="item-detail">Add 1–2 clear, appetizing sentences for all 43+ food items in the existing refined tone.</div></div></div>
+      <div class="item"><div class="item-num">6</div><div class="item-content"><div class="item-title">Write detailed descriptions for sharing platters</div><div class="item-detail">For Kimsha, Ye Tsom Agelgil and all large platters: explain what is included and how many people it serves.</div></div></div>
+      <div class="item"><div class="item-num">7</div><div class="item-content"><div class="item-title">Add a nearby landmark to the address</div><div class="item-detail">Integrate a well-known nearby landmark naturally into the existing address block without clutter.</div></div></div>
+      <div class="item"><div class="item-num">8</div><div class="item-content"><div class="item-title">Change default menu order</div><div class="item-detail">Make the Ethiopian section appear before the American section. Keep the same visual flow.</div></div></div>
+      <div class="item"><div class="item-num">9</div><div class="item-content"><div class="item-title">Add clear Fasting label</div><div class="item-detail">Add “Fasting = Plant-based / Vegan-friendly” in a subtle, elegant way that matches existing labels.</div></div></div>
+      <div class="item"><div class="item-num">10</div><div class="item-content"><div class="item-title">Label breakfast items</div><div class="item-detail">Clearly mark Fatira, Ful, Chechebsa and similar items as Breakfast without disrupting layout.</div></div></div>
+      <div class="item"><div class="item-num">11</div><div class="item-content"><div class="item-title">Make spice labels consistent</div><div class="item-detail">Either apply Mild/Medium/Hot consistently or remove all spice labels. Keep them visually light.</div></div></div>
+      <div class="item"><div class="item-num">12</div><div class="item-content"><div class="item-title">Add last menu update date</div><div class="item-detail">Show “Menu last updated: [date]” discreetly in matching style.</div></div></div>
+      <div class="item"><div class="item-num">13</div><div class="item-content"><div class="item-title">Add VAT note</div><div class="item-detail">Clearly state if prices include VAT or not, near prices or footer.</div></div></div>
+      <div class="item"><div class="item-num">14</div><div class="item-content"><div class="item-title">Amharic proofreading</div><div class="item-detail">Have every Amharic text checked and corrected by a fluent native speaker. Preserve layout.</div></div></div>
+      <div class="item"><div class="item-num">15</div><div class="item-content"><div class="item-title">English proofreading</div><div class="item-detail">Correct all English text for grammar and clarity without changing visual design.</div></div></div>
+    </div>
+  </div>
+
+  <!-- PRIORITY 1 -->
+  <div class="priority" data-priority="1">
+    <div class="priority-header" onclick="toggle(this)">
+      <h2>Priority 1 – Basic Ordering + Payments</h2>
+      <span class="meta">Items 16–30</span>
+    </div>
+    <div class="priority-body">
+      <div class="item"><div class="item-num">16</div><div class="item-content"><div class="item-title">Persistent cart</div><div class="item-detail">Elegant, minimal cart that stays accessible without covering the design. Must feel native.<span class="design-note">Match navy/peach palette and existing spacing.</span></div></div></div>
+      <div class="item"><div class="item-num">17</div><div class="item-content"><div class="item-title">Order via WhatsApp button</div><div class="item-detail">Refined button matching existing style (not bright generic green). Opens WhatsApp with pre-filled order + total in ETB.<span class="design-note">Premium, integrated look required.</span></div></div></div>
+      <div class="item"><div class="item-num">18</div><div class="item-content"><div class="item-title">Order via Telegram button</div><div class="item-detail">Same standard — elegant and consistent with site design language.</div></div></div>
+      <div class="item"><div class="item-num">19</div><div class="item-content"><div class="item-title">Show Telebirr payment details</div><div class="item-detail">Display number and exact amount in a clean, well-spaced elegant block.</div></div></div>
+      <div class="item"><div class="item-num">20</div><div class="item-content"><div class="item-title">Show CBE Birr number</div><div class="item-detail">Same elegant treatment as Telebirr.</div></div></div>
+      <div class="item"><div class="item-num">21</div><div class="item-content"><div class="item-title">Payment instructions</div><div class="item-detail">Clear steps in the same refined typography: Pay exact amount → Send screenshot/ID → We confirm.</div></div></div>
+      <div class="item"><div class="item-num">22</div><div class="item-content"><div class="item-title">Call to order button</div><div class="item-detail">Stylish click-to-call button matching existing buttons.</div></div></div>
+      <div class="item"><div class="item-num">23</div><div class="item-content"><div class="item-title">Cash option</div><div class="item-detail">Integrate “Cash on pickup” and “Cash on delivery” cleanly into checkout.</div></div></div>
+      <div class="item"><div class="item-num">24</div><div class="item-content"><div class="item-title">Order confirmation number</div><div class="item-detail">Generate unique number (e.g. CL-2309-001) and display elegantly.</div></div></div>
+      <div class="item"><div class="item-num">25</div><div class="item-content"><div class="item-title">Track your order page</div><div class="item-detail">Clean, minimal tracking page matching main site aesthetic.</div></div></div>
+      <div class="item"><div class="item-num">26</div><div class="item-content"><div class="item-title">Estimated preparation time</div><div class="item-detail">Show approximate ready time in a refined, non-intrusive way.</div></div></div>
+      <div class="item"><div class="item-num">27</div><div class="item-content"><div class="item-title">Staff confirmation flow</div><div class="item-detail">Staff can mark payment received and confirm the order (backend).</div></div></div>
+      <div class="item"><div class="item-num">28</div><div class="item-content"><div class="item-title">Sold-out system</div><div class="item-detail">Staff can mark items sold out. Use subtle opacity or refined “Sold Out” label (not harsh red).</div></div></div>
+      <div class="item"><div class="item-num">29</div><div class="item-content"><div class="item-title">Allergen icons</div><div class="item-detail">Minimal, elegant icons for Peanuts, Dairy, Eggs, Wheat/Gluten.</div></div></div>
+      <div class="item"><div class="item-num">30</div><div class="item-content"><div class="item-title">Dietary filters</div><div class="item-detail">Working filters for Fasting, Vegetarian, Spicy. Must look refined and match navigation style.</div></div></div>
+    </div>
+  </div>
+
+  <!-- PRIORITY 2 -->
+  <div class="priority" data-priority="2">
+    <div class="priority-header" onclick="toggle(this)">
+      <h2>Priority 2 – Core Customer Experience</h2>
+      <span class="meta">Items 31–46</span>
+    </div>
+    <div class="priority-body">
+      <div class="item"><div class="item-num">31</div><div class="item-content"><div class="item-title">One-tap reorder</div><div class="item-detail">Clean elegant button/link so customer can reorder any previous order with one click.</div></div></div>
+      <div class="item"><div class="item-num">32</div><div class="item-content"><div class="item-title">Favorites / heart system</div><div class="item-detail">Subtle refined heart icon that matches the visual language.</div></div></div>
+      <div class="item"><div class="item-num">33</div><div class="item-content"><div class="item-title">Guest checkout</div><div class="item-detail">Allow ordering without account. Smooth minimal form design.</div></div></div>
+      <div class="item"><div class="item-num">34</div><div class="item-content"><div class="item-title">Special instructions field</div><div class="item-detail">Elegant input field matching existing forms (e.g. “no onion”).</div></div></div>
+      <div class="item"><div class="item-num">35</div><div class="item-content"><div class="item-title">Number of guests field</div><div class="item-detail">Optional field in refined form style.</div></div></div>
+      <div class="item"><div class="item-num">36</div><div class="item-content"><div class="item-title">Table number field</div><div class="item-detail">Field for in-restaurant customers. Same refined style.</div></div></div>
+      <div class="item"><div class="item-num">37</div><div class="item-content"><div class="item-title">Delivery notes field</div><div class="item-detail">Field for delivery instructions. Matching form style.</div></div></div>
+      <div class="item"><div class="item-num">38</div><div class="item-content"><div class="item-title">Pickup vs Delivery choice</div><div class="item-detail">Elegant toggle or selection that feels native to the site.</div></div></div>
+      <div class="item"><div class="item-num">39</div><div class="item-content"><div class="item-title">Delivery fee calculator</div><div class="item-detail">Clean display of fees based on location/zone.</div></div></div>
+      <div class="item"><div class="item-num">40</div><div class="item-content"><div class="item-title">“Notify me when ready” option</div><div class="item-detail">Subtle checkbox or toggle.</div></div></div>
+      <div class="item"><div class="item-num">41</div><div class="item-content"><div class="item-title">Real-time order status</div><div class="item-detail">Beautiful minimal status timeline: Pending → Confirmed → Preparing → Ready → Completed.</div></div></div>
+      <div class="item"><div class="item-num">42</div><div class="item-content"><div class="item-title">Automatic WhatsApp status updates</div><div class="item-detail">Send status changes automatically via WhatsApp.</div></div></div>
+      <div class="item"><div class="item-num">43</div><div class="item-content"><div class="item-title">Automatic Telegram status updates</div><div class="item-detail">Same for Telegram.</div></div></div>
+      <div class="item"><div class="item-num">44</div><div class="item-content"><div class="item-title">Order editing before confirmation</div><div class="item-detail">Smooth elegant editing experience before final confirm.</div></div></div>
+      <div class="item"><div class="item-num">45</div><div class="item-content"><div class="item-title">Clear cancellation policy</div><div class="item-detail">Write and display policy in the same elegant text treatment.</div></div></div>
+      <div class="item"><div class="item-num">46</div><div class="item-content"><div class="item-title">Clear refund policy</div><div class="item-detail">Write and display policy in matching elegant style.</div></div></div>
+    </div>
+  </div>
+
+  <!-- PRIORITY 3 -->
+  <div class="priority" data-priority="3">
+    <div class="priority-header" onclick="toggle(this)">
+      <h2>Priority 3 – Menu Intelligence & Selling Tools</h2>
+      <span class="meta">Items 47–66</span>
+    </div>
+    <div class="priority-body">
+      <div class="item"><div class="item-num">47</div><div class="item-content"><div class="item-title">Professional photos for signature dishes</div><div class="item-detail">Add high-quality photos. Maintain visual consistency with existing photography style.</div></div></div>
+      <div class="item"><div class="item-num">48</div><div class="item-content"><div class="item-title">“Best with” drink recommendations</div><div class="item-detail">On each dish suggest a matching drink. Keep understated and on-brand.</div></div></div>
+      <div class="item"><div class="item-num">49</div><div class="item-content"><div class="item-title">“Similar dishes” suggestions</div><div class="item-detail">Show similar items. Use existing card/list styling.</div></div></div>
+      <div class="item"><div class="item-num">50</div><div class="item-content"><div class="item-title">Popular / Most ordered badges</div><div class="item-detail">Subtle badge using the peach accent. Not loud.</div></div></div>
+      <div class="item"><div class="item-num">51</div><div class="item-content"><div class="item-title">Chef’s recommendation badges</div><div class="item-detail">Refined “Chef’s Recommendation” treatment.</div></div></div>
+      <div class="item"><div class="item-num">52</div><div class="item-content"><div class="item-title">Family / Sharing platter section</div><div class="item-detail">Dedicated section with same elegant layout as other menu sections.</div></div></div>
+      <div class="item"><div class="item-num">53</div><div class="item-content"><div class="item-title">Breakfast filter</div><div class="item-detail">Working filter. Match existing filter/navigation style.</div></div></div>
+      <div class="item"><div class="item-num">54</div><div class="item-content"><div class="item-title">Coffee & Tea filter</div><div class="item-detail">Working filter in refined style.</div></div></div>
+      <div class="item"><div class="item-num">55</div><div class="item-content"><div class="item-title">Daily specials section</div><div class="item-detail">Section for daily specials. Keep premium look.</div></div></div>
+      <div class="item"><div class="item-num">56</div><div class="item-content"><div class="item-title">Happy hour section</div><div class="item-detail">Section for happy-hour offers. Understated design.</div></div></div>
+      <div class="item"><div class="item-num">57</div><div class="item-content"><div class="item-title">Combo / meal deals</div><div class="item-detail">Ability to create and display combos without breaking visual language.</div></div></div>
+      <div class="item"><div class="item-num">58</div><div class="item-content"><div class="item-title">Upsell suggestions at checkout</div><div class="item-detail">Suggest extras elegantly at checkout.</div></div></div>
+      <div class="item"><div class="item-num">59</div><div class="item-content"><div class="item-title">Cross-sell suggestions</div><div class="item-detail">Related items while browsing. On-brand cards.</div></div></div>
+      <div class="item"><div class="item-num">60</div><div class="item-content"><div class="item-title">Portion size indicators</div><div class="item-detail">Show “Single / For 2 / For the table” where relevant.</div></div></div>
+      <div class="item"><div class="item-num">61</div><div class="item-content"><div class="item-title">“Contains…” allergen text</div><div class="item-detail">Under every dish write allergens in clean text.</div></div></div>
+      <div class="item"><div class="item-num">62</div><div class="item-content"><div class="item-title">Spice level with Amharic terms</div><div class="item-detail">Show spice level in English + Amharic. Light visual treatment.</div></div></div>
+      <div class="item"><div class="item-num">63</div><div class="item-content"><div class="item-title">Cultural one-line notes</div><div class="item-detail">Short cultural note under classic Ethiopian dishes.</div></div></div>
+      <div class="item"><div class="item-num">64</div><div class="item-content"><div class="item-title">“How to eat injera” guide</div><div class="item-detail">Short elegant guide.</div></div></div>
+      <div class="item"><div class="item-num">65</div><div class="item-content"><div class="item-title">Audio pronunciation</div><div class="item-detail">Audio for difficult dish names. Discreet player UI.</div></div></div>
+      <div class="item"><div class="item-num">66</div><div class="item-content"><div class="item-title">Explanation of Ethiopian food terms</div><div class="item-detail">Explain firfir, tibs, shiro, beyaynetu etc. in matching style.</div></div></div>
+    </div>
+  </div>
+
+  <!-- PRIORITY 4 -->
+  <div class="priority" data-priority="4">
+    <div class="priority-header" onclick="toggle(this)">
+      <h2>Priority 4 – Payments Expansion</h2>
+      <span class="meta">Items 67–84</span>
+    </div>
+    <div class="priority-body">
+      <div class="item"><div class="item-num">67</div><div class="item-content"><div class="item-title">Full Telebirr payment on website</div><div class="item-detail">Customer pays with Telebirr directly on site. Interface must look premium, not generic gateway.</div></div></div>
+      <div class="item"><div class="item-num">68</div><div class="item-content"><div class="item-title">Full CBE Birr payment on website</div><div class="item-detail">Same high visual standard for CBE Birr.</div></div></div>
+      <div class="item"><div class="item-num">69</div><div class="item-content"><div class="item-title">HelloCash support</div><div class="item-detail">Accept HelloCash. Keep UI consistent.</div></div></div>
+      <div class="item"><div class="item-num">70</div><div class="item-content"><div class="item-title">Chapa payment gateway</div><div class="item-detail">Integrate Chapa for cards + other methods. Style the flow to match Cloud L.</div></div></div>
+      <div class="item"><div class="item-num">71</div><div class="item-content"><div class="item-title">Automatic payment confirmation</div><div class="item-detail">Successful payment automatically marks order as Paid.</div></div></div>
+      <div class="item"><div class="item-num">72</div><div class="item-content"><div class="item-title">Payment success → order marked Paid</div><div class="item-detail">No manual step after successful payment.</div></div></div>
+      <div class="item"><div class="item-num">73</div><div class="item-content"><div class="item-title">Split bill payment</div><div class="item-detail">Allow multiple people to pay parts of the bill. Clean UI.</div></div></div>
+      <div class="item"><div class="item-num">74</div><div class="item-content"><div class="item-title">Tip / gratuity field</div><div class="item-detail">Optional tip field at checkout. Refined design.</div></div></div>
+      <div class="item"><div class="item-num">75</div><div class="item-content"><div class="item-title">Service charge configuration</div><div class="item-detail">Ability to turn service charge on/off and set percentage.</div></div></div>
+      <div class="item"><div class="item-num">76</div><div class="item-content"><div class="item-title">Packaging fee option</div><div class="item-detail">Ability to add packaging fee cleanly.</div></div></div>
+      <div class="item"><div class="item-num">77</div><div class="item-content"><div class="item-title">Minimum order value</div><div class="item-detail">Set and enforce minimum order amount.</div></div></div>
+      <div class="item"><div class="item-num">78</div><div class="item-content"><div class="item-title">Free delivery threshold</div><div class="item-detail">Free delivery above a set amount.</div></div></div>
+      <div class="item"><div class="item-num">79</div><div class="item-content"><div class="item-title">Discount / coupon code system</div><div class="item-detail">Create and redeem discount codes. Elegant input.</div></div></div>
+      <div class="item"><div class="item-num">80</div><div class="item-content"><div class="item-title">Gift cards / vouchers</div><div class="item-detail">Support gift cards and vouchers.</div></div></div>
+      <div class="item"><div class="item-num">81</div><div class="item-content"><div class="item-title">Refund (full and partial)</div><div class="item-detail">Refund full or partial amount back to Telebirr/CBE.</div></div></div>
+      <div class="item"><div class="item-num">82</div><div class="item-content"><div class="item-title">Fiscal receipt / EIMS compliance</div><div class="item-detail">Generate tax-compliant fiscal receipts.</div></div></div>
+      <div class="item"><div class="item-num">83</div><div class="item-content"><div class="item-title">Invoice generation</div><div class="item-detail">Ability to generate proper invoices.</div></div></div>
+      <div class="item"><div class="item-num">84</div><div class="item-content"><div class="item-title">Corporate billing / pay later</div><div class="item-detail">Allow approved companies to order and pay later.</div></div></div>
+    </div>
+  </div>
+
+  <!-- PRIORITY 5 -->
+  <div class="priority" data-priority="5">
+    <div class="priority-header" onclick="toggle(this)">
+      <h2>Priority 5 – Staff & Kitchen Operations</h2>
+      <span class="meta">Items 85–100</span>
+    </div>
+    <div class="priority-body">
+      <div class="item"><div class="item-num">85</div><div class="item-content"><div class="item-title">Real-time notification of new orders</div><div class="item-detail">Staff receive instant notification when a new order arrives.</div></div></div>
+      <div class="item"><div class="item-num">86</div><div class="item-content"><div class="item-title">Sound alert for new orders</div><div class="item-detail">Play a clear sound when a new order comes in.</div></div></div>
+      <div class="item"><div class="item-num">87</div><div class="item-content"><div class="item-title">Kitchen Display System (KDS)</div><div class="item-detail">Screen that shows live orders for the kitchen.</div></div></div>
+      <div class="item"><div class="item-num">88</div><div class="item-content"><div class="item-title">Kitchen ticket printing</div><div class="item-detail">Automatically print order tickets for the kitchen.</div></div></div>
+      <div class="item"><div class="item-num">89</div><div class="item-content"><div class="item-title">Order status board for staff</div><div class="item-detail">Board showing all orders and their current status.</div></div></div>
+      <div class="item"><div class="item-num">90</div><div class="item-content"><div class="item-title">One-tap “Mark as Ready”</div><div class="item-detail">Staff can mark an order as ready with one tap.</div></div></div>
+      <div class="item"><div class="item-num">91</div><div class="item-content"><div class="item-title">“Running late” automatic message</div><div class="item-detail">System can send automatic message if order is delayed.</div></div></div>
+      <div class="item"><div class="item-num">92</div><div class="item-content"><div class="item-title">Staff roles</div><div class="item-detail">Create roles: Owner, Manager, Cashier, Kitchen, Waiter.</div></div></div>
+      <div class="item"><div class="item-num">93</div><div class="item-content"><div class="item-title">Different permissions per role</div><div class="item-detail">Each role only sees and can do what they need.</div></div></div>
+      <div class="item"><div class="item-num">94</div><div class="item-content"><div class="item-title">“86 this item” button</div><div class="item-detail">Quick button to mark an item as sold out.</div></div></div>
+      <div class="item"><div class="item-num">95</div><div class="item-content"><div class="item-title">Ingredient low-stock warnings</div><div class="item-detail">Alert when important ingredients are running low.</div></div></div>
+      <div class="item"><div class="item-num">96</div><div class="item-content"><div class="item-title">Basic inventory tracking</div><div class="item-detail">Track stock levels of key items.</div></div></div>
+      <div class="item"><div class="item-num">97</div><div class="item-content"><div class="item-title">Shift handover notes</div><div class="item-detail">Staff can leave notes for the next shift.</div></div></div>
+      <div class="item"><div class="item-num">98</div><div class="item-content"><div class="item-title">Staff login system</div><div class="item-detail">Secure login for all staff.</div></div></div>
+      <div class="item"><div class="item-num">99</div><div class="item-content"><div class="item-title">Activity / audit log</div><div class="item-detail">Log of important actions (who changed what and when).</div></div></div>
+      <div class="item"><div class="item-num">100</div><div class="item-content"><div class="item-title">Offline mode for kitchen</div><div class="item-detail">Kitchen can still see and update orders if internet drops.</div></div></div>
+    </div>
+  </div>
+
+  <!-- PRIORITY 6 -->
+  <div class="priority" data-priority="6">
+    <div class="priority-header" onclick="toggle(this)">
+      <h2>Priority 6 – Analytics & Owner Tools</h2>
+      <span class="meta">Items 101–113</span>
+    </div>
+    <div class="priority-body">
+      <div class="item"><div class="item-num">101</div><div class="item-content"><div class="item-title">Daily sales summary</div><div class="item-detail">Show total sales for the day.</div></div></div>
+      <div class="item"><div class="item-num">102</div><div class="item-content"><div class="item-title">Weekly sales summary</div><div class="item-detail">Show total sales for the week.</div></div></div>
+      <div class="item"><div class="item-num">103</div><div class="item-content"><div class="item-title">Monthly sales summary</div><div class="item-detail">Show total sales for the month.</div></div></div>
+      <div class="item"><div class="item-num">104</div><div class="item-content"><div class="item-title">Top 10 dishes report</div><div class="item-detail">List the best-selling dishes.</div></div></div>
+      <div class="item"><div class="item-num">105</div><div class="item-content"><div class="item-title">Top drinks report</div><div class="item-detail">List the best-selling drinks.</div></div></div>
+      <div class="item"><div class="item-num">106</div><div class="item-content"><div class="item-title">Peak hours report</div><div class="item-detail">Show busiest hours of the day.</div></div></div>
+      <div class="item"><div class="item-num">107</div><div class="item-content"><div class="item-title">Average order value</div><div class="item-detail">Calculate and display average order value.</div></div></div>
+      <div class="item"><div class="item-num">108</div><div class="item-content"><div class="item-title">Sales by payment method</div><div class="item-detail">Breakdown of sales by Telebirr, CBE, cash, etc.</div></div></div>
+      <div class="item"><div class="item-num">109</div><div class="item-content"><div class="item-title">Sales by category</div><div class="item-detail">Breakdown by menu category.</div></div></div>
+      <div class="item"><div class="item-num">110</div><div class="item-content"><div class="item-title">Customer repeat rate</div><div class="item-detail">Measure how many customers return.</div></div></div>
+      <div class="item"><div class="item-num">111</div><div class="item-content"><div class="item-title">Automatic daily report to owner</div><div class="item-detail">Send daily summary via WhatsApp or Email.</div></div></div>
+      <div class="item"><div class="item-num">112</div><div class="item-content"><div class="item-title">Live dashboard</div><div class="item-detail">Real-time view of key metrics.</div></div></div>
+      <div class="item"><div class="item-num">113</div><div class="item-content"><div class="item-title">Export reports (Excel / PDF)</div><div class="item-detail">Ability to download reports.</div></div></div>
+    </div>
+  </div>
+
+  <!-- PRIORITY 7 -->
+  <div class="priority" data-priority="7">
+    <div class="priority-header" onclick="toggle(this)">
+      <h2>Priority 7 – Reservations & Table Management</h2>
+      <span class="meta">Items 114–120</span>
+    </div>
+    <div class="priority-body">
+      <div class="item"><div class="item-num">114</div><div class="item-content"><div class="item-title">Reservation request form</div><div class="item-detail">Clean form matching site design for table bookings.</div></div></div>
+      <div class="item"><div class="item-num">115</div><div class="item-content"><div class="item-title">Waitlist form</div><div class="item-detail">Form for customers to join a waitlist.</div></div></div>
+      <div class="item"><div class="item-num">116</div><div class="item-content"><div class="item-title">Table QR codes</div><div class="item-detail">Generate QR codes for each table.</div></div></div>
+      <div class="item"><div class="item-num">117</div><div class="item-content"><div class="item-title">Table number auto-detection</div><div class="item-detail">Detect table number from QR scan.</div></div></div>
+      <div class="item"><div class="item-num">118</div><div class="item-content"><div class="item-title">Reservation confirmation via WhatsApp</div><div class="item-detail">Send confirmation message automatically.</div></div></div>
+      <div class="item"><div class="item-num">119</div><div class="item-content"><div class="item-title">Special occasion notes</div><div class="item-detail">Allow notes for birthday, anniversary, etc.</div></div></div>
+      <div class="item"><div class="item-num">120</div><div class="item-content"><div class="item-title">No-show tracking</div><div class="item-detail">Track and record no-shows.</div></div></div>
+    </div>
+  </div>
+
+  <!-- PRIORITY 8 -->
+  <div class="priority" data-priority="8">
+    <div class="priority-header" onclick="toggle(this)">
+      <h2>Priority 8 – Loyalty, Marketing & Growth</h2>
+      <span class="meta">Items 121–134</span>
+    </div>
+    <div class="priority-body">
+      <div class="item"><div class="item-num">121</div><div class="item-content"><div class="item-title">Digital loyalty / stamp card</div><div class="item-detail">Digital stamp card. Keep design refined, not flashy.</div></div></div>
+      <div class="item"><div class="item-num">122</div><div class="item-content"><div class="item-title">Points system</div><div class="item-detail">Earn and redeem points.</div></div></div>
+      <div class="item"><div class="item-num">123</div><div class="item-content"><div class="item-title">Birthday reward automation</div><div class="item-detail">Automatic reward on customer birthday.</div></div></div>
+      <div class="item"><div class="item-num">124</div><div class="item-content"><div class="item-title">Referral program</div><div class="item-detail">Give/get discount for referrals.</div></div></div>
+      <div class="item"><div class="item-num">125</div><div class="item-content"><div class="item-title">WhatsApp broadcast for specials</div><div class="item-detail">Send specials to opted-in customers.</div></div></div>
+      <div class="item"><div class="item-num">126</div><div class="item-content"><div class="item-title">Post-order feedback (1-tap rating)</div><div class="item-detail">Simple rating after order.</div></div></div>
+      <div class="item"><div class="item-num">127</div><div class="item-content"><div class="item-title">Automatic Google review request</div><div class="item-detail">Ask happy customers for a Google review.</div></div></div>
+      <div class="item"><div class="item-num">128</div><div class="item-content"><div class="item-title">“You’re a regular” recognition</div><div class="item-detail">Acknowledge repeat customers.</div></div></div>
+      <div class="item"><div class="item-num">129</div><div class="item-content"><div class="item-title">Corporate / office accounts</div><div class="item-detail">Support for company accounts.</div></div></div>
+      <div class="item"><div class="item-num">130</div><div class="item-content"><div class="item-title">Event & catering inquiry form</div><div class="item-detail">Form for events and catering. Match site design.</div></div></div>
+      <div class="item"><div class="item-num">131</div><div class="item-content"><div class="item-title">Discount codes engine</div><div class="item-detail">System to create and manage discount codes.</div></div></div>
+      <div class="item"><div class="item-num">132</div><div class="item-content"><div class="item-title">First-order discount</div><div class="item-detail">Special offer for first-time customers.</div></div></div>
+      <div class="item"><div class="item-num">133</div><div class="item-content"><div class="item-title">Abandoned cart recovery</div><div class="item-detail">Message customers who left items in cart.</div></div></div>
+      <div class="item"><div class="item-num">134</div><div class="item-content"><div class="item-title">Seasonal promotions</div><div class="item-detail">Support for time-limited promotions.</div></div></div>
+    </div>
+  </div>
+
+  <!-- PRIORITY 9 -->
+  <div class="priority" data-priority="9">
+    <div class="priority-header" onclick="toggle(this)">
+      <h2>Priority 9 – Accessibility, Language & Ethiopian Specific</h2>
+      <span class="meta">Items 135–143</span>
+    </div>
+    <div class="priority-body">
+      <div class="item"><div class="item-num">135</div><div class="item-content"><div class="item-title">Amharic-first mode</div><div class="item-detail">Option to show Amharic as primary language. Preserve premium look.</div></div></div>
+      <div class="item"><div class="item-num">136</div><div class="item-content"><div class="item-title">Large text mode</div><div class="item-detail">Larger text for older customers. Still elegant.</div></div></div>
+      <div class="item"><div class="item-num">137</div><div class="item-content"><div class="item-title">High contrast mode</div><div class="item-detail">High-contrast option for accessibility.</div></div></div>
+      <div class="item"><div class="item-num">138</div><div class="item-content"><div class="item-title">Screen reader support</div><div class="item-detail">Proper semantic HTML and ARIA where needed.</div></div></div>
+      <div class="item"><div class="item-num">139</div><div class="item-content"><div class="item-title">“Today is fasting day” indicator</div><div class="item-detail">Automatic indicator on fasting days.</div></div></div>
+      <div class="item"><div class="item-num">140</div><div class="item-content"><div class="item-title">Fasting calendar integration</div><div class="item-detail">Link to or embed fasting calendar logic.</div></div></div>
+      <div class="item"><div class="item-num">141</div><div class="item-content"><div class="item-title">Coffee ceremony add-on</div><div class="item-detail">Option to add traditional coffee ceremony.</div></div></div>
+      <div class="item"><div class="item-num">142</div><div class="item-content"><div class="item-title">Pairing suggestions with tej / local beer</div><div class="item-detail">Suggest traditional pairings.</div></div></div>
+      <div class="item"><div class="item-num">143</div><div class="item-content"><div class="item-title">Multi-language support</div><div class="item-detail">Future support for Oromo, Tigrinya, etc.</div></div></div>
+    </div>
+  </div>
+
+  <!-- PRIORITY 10 -->
+  <div class="priority" data-priority="10">
+    <div class="priority-header" onclick="toggle(this)">
+      <h2>Priority 10 – Advanced / Long-term Features</h2>
+      <span class="meta">Items 144–160</span>
+    </div>
+    <div class="priority-body">
+      <div class="item"><div class="item-num">144</div><div class="item-content"><div class="item-title">Customer accounts with order history</div><div class="item-detail">Full accounts and past orders.</div></div></div>
+      <div class="item"><div class="item-num">145</div><div class="item-content"><div class="item-title">Saved addresses and payment methods</div><div class="item-detail">Save details for faster checkout.</div></div></div>
+      <div class="item"><div class="item-num">146</div><div class="item-content"><div class="item-title">Group ordering</div><div class="item-detail">Multiple people add to the same cart.</div></div></div>
+      <div class="item"><div class="item-num">147</div><div class="item-content"><div class="item-title">Order scheduling for later</div><div class="item-detail">Place order for a future time.</div></div></div>
+      <div class="item"><div class="item-num">148</div><div class="item-content"><div class="item-title">Delivery driver assignment & tracking</div><div class="item-detail">Assign and track delivery drivers.</div></div></div>
+      <div class="item"><div class="item-num">149</div><div class="item-content"><div class="item-title">Delivery proof (photo)</div><div class="item-detail">Photo confirmation of delivery.</div></div></div>
+      <div class="item"><div class="item-num">150</div><div class="item-content"><div class="item-title">Native iOS and Android apps</div><div class="item-detail">Full native mobile applications.</div></div></div>
+      <div class="item"><div class="item-num">151</div><div class="item-content"><div class="item-title">Progressive Web App (PWA)</div><div class="item-detail">Installable web app experience.</div></div></div>
+      <div class="item"><div class="item-num">152</div><div class="item-content"><div class="item-title">AI recommendation engine</div><div class="item-detail">Personalized dish suggestions.</div></div></div>
+      <div class="item"><div class="item-num">153</div><div class="item-content"><div class="item-title">Multi-branch support</div><div class="item-detail">Support for multiple restaurant locations.</div></div></div>
+      <div class="item"><div class="item-num">154</div><div class="item-content"><div class="item-title">Supplier & purchase order system</div><div class="item-detail">Manage suppliers and purchase orders.</div></div></div>
+      <div class="item"><div class="item-num">155</div><div class="item-content"><div class="item-title">Recipe costing & profit margin</div><div class="item-detail">Calculate cost and margin per dish.</div></div></div>
+      <div class="item"><div class="item-num">156</div><div class="item-content"><div class="item-title">Staff scheduling & attendance</div><div class="item-detail">Schedule shifts and track attendance.</div></div></div>
+      <div class="item"><div class="item-num">157</div><div class="item-content"><div class="item-title">Advanced inventory with units</div><div class="item-detail">Track inventory in kg, liters, pieces, etc.</div></div></div>
+      <div class="item"><div class="item-num">158</div><div class="item-content"><div class="item-title">Waste tracking</div><div class="item-detail">Record and analyze food waste.</div></div></div>
+      <div class="item"><div class="item-num">159</div><div class="item-content"><div class="item-title">Full API for future integrations</div><div class="item-detail">Public or private API for extensions.</div></div></div>
+      <div class="item"><div class="item-num">160</div><div class="item-content"><div class="item-title">White-label version</div><div class="item-detail">Version that other restaurants can use.</div></div></div>
+    </div>
+  </div>
+
+  <!-- PRIORITY 11 -->
+  <div class="priority" data-priority="11">
+    <div class="priority-header" onclick="toggle(this)">
+      <h2>Priority 11 – Technical, Security, Legal & Infrastructure</h2>
+      <span class="meta">Items 161–183</span>
+    </div>
+    <div class="priority-body">
+      <div class="item"><div class="item-num">161</div><div class="item-content"><div class="item-title">Mobile-first perfect responsive design</div><div class="item-detail">Flawless experience on all screen sizes.</div></div></div>
+      <div class="item"><div class="item-num">162</div><div class="item-content"><div class="item-title">Page load under 2 seconds</div><div class="item-detail">Optimize so pages load quickly.</div></div></div>
+      <div class="item"><div class="item-num">163</div><div class="item-content"><div class="item-title">Image optimization + CDN</div><div class="item-detail">Serve optimized images via CDN.</div></div></div>
+      <div class="item"><div class="item-num">164</div><div class="item-content"><div class="item-title">HTTPS everywhere</div><div class="item-detail">Secure all connections.</div></div></div>
+      <div class="item"><div class="item-num">165</div><div class="item-content"><div class="item-title">Privacy policy page</div><div class="item-detail">Clear privacy policy.</div></div></div>
+      <div class="item"><div class="item-num">166</div><div class="item-content"><div class="item-title">Terms & conditions page</div><div class="item-detail">Clear terms of use.</div></div></div>
+      <div class="item"><div class="item-num">167</div><div class="item-content"><div class="item-title">Cookie consent</div><div class="item-detail">Proper cookie consent mechanism.</div></div></div>
+      <div class="item"><div class="item-num">168</div><div class="item-content"><div class="item-title">Daily data backup</div><div class="item-detail">Automatic daily backups.</div></div></div>
+      <div class="item"><div class="item-num">169</div><div class="item-content"><div class="item-title">Two-factor authentication for admin</div><div class="item-detail">2FA for administrator accounts.</div></div></div>
+      <div class="item"><div class="item-num">170</div><div class="item-content"><div class="item-title">Role-based access control</div><div class="item-detail">Granular permissions by role.</div></div></div>
+      <div class="item"><div class="item-num">171</div><div class="item-content"><div class="item-title">Error logging & monitoring</div><div class="item-detail">Log and monitor errors.</div></div></div>
+      <div class="item"><div class="item-num">172</div><div class="item-content"><div class="item-title">Staging environment</div><div class="item-detail">Separate staging for testing.</div></div></div>
+      <div class="item"><div class="item-num">173</div><div class="item-content"><div class="item-title">Rate limiting & basic security</div><div class="item-detail">Protect against abuse.</div></div></div>
+      <div class="item"><div class="item-num">174</div><div class="item-content"><div class="item-title">CAPTCHA on public forms</div><div class="item-detail">Add CAPTCHA where needed.</div></div></div>
+      <div class="item"><div class="item-num">175</div><div class="item-content"><div class="item-title">SEO basics</div><div class="item-detail">Proper titles, meta descriptions, sitemap.</div></div></div>
+      <div class="item"><div class="item-num">176</div><div class="item-content"><div class="item-title">Analytics</div><div class="item-detail">Google Analytics or privacy-friendly alternative.</div></div></div>
+      <div class="item"><div class="item-num">177</div><div class="item-content"><div class="item-title">Google Business Profile integration</div><div class="item-detail">Connect with Google Business Profile.</div></div></div>
+      <div class="item"><div class="item-num">178</div><div class="item-content"><div class="item-title">Map embed with correct location</div><div class="item-detail">Accurate map on the site.</div></div></div>
+      <div class="item"><div class="item-num">179</div><div class="item-content"><div class="item-title">Social media links</div><div class="item-detail">Links to official social accounts.</div></div></div>
+      <div class="item"><div class="item-num">180</div><div class="item-content"><div class="item-title">Contact form</div><div class="item-detail">Working contact form.</div></div></div>
+      <div class="item"><div class="item-num">181</div><div class="item-content"><div class="item-title">Opening hours management</div><div class="item-detail">Manage regular and special hours/holidays.</div></div></div>
+      <div class="item"><div class="item-num">182</div><div class="item-content"><div class="item-title">Temporary closure mode</div><div class="item-detail">“We are closed” mode when needed.</div></div></div>
+      <div class="item"><div class="item-num">183</div><div class="item-content"><div class="item-title">Capacity / max orders per hour</div><div class="item-detail">Limit orders to protect kitchen capacity.</div></div></div>
+    </div>
+  </div>
+
+  <!-- PRIORITY 12 -->
+  <div class="priority" data-priority="12">
+    <div class="priority-header" onclick="toggle(this)">
+      <h2>Priority 12 – Extra Completeness Items</h2>
+      <span class="meta">Items 184–235</span>
+    </div>
+    <div class="priority-body">
+      <div class="item"><div class="item-num">184</div><div class="item-content"><div class="item-title">Kids menu section</div><div class="item-detail">Dedicated kids menu if applicable.</div></div></div>
+      <div class="item"><div class="item-num">185</div><div class="item-content"><div class="item-title">Combo meals builder</div><div class="item-detail">Tool to build combo meals.</div></div></div>
+      <div class="item"><div class="item-num">186</div><div class="item-content"><div class="item-title">Modifier system</div><div class="item-detail">Support extra sauce, no onion, etc.</div></div></div>
+      <div class="item"><div class="item-num">187</div><div class="item-content"><div class="item-title">Upsell at cart</div><div class="item-detail">Suggest add-ons in the cart.</div></div></div>
+      <div class="item"><div class="item-num">188</div><div class="item-content"><div class="item-title">Minimum order rules</div><div class="item-detail">Enforce minimum order rules.</div></div></div>
+      <div class="item"><div class="item-num">189</div><div class="item-content"><div class="item-title">Packaging options</div><div class="item-detail">Eco / normal packaging choice.</div></div></div>
+      <div class="item"><div class="item-num">190</div><div class="item-content"><div class="item-title">Service fee on/off toggle</div><div class="item-detail">Control service fee visibility.</div></div></div>
+      <div class="item"><div class="item-num">191</div><div class="item-content"><div class="item-title">Multi-currency display for tourists</div><div class="item-detail">Show approximate prices in other currencies.</div></div></div>
+      <div class="item"><div class="item-num">192</div><div class="item-content"><div class="item-title">Tourist mode with explanations</div><div class="item-detail">Extra explanations for visitors.</div></div></div>
+      <div class="item"><div class="item-num">193</div><div class="item-content"><div class="item-title">Lost & found feature</div><div class="item-detail">Simple lost & found log.</div></div></div>
+      <div class="item"><div class="item-num">194</div><div class="item-content"><div class="item-title">Complaint handling workflow</div><div class="item-detail">Process for handling complaints.</div></div></div>
+      <div class="item"><div class="item-num">195</div><div class="item-content"><div class="item-title">NPS survey after order</div><div class="item-detail">Net Promoter Score survey.</div></div></div>
+      <div class="item"><div class="item-num">196</div><div class="item-content"><div class="item-title">Win-back campaigns</div><div class="item-detail">Re-engage inactive customers.</div></div></div>
+      <div class="item"><div class="item-num">197</div><div class="item-content"><div class="item-title">Gift message on orders</div><div class="item-detail">Allow a gift message.</div></div></div>
+      <div class="item"><div class="item-num">198</div><div class="item-content"><div class="item-title">Printable digital menu PDF</div><div class="item-detail">Generate a clean PDF menu.</div></div></div>
+      <div class="item"><div class="item-num">199</div><div class="item-content"><div class="item-title">Improved QR code for the whole menu</div><div class="item-detail">Better QR experience for the full menu.</div></div></div>
+      <div class="item"><div class="item-num">200</div><div class="item-content"><div class="item-title">Staff training notes / allergen training</div><div class="item-detail">Notes and training materials for staff.</div></div></div>
+      <div class="item"><div class="item-num">201</div><div class="item-content"><div class="item-title">Hygiene checklist for staff</div><div class="item-detail">Daily hygiene checklist.</div></div></div>
+      <div class="item"><div class="item-num">202</div><div class="item-content"><div class="item-title">Temperature log</div><div class="item-detail">Log temperatures if required.</div></div></div>
+      <div class="item"><div class="item-num">203</div><div class="item-content"><div class="item-title">Proper WhatsApp Business API integration</div><div class="item-detail">Official WhatsApp Business API.</div></div></div>
+      <div class="item"><div class="item-num">204</div><div class="item-content"><div class="item-title">Telegram bot for ordering</div><div class="item-detail">Bot that can take orders.</div></div></div>
+      <div class="item"><div class="item-num">205</div><div class="item-content"><div class="item-title">SMS gateway for notifications</div><div class="item-detail">Send SMS notifications.</div></div></div>
+      <div class="item"><div class="item-num">206</div><div class="item-content"><div class="item-title">Email notifications</div><div class="item-detail">Email for order updates and reports.</div></div></div>
+      <div class="item"><div class="item-num">207</div><div class="item-content"><div class="item-title">Push notifications (future app)</div><div class="item-detail">Push for native apps.</div></div></div>
+      <div class="item"><div class="item-num">208</div><div class="item-content"><div class="item-title">Offline order queue + sync</div><div class="item-detail">Queue orders offline and sync later.</div></div></div>
+      <div class="item"><div class="item-num">209</div><div class="item-content"><div class="item-title">Automatic tax calculation</div><div class="item-detail">Calculate tax automatically.</div></div></div>
+      <div class="item"><div class="item-num">210</div><div class="item-content"><div class="item-title">Multi-tax support</div><div class="item-detail">Support multiple tax rules if needed.</div></div></div>
+      <div class="item"><div class="item-num">211</div><div class="item-content"><div class="item-title">Customer data export</div><div class="item-detail">Allow customers to export their data.</div></div></div>
+      <div class="item"><div class="item-num">212</div><div class="item-content"><div class="item-title">Account deletion request</div><div class="item-detail">Process for account deletion.</div></div></div>
+      <div class="item"><div class="item-num">213</div><div class="item-content"><div class="item-title">Session timeout security</div><div class="item-detail">Automatic logout after inactivity.</div></div></div>
+      <div class="item"><div class="item-num">214</div><div class="item-content"><div class="item-title">Audit trail of every price change</div><div class="item-detail">Log all price changes.</div></div></div>
+      <div class="item"><div class="item-num">215</div><div class="item-content"><div class="item-title">Audit trail of every menu change</div><div class="item-detail">Log all menu changes.</div></div></div>
+      <div class="item"><div class="item-num">216</div><div class="item-content"><div class="item-title">Version history of the menu</div><div class="item-detail">Keep historical versions of the menu.</div></div></div>
+      <div class="item"><div class="item-num">217</div><div class="item-content"><div class="item-title">A/B testing for menu layout</div><div class="item-detail">Test different layouts (long term).</div></div></div>
+      <div class="item"><div class="item-num">218</div><div class="item-content"><div class="item-title">Heatmap of most clicked dishes</div><div class="item-detail">See which dishes get most attention.</div></div></div>
+      <div class="item"><div class="item-num">219</div><div class="item-content"><div class="item-title">Live visitor counter (optional)</div><div class="item-detail">Optional live visitor display.</div></div></div>
+      <div class="item"><div class="item-num">220</div><div class="item-content"><div class="item-title">Maintenance mode page</div><div class="item-detail">Page shown during maintenance.</div></div></div>
+      <div class="item"><div class="item-num">221</div><div class="item-content"><div class="item-title">Custom 404 page</div><div class="item-detail">Branded 404 page.</div></div></div>
+      <div class="item"><div class="item-num">222</div><div class="item-content"><div class="item-title">Favicon + app icons</div><div class="item-detail">Proper icons for browser and devices.</div></div></div>
+      <div class="item"><div class="item-num">223</div><div class="item-content"><div class="item-title">Open Graph images</div><div class="item-detail">Images for social media sharing.</div></div></div>
+      <div class="item"><div class="item-num">224</div><div class="item-content"><div class="item-title">Structured data (Schema.org)</div><div class="item-detail">Schema markup for search engines.</div></div></div>
+      <div class="item"><div class="item-num">225</div><div class="item-content"><div class="item-title">Sitemap.xml</div><div class="item-detail">XML sitemap for search engines.</div></div></div>
+      <div class="item"><div class="item-num">226</div><div class="item-content"><div class="item-title">Robots.txt</div><div class="item-detail">Proper robots.txt file.</div></div></div>
+      <div class="item"><div class="item-num">227</div><div class="item-content"><div class="item-title">Performance monitoring</div><div class="item-detail">Monitor site performance.</div></div></div>
+      <div class="item"><div class="item-num">228</div><div class="item-content"><div class="item-title">Uptime monitoring</div><div class="item-detail">Monitor site uptime.</div></div></div>
+      <div class="item"><div class="item-num">229</div><div class="item-content"><div class="item-title">Automated testing for critical flows</div><div class="item-detail">Tests for ordering and payment flows.</div></div></div>
+      <div class="item"><div class="item-num">230</div><div class="item-content"><div class="item-title">Documentation for staff</div><div class="item-detail">How-to guides for staff.</div></div></div>
+      <div class="item"><div class="item-num">231</div><div class="item-content"><div class="item-title">Documentation for owner</div><div class="item-detail">Guides for the owner.</div></div></div>
+      <div class="item"><div class="item-num">232</div><div class="item-content"><div class="item-title">Onboarding checklist for new staff</div><div class="item-detail">Checklist for new team members.</div></div></div>
+      <div class="item"><div class="item-num">233</div><div class="item-content"><div class="item-title">Short video tutorials for staff</div><div class="item-detail">Brief training videos.</div></div></div>
+      <div class="item"><div class="item-num">234</div><div class="item-content"><div class="item-title">In-app help / tooltips</div><div class="item-detail">Helpful tooltips inside the system.</div></div></div>
+      <div class="item"><div class="item-num">235</div><div class="item-content"><div class="item-title">Feedback button for staff about the system</div><div class="item-detail">Way for staff to give feedback on the tools themselves.</div></div></div>
+    </div>
+  </div>
+
+</main>
+
+<footer>
+  Cloud L Restaurant · Master Checklist · Design quality is non-negotiable
+</footer>
+
+<script>
+  function toggle(header) {
+    header.parentElement.classList.toggle('open');
+  }
+
+  const filter = document.getElementById('priorityFilter');
+  const search = document.getElementById('searchBox');
+  const stats = document.getElementById('stats');
+
+  function update() {
+    const pVal = filter.value;
+    const q = search.value.toLowerCase().trim();
+    let visible = 0;
+    document.querySelectorAll('.priority').forEach(prio => {
+      const pMatch = pVal === 'all' || prio.dataset.priority === pVal;
+      let itemMatch = false;
+      prio.querySelectorAll('.item').forEach(item => {
+        const text = item.textContent.toLowerCase();
+        const show = pMatch && (!q || text.includes(q));
+        item.style.display = show ? 'flex' : 'none';
+        if (show) { itemMatch = true; visible++; }
+      });
+      prio.style.display = (pMatch && (itemMatch || !q)) ? 'block' : 'none';
+    });
+    stats.textContent = visible + ' items shown';
+  }
+
+  filter.addEventListener('change', update);
+  search.addEventListener('input', update);
+</script>
+</body>
+</html>
