@@ -1,0 +1,183 @@
+const assets = {
+  logo: "/manus-storage/cloud-l-trading-logo-horizontal_b7e0ec52.svg",
+  hero: "/manus-storage/ethiopian-detail_8e35d62d.jpg",
+  american: "/manus-storage/american-platter_6f21f082.jpg",
+  nonFasting: "/manus-storage/nonfasting-platter_2c7a4554.jpg",
+  fasting: "/manus-storage/fasting-platter_f39d1c0a.jpg",
+  coffee: "/manus-storage/coffee-dessert_cfe3c893.jpg",
+  qr: "/manus-storage/qr-cloud-l-table_284ff3da.png",
+  pdf: "/manus-storage/cloud-l-menu-readable_7182cd8e.pdf",
+  tibs: "/manus-storage/dish-tibs_262e7c6a.jpg",
+  beyaynetu: "/manus-storage/dish-beyaynetu_9ca75561.jpg",
+  specialPizza: "/manus-storage/dish-special-pizza_8d9340e8.jpg",
+  specialBurger: "/manus-storage/dish-special-burger_8d5517a2.jpg",
+  chechebsa: "/manus-storage/dish-chechebsa_4a17003e.jpg",
+  shiroFeses: "/manus-storage/dish-shiro-feses_a5dea518.jpg",
+  dulet: "/manus-storage/dish-dulet_8b20a3ce.jpg",
+  specialFatira: "/manus-storage/dish-special-fatira_b2e5c88e.jpg",
+  pastaMeat: "/manus-storage/dish-pasta-meat_a29d198a.jpg",
+  shiroFitfit: "/manus-storage/dish-shiro-fitfit_909c45e8.jpg",
+  frenchFries: "/manus-storage/dish-french-fries_450387f8.jpg",
+};
+
+const drinkImageUrls: Partial<Record<string, string>> = {
+  soda: "/manus-storage/soda_a0037657.jpg",
+  ambo: "/manus-storage/ambo_0d844a27.jpg",
+  tea: "/manus-storage/tea_5a13e9dd.jpg",
+  "peanut-tea": "/manus-storage/peanut-tea_87ac995d.jpg",
+  "keshir-ginger-tea": "/manus-storage/keshir-ginger-tea_edd20e0b.jpg",
+  "special-tea": "/manus-storage/special-tea_4bc7e2f7.jpg",
+  "lemon-tea": "/manus-storage/lemon-tea_614fc5e3.jpg",
+  macchiato: "/manus-storage/macchiato_6e3264a6.jpg",
+  coffee: "/manus-storage/coffee_f3528d87.jpg",
+  spiris: "/manus-storage/spiris_f81d3a90.jpg",
+  cappuccino: "/manus-storage/cappuccino_132da624.jpg",
+  milk: "/manus-storage/milk_b1a2965a.jpg",
+  "draft-beer": "/manus-storage/draft-beer_1501fa9c.jpg",
+  beer: "/manus-storage/beer_73e612ff.jpg",
+  "special-beer": "/manus-storage/special-beer_d8be5575.jpg",
+  "wine-category": "/manus-storage/wine-category_5512d398.jpg",
+};
+
+const mapUrl = "https://maps.app.goo.gl/nCn3gBFXxHHfqp3k9";
+const phoneUrl = "tel:+251901120012";
+const whatsappUrl = "https://wa.me/251901120012";
+const telegramContactUrl = "https://t.me/+251901120012";
+
+type MenuItem = { en: string; am: string; price: string; category: string };
+type MenuSection = { id: string; eyebrow: string; title: string; am: string; description: string; image: string; accent: string; items: MenuItem[] };
+
+const menuSections: MenuSection[] = [
+  {
+    id: "american",
+    eyebrow: "03 / Familiar favorites",
+    title: "American Foods",
+    am: "አሜሪካዊ ምግቦች",
+    description: "Crisp, comforting, and made to order — from loaded pizzas to the perfect club sandwich.",
+    image: assets.american,
+    accent: "ember",
+    items: [
+      ["Special Burger", "ስፔሻል በርገር", "500"],
+      ["Special Pizza", "ስፔሻል ፒዛ", "700"],
+      ["Sandwich", "ሳንድዊች", "300"],
+      ["Club Sandwich", "ክለብ ሳንድዊች", "500"],
+      ["Vegetable Pizza", "የአትክልት ፒዛ", "400"],
+      ["Cheese Pizza", "ቺዝ ፒዛ", "500"],
+      ["Margherita Pizza", "ማርጋሪታ ፒዛ", "500"],
+      ["Tuna Pizza", "ቱና ፒዛ", "700"],
+      ["Vegetable Sandwich", "የአትክልት ሳንድዊች", "200"],
+      ["French Fries", "ፍሬንች ፍራይስ", "280"],
+    ].map(([en, am, price]) => ({ en, am, price, category: "american" })),
+  },
+  {
+    id: "non-fasting",
+    eyebrow: "01 / Ethiopian table",
+    title: "Ethiopian Non-Fasting Foods",
+    am: "የፍስክ ምግቦች",
+    description: "The deep, generous flavors of the Ethiopian table — seasoned, soulful, and meant to share.",
+    image: assets.nonFasting,
+    accent: "gold",
+    items: [
+      ["Dulet", "ዱለት", "350"],
+      ["Tibs", "ጥብስ", "500"],
+      ["Kuanta Firfir", "ቋንጣ ፍርፍር", "350"],
+      ["Tibs Firfir", "ጥብስ ፍርፍር", "350"],
+      ["Pasta with Meat", "ፓስታ ከስጋ ጋር", "300"],
+      ["Enkulal Firfir", "እንቁላል ፍርፍር", "280"],
+      ["Enkulal Sils", "እንቁላል ስልስ", "260"],
+      ["Chikina", "ጭቅና", "500"],
+      ["Bozena Shiro", "ቦዘና ሽሮ", "300"],
+      ["Macaroni with Meat", "ማካሮኒ ከስጋ ጋር", "300"],
+      ["Kimsha Yefeski", "ቅምሻ የፍስክ", "300"],
+      ["Special Fatira", "ስፔሻል ፋጢራ", "280"],
+      ["Special Ful", "ስፔሻል ፉል", "300"],
+      ["Fish Goulash", "የዓሳ ጉላሽ", "500"],
+    ].map(([en, am, price]) => ({ en, am, price, category: "non-fasting" })),
+  },
+  {
+    id: "fasting",
+    eyebrow: "02 / Plant-forward",
+    title: "Ethiopian Fasting Foods",
+    am: "የጾም ምግቦች",
+    description: "Bright, vegetable-rich plates and comforting sauces that let every ingredient speak.",
+    image: assets.fasting,
+    accent: "sage",
+    items: [
+      ["Beyaynetu", "በያይነቱ", "450"],
+      ["Firfir", "ፍርፍር", "250"],
+      ["Dirkosh Firfir", "ድርቆሽ ፍርፍር", "350"],
+      ["Shiro Feses", "ሽሮ ፈሰስ", "200"],
+      ["Tegabino", "ተጋቢኖ", "250"],
+      ["Telba Fitfit", "ተልባ ፍትፍት", "250"],
+      ["Shiro Fitfit", "ሽሮ ፍትፍት", "250"],
+      ["Ye Tsom Agelgil", "የጾም አገልግል", "700"],
+      ["Rice with Vegetables", "ሩዝ ከአትክልት ጋር", "250"],
+      ["Macaroni with Tomato Sauce", "ማካሮኒ በቲማቲም ሶስ", "300"],
+      ["Timatim Kurte (Tomato Salad)", "ቲማቲም ቁርጥ", "250"],
+      ["Pasta with Tomato Sauce", "ፓስታ በቲማቲም ሶስ", "220"],
+      ["Pasta with Vegetables", "ፓስታ ከአትክልት ጋር", "250"],
+      ["Salad", "ሰላጣ", "400"],
+      ["Chechebsa", "ጨጨብሳ", "220"],
+      ["Half-Half", "ሃፍ ሃፍ", "400"],
+      ["Fatira", "ፈጢራ", "220"],
+      ["Special Chechebsa", "ስፔሻል ጨጨብሳ", "250"],
+      ["Kimsha", "ቅምሻ", "1,500"],
+    ].map(([en, am, price]) => ({ en, am, price, category: "fasting" })),
+  },
+];
+
+const orderedMenuSections = [menuSections[1], menuSections[2], menuSections[0]];
+const orderStatusSteps = [
+  { key: "pending", label: "Pending", detail: "Request received" },
+  { key: "confirmed", label: "Confirmed", detail: "Cloud L confirmed" },
+  { key: "preparing", label: "Preparing", detail: "Kitchen started" },
+  { key: "ready", label: "Ready", detail: "Come collect" },
+  { key: "completed", label: "Completed", detail: "Order closed" },
+] as const;
+
+const featured = [
+  { label: "Guest favorite", name: "Beyaynetu", am: "በያይነቱ", price: "450", image: assets.fasting, tone: "light" },
+  { label: "House classic", name: "Tibs", am: "ጥብስ", price: "500", image: assets.nonFasting, tone: "dark" },
+  { label: "For the table", name: "Special Pizza", am: "ስፔሻል ፒዛ", price: "700", image: assets.american, tone: "light" },
+];
+
+const itemMeta: Record<string, { vegetarian?: boolean; breakfast?: boolean; spicy?: boolean; allergens?: string; popular?: boolean }> = {
+  "Special Burger": { allergens: "wheat, dairy, egg", popular: true },
+  "Special Pizza": { allergens: "wheat, dairy", popular: true },
+  Sandwich: { allergens: "wheat, dairy", breakfast: true },
+  "Club Sandwich": { allergens: "wheat, dairy, egg", popular: true },
+  "Vegetable Pizza": { vegetarian: true, allergens: "wheat, dairy" },
+  "Cheese Pizza": { vegetarian: true, allergens: "wheat, dairy" },
+  "Margherita Pizza": { vegetarian: true, allergens: "wheat, dairy" },
+  "Special Fatira": { allergens: "wheat, egg", breakfast: true },
+  "Special Ful": { vegetarian: true, breakfast: true },
+  "Vegetable Sandwich": { vegetarian: true, allergens: "wheat" },
+  "French Fries": { vegetarian: true, allergens: "may contain wheat", popular: true },
+  Dulet: { allergens: "meat", spicy: true, popular: true },
+  Tibs: { allergens: "meat", spicy: true, popular: true },
+  "Pasta with Meat": { allergens: "wheat, meat" },
+  "Bozena Shiro": { allergens: "legumes", spicy: true },
+  Beyaynetu: { vegetarian: true, popular: true },
+  "Shiro Feses": { vegetarian: true, allergens: "legumes", popular: true },
+  Tegabino: { vegetarian: true, allergens: "legumes" },
+  "Shiro Fitfit": { vegetarian: true, allergens: "legumes" },
+  Salad: { vegetarian: true, allergens: "none" },
+  Chechebsa: { vegetarian: true, allergens: "wheat", breakfast: true },
+  Fatira: { vegetarian: true, allergens: "wheat", breakfast: true },
+};
+
+const dishPhotos: Record<string, string> = {
+  "Special Burger": assets.specialBurger,
+  Tibs: assets.tibs,
+  Beyaynetu: assets.beyaynetu,
+  "Special Pizza": assets.specialPizza,
+  Chechebsa: assets.chechebsa,
+  "Shiro Feses": assets.shiroFeses,
+  Dulet: assets.dulet,
+  "Special Fatira": assets.specialFatira,
+  "Pasta with Meat": assets.pastaMeat,
+  "Shiro Fitfit": assets.shiroFitfit,
+  "French Fries": assets.frenchFries,
+};
+
+const chefPickNames = new Set(Object.keys(dishPhotos));
