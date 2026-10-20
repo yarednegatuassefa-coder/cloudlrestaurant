@@ -58,7 +58,7 @@ function App() {
         <div className="hero-content">
           <div className="hero-copy">
             <p className="eyebrow eyebrow--light"><span />A table for every mood</p>
-            <h1>Ethiopian food.<br /><em>Made for Addis.</em></h1>
+            <h1>Ethiopian<br /><em>food for Addis.</em></h1>
             <p className="hero-lede">Find Cloud L Restaurant in Kebena, Addis Ababa for Ethiopian injera platters, fasting-friendly dishes, tibs, and familiar favorites.</p>
             <div className="hero-buttons">
               <a className="button button--copper" href="#food">Explore the menu <span aria-hidden="true">↘</span></a>
