@@ -2,6 +2,8 @@ import FoodMenu from "./components/FoodMenu";
 import DrinksMenu from "./components/DrinksMenu";
 import "./site.css";
 
+const mapSearchUrl = "https://www.google.com/maps/search/?api=1&query=2QJF%2BXR2%2C+Queen+Elizabeth+II+Street%2C+Kebena%2C+Addis+Ababa%2C+Ethiopia";
+
 const featured = [
   {
     number: "01",
@@ -56,11 +58,11 @@ function App() {
         <div className="hero-content">
           <div className="hero-copy">
             <p className="eyebrow eyebrow--light"><span />A table for every mood</p>
-            <h1>Good food.<br /><em>Good feeling.</em></h1>
-            <p className="hero-lede">A warm Addis table where Ethiopian soul food and familiar favorites meet over generous plates.</p>
+            <h1>Ethiopian food.<br /><em>Made for Addis.</em></h1>
+            <p className="hero-lede">Find Cloud L Restaurant in Kebena, Addis Ababa for Ethiopian injera platters, fasting-friendly dishes, tibs, and familiar favorites.</p>
             <div className="hero-buttons">
               <a className="button button--copper" href="#food">Explore the menu <span aria-hidden="true">↘</span></a>
-              <a className="button button--ghost" href="https://maps.app.goo.gl/nCn3gBFXxHHfqp3k9" target="_blank" rel="noreferrer">Find us in Addis <span aria-hidden="true">↗</span></a>
+              <a className="button button--ghost" href={mapSearchUrl} target="_blank" rel="noreferrer">Find us in Kebena <span aria-hidden="true">↗</span></a>
             </div>
             <div className="hero-proof" aria-label="Restaurant highlights">
               <span><i>✳</i>43 dishes</span>
@@ -71,10 +73,10 @@ function App() {
           <div className="hero-visual">
             <img className="hero-food" src="/assets/restaurant/hero-ethiopian.webp" alt="A generous Ethiopian platter of colorful stews and injera" />
             <div className="hero-note"><small>Today at Cloud L</small><strong>Come hungry.<br />Leave lighter.<span>✦</span></strong></div>
-            <div className="hours-card"><small>Open daily</small><strong>◷ &nbsp;7:00 — 20:30</strong><span>⌖ &nbsp;Queen Elizabeth II Street</span></div>
+            <div className="hours-card"><small>Open daily</small><strong>◷ &nbsp;7:00 — 20:30</strong><span>⌖ &nbsp;Queen Elizabeth II St · Kebena</span></div>
           </div>
         </div>
-        <div className="hero-footerline"><span>Cloud L Restaurant</span><i /> <span>Queen Elizabeth II Street · Addis Ababa</span></div>
+        <div className="hero-footerline"><span>Cloud L Restaurant</span><i /> <span>Kebena · Addis Ababa · Ethiopia</span></div>
       </section>
 
       <section className="story-section content-wrap" id="story">
@@ -82,7 +84,7 @@ function App() {
         <div className="story-copy">
           <p className="eyebrow"><span />A generous kind of welcome</p>
           <h2>Your neighborhood table,<br />with a little more feeling.<br /><em>እንኳን ደህና መጡ</em></h2>
-          <p className="story-text">Cloud L is a simple idea: bring people together around food that feels familiar, vibrant, and full of care. Start with a plate of tibs, share the pizza, finish with something warm.</p>
+          <p className="story-text">At our table in Kebena, Addis Ababa, Ethiopian cooking brings people together over food that feels familiar, vibrant, and full of care. Start with injera and tibs, share a fasting platter or pizza, and finish with something warm.</p>
           <p className="story-signoff">Made for Addis, with love <span>✦</span></p>
         </div>
         <figure className="story-photo-wrap">
@@ -134,15 +136,15 @@ function App() {
           <div>
             <p className="eyebrow eyebrow--light"><span />Bring someone</p>
             <h2>Good food is<br /><em>better together.</em></h2>
-            <p>We’re on Queen Elizabeth II Street in Addis Ababa — easy to find, easier to stay awhile.</p>
+            <p>Find Cloud L on Queen Elizabeth II Street in Kebena, Addis Ababa. Use address code 2QJF+XR2 for map directions.</p>
           </div>
           <div className="visit-card">
             <img src="/assets/restaurant/cloud-l-logo.svg" alt="Cloud L Restaurant" />
-            <span>Queen Elizabeth II Street<br />Addis Ababa, Ethiopia</span>
+            <span>2QJF+XR2 · Queen Elizabeth II Street<br />Kebena, Addis Ababa, Ethiopia</span>
             <div className="visit-links">
               <a href="tel:+251901120012">Call us <span>↗</span></a>
               <a href="https://wa.me/251901120012" target="_blank" rel="noreferrer">WhatsApp <span>↗</span></a>
-              <a href="https://maps.app.goo.gl/nCn3gBFXxHHfqp3k9" target="_blank" rel="noreferrer">Get directions <span>↗</span></a>
+              <a href={mapSearchUrl} target="_blank" rel="noreferrer">Get directions <span>↗</span></a>
             </div>
           </div>
         </div>
