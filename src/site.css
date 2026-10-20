@@ -10,3 +10,44 @@
 @media(max-width:900px){.hero-content{min-height:450px;grid-template-columns:1fr .74fr;gap:20px}.hero-copy h1{font-size:clamp(3.5rem,8vw,5.8rem)}.hero-note{left:-12%;width:145px}.hours-card{right:-2%;min-width:180px}.desktop-nav{gap:16px}.desktop-nav a,.nav-phone{font-size:10px}.nav-actions{gap:12px}.fm__category{grid-template-columns:.63fr 1.37fr;gap:30px}.fm__visual,.fm__visual img{min-height:315px}}
 @media(max-width:680px){.content-wrap{width:min(100% - 36px,540px)}.hero-shell{padding-inline:18px}.site-nav{min-height:70px;gap:10px}.site-brand{width:75px;height:57px}.site-brand img{width:70px;max-height:50px}.desktop-nav,.nav-phone,.nav-cta{display:none}.mobile-nav-cta{display:inline-flex;min-height:36px;padding-inline:13px;font-size:9px}.hero-content{display:flex;flex-direction:column;align-items:stretch;gap:35px;padding:55px 0 31px}.hero-copy{padding-bottom:0}.hero-copy h1{font-size:clamp(3.8rem,16vw,5.6rem)}.hero-lede{max-width:350px;margin-top:20px;font-size:12px}.hero-buttons{gap:8px;margin-top:22px}.button{min-height:42px;gap:12px;padding-inline:12px;font-size:8px}.hero-proof{gap:12px;margin-top:26px;font-size:8px}.hero-proof span{gap:6px}.hero-proof i{width:21px;height:21px;font-size:10px}.hero-visual{width:min(88%,370px);align-self:center;margin:0 0 7px;padding-inline:4px}.hero-food{max-height:380px;aspect-ratio:.95;border-radius:48% 48% 5px 5px}.hero-note{top:12%;left:-13%;width:132px;padding:12px 13px}.hero-note strong{font-size:16px}.hours-card{right:-11%;bottom:3%;min-width:163px;padding:13px}.hours-card strong,.hours-card>span{font-size:8px}.hero-footerline{min-height:36px;gap:8px;font-size:6px;letter-spacing:.08em}.hero-footerline i{width:18px}.story-section{grid-template-columns:1fr 1fr;gap:24px 18px;padding-block:68px}.story-rail{display:none}.story-copy{grid-column:1/-1}.story-copy h2{font-size:clamp(2.25rem,10vw,3.45rem)}.story-copy h2 em{display:inline-block;margin-top:8px;font-size:.38em}.story-text{margin-top:17px;font-size:11px}.story-photo-wrap{grid-column:1/-1;width:min(100%,390px);justify-self:center}.story-photo-wrap img{height:310px}.shortlist-section{padding-block:62px}.shortlist-heading{align-items:flex-start;flex-direction:column;gap:16px;margin-bottom:24px}.shortlist-heading h2{font-size:clamp(2.55rem,11vw,3.6rem)}.shortlist-heading>div>p:last-child{font-size:10px}.text-link{margin:0;font-size:8px}.featured-grid{grid-template-columns:1fr;gap:25px}.featured-photo{aspect-ratio:1.45}.featured-details{padding-top:12px}.featured-details h3{font-size:21px}.menu-intro{align-items:flex-start;flex-direction:column;gap:13px;padding-block:65px 15px}.menu-intro h2{font-size:clamp(2.8rem,12vw,3.8rem)}.menu-intro>p{font-size:10px;text-align:left}.fm{padding:10px 18px 58px}.fm__controls{align-items:stretch;flex-direction:column;gap:16px;margin-bottom:30px;padding-block:14px}.fm__search-wrap{width:100%}.fm__tabs{gap:14px}.fm__tabs a{font-size:8px}.fm__sections{gap:56px}.fm__category{grid-template-columns:1fr;gap:19px}.fm__visual{position:relative;top:auto;min-height:220px;aspect-ratio:1.55}.fm__visual img{min-height:220px}.fm__category-content h2{font-size:2.4rem}.fm__grid{grid-template-columns:1fr}.fm__item{min-height:54px}.visit-inner{grid-template-columns:1fr;gap:30px;padding-bottom:48px}.visit-section h2{font-size:clamp(3.15rem,14vw,4.6rem)}.visit-card{padding:20px}.visit-links{grid-template-columns:1fr;gap:7px}.site-footer{min-height:58px;flex-wrap:wrap;justify-content:space-between;padding-block:12px;font-size:7px}.site-footer span:last-child{display:none}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition-duration:.01ms!important;animation-duration:.01ms!important}}
+
+
+/* Free WhatsApp-first ordering */
+.fm__item{align-items:center}
+.fm__add{display:inline-grid;width:28px;height:28px;flex:0 0 28px;place-items:center;border:1px solid #c47c5d;border-radius:50%;background:transparent;color:#8f5841;cursor:pointer;font:600 17px/1 "DM Sans","Noto Sans Ethiopic",sans-serif;transition:background .18s,color .18s,transform .18s}
+.fm__add:hover{background:#c47c5d;color:#fffaf2;transform:scale(1.04)}
+.fm__add:focus-visible,.order-cart-trigger:focus-visible,.order-cart__close:focus-visible,.order-cart__quantity button:focus-visible,.order-cart__whatsapp:focus-visible{outline:3px solid #d5a17f;outline-offset:3px}
+.order-cart-trigger{position:fixed;right:24px;bottom:22px;z-index:900;display:flex;min-height:54px;align-items:center;justify-content:center;gap:18px;padding:0 20px;border:1px solid rgba(255,255,255,.22);background:#232630;color:#fffaf2;box-shadow:0 10px 30px rgba(24,25,30,.22);cursor:pointer;font-size:11px;font-weight:700;letter-spacing:.06em}
+.order-cart-trigger strong{color:#e1b08d;font-variant-numeric:tabular-nums}
+.order-cart-scrim{position:fixed;inset:0;z-index:1000;border:0;background:rgba(28,29,34,.42);cursor:pointer}
+.order-cart-panel{position:fixed;right:24px;bottom:90px;z-index:1001;display:flex;width:min(430px,calc(100vw - 32px));max-height:min(76vh,680px);flex-direction:column;overflow:auto;padding:24px;border:1px solid var(--line);background:var(--cream);color:var(--ink);box-shadow:0 22px 68px rgba(20,21,26,.28)}
+.order-cart__header{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;padding-bottom:17px;border-bottom:1px solid var(--line)}
+.order-cart__eyebrow{margin:0 0 7px;color:#a8664d;font-size:8px;font-weight:700;letter-spacing:.17em}
+.order-cart__header h2{margin:0;font-family:var(--serif);font-size:30px;font-weight:500;letter-spacing:-.04em}
+.order-cart__close{display:grid;width:34px;height:34px;place-items:center;border:1px solid var(--line);background:transparent;color:var(--ink);cursor:pointer;font-size:22px;line-height:1}
+.order-cart__empty{margin:22px 0 4px;color:var(--muted);font-size:13px;line-height:1.7}
+.order-cart__items{display:grid;gap:0;margin:0;padding:0;list-style:none}
+.order-cart__item{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:9px 12px;padding:15px 0;border-bottom:1px solid var(--line)}
+.order-cart__item-copy{display:grid;gap:3px;min-width:0}
+.order-cart__item-copy strong{font-size:12px;font-weight:650;line-height:1.4}
+.order-cart__item-copy span{color:var(--muted);font-size:11px}
+.order-cart__item-copy small{color:var(--muted);font-size:9px}
+.order-cart__quantity{display:flex;align-items:center;gap:8px}
+.order-cart__quantity button{display:grid;width:27px;height:27px;place-items:center;border:1px solid var(--line);background:transparent;color:var(--ink);cursor:pointer;font-size:16px}
+.order-cart__quantity span{min-width:12px;text-align:center;font-size:11px;font-variant-numeric:tabular-nums}
+.order-cart__line-total{grid-column:1/-1;justify-self:end;color:#8f5841;font-size:11px;font-variant-numeric:tabular-nums}
+.order-cart__subtotal{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:17px 0 4px;font-size:12px}
+.order-cart__subtotal strong{font-size:15px;font-variant-numeric:tabular-nums}
+.order-cart__notice{margin:10px 0 16px;color:var(--muted);font-size:10px;line-height:1.65}
+.order-cart__whatsapp{display:flex;min-height:46px;align-items:center;justify-content:center;gap:14px;padding:0 16px;border:0;background:#232630;color:#fffaf2;cursor:pointer;font:700 10px "DM Sans","Noto Sans Ethiopic",sans-serif;letter-spacing:.1em;text-decoration:none;text-transform:uppercase}
+.order-cart__whatsapp span{color:#e1b08d;font-size:15px}
+.order-cart__whatsapp:disabled{opacity:.55;cursor:not-allowed}
+@media(max-width:680px){
+  .fm__item{gap:7px}
+  .fm__item-name strong{font-size:9px}
+  .fm__price{font-size:9px}
+  .fm__add{width:26px;height:26px;flex-basis:26px}
+  .order-cart-trigger{right:14px;bottom:12px;left:14px;min-height:48px;justify-content:space-between;padding-inline:17px}
+  .order-cart-panel{right:12px;bottom:72px;left:12px;width:auto;max-height:72vh;padding:19px}
+}
+@media(prefers-reduced-motion:reduce){.fm__add{transition:none}}

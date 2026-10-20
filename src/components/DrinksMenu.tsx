@@ -319,7 +319,7 @@ export default function DrinksMenu({
     <section className="drinks-menu" id="drinks" aria-labelledby="drinks-menu-title">
       <div className="drinks-menu__inner">
         <header className="drinks-menu__header">
-          <p className="drinks-menu__eyebrow">CLOUD L RESTAURANT · ADDIS ABABA</p>
+          <p className="drinks-menu__eyebrow">CLOUD L · ADDIS ABABA</p>
           <div className="drinks-menu__heading-row">
             <div>
               <h2 className="drinks-menu__title" id="drinks-menu-title">

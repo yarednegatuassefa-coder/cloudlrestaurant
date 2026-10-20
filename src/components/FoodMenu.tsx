@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import type { OrderSelection } from "./orderTypes";
 
 type Item = { en: string; am: string; price: string };
 type Section = {
@@ -10,6 +11,10 @@ type Section = {
   image: string;
   imageAlt: string;
   items: Item[];
+};
+
+type FoodMenuProps = {
+  onAddToOrder?: (item: OrderSelection) => void;
 };
 
 const sections: Section[] = [
@@ -91,7 +96,7 @@ const sections: Section[] = [
   },
 ];
 
-export default function FoodMenu() {
+export default function FoodMenu({ onAddToOrder }: FoodMenuProps) {
   const [query, setQuery] = useState("");
   const normalizedQuery = query.trim().toLocaleLowerCase();
   const visibleSections = useMemo(
@@ -140,6 +145,19 @@ export default function FoodMenu() {
                     <article className="fm__item" key={item.en}>
                       <div className="fm__item-name"><strong>{item.en}</strong><span lang="am">{item.am}</span></div>
                       <strong className="fm__price">{item.price}<small> ETB</small></strong>
+                      <button
+                        className="fm__add"
+                        type="button"
+                        aria-label={`Add ${item.en} to order`}
+                        onClick={() => onAddToOrder?.({
+                          id: `food-${section.id}-${item.en.toLocaleLowerCase().replace(/[^a-z0-9]+/g, "-")}`,
+                          name: item.en,
+                          nameAmharic: item.am,
+                          price: Number(item.price.replaceAll(",", "")),
+                        })}
+                      >
+                        <span aria-hidden="true">+</span>
+                      </button>
                     </article>
                   ))}
                 </div>
