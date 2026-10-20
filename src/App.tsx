@@ -5,7 +5,7 @@ import OrderCart from "./components/OrderCart";
 import type { CartLine, OrderSelection } from "./components/orderTypes";
 import "./site.css";
 
-const mapSearchUrl = "https://maps.app.goo.gl/nCn3gBFXxHHfqp3k9";
+const mapSearchUrl = "https://www.google.com/maps/dir/?api=1&destination=2QJF%2BXR2%2C%20Kebena%2C%20Addis%20Ababa%2C%20Ethiopia";
 const cartStorageKey = "cloudl-order-cart-v1";
 const whatsappNumber = "251901120012";
 const emptyCart: CartLine[] = [];
@@ -164,7 +164,7 @@ function App() {
               <p className="hero-lede">Find Cloud L in Kebena, Addis Ababa for Ethiopian injera platters, fasting-friendly dishes, tibs, and familiar favorites.</p>
               <div className="hero-buttons">
                 <a className="button button--copper" href="#food">Explore the menu <span aria-hidden="true">↘</span></a>
-                <a className="button button--ghost" href={mapSearchUrl} target="_blank" rel="noreferrer">Find us in Kebena <span aria-hidden="true">↗</span></a>
+                <a className="button button--ghost" href={mapSearchUrl} target="_blank" rel="noreferrer" aria-label="Get directions to Cloud L in Kebena, Addis Ababa">Get directions <span aria-hidden="true">↗</span></a>
               </div>
               <div className="hero-proof" aria-label="Restaurant highlights">
                 <span><i>✳</i>43 dishes</span>
@@ -238,15 +238,15 @@ function App() {
             <div>
               <p className="eyebrow eyebrow--light"><span />Bring someone</p>
               <h2>Good food is<br /><em>better together.</em></h2>
-              <p>Find Cloud L on Queen Elizabeth II Street in Kebena, Addis Ababa. Use address code 2QJF+XR2 for map directions.</p>
+              <p>Find our table on Queen Elizabeth II Street in Kebena, Addis Ababa. Tap for turn-by-turn directions.</p>
             </div>
             <div className="visit-card">
               <img src="/assets/restaurant/cloud-l-logo.svg" alt="Cloud L" />
-              <span>2QJF+XR2 · Queen Elizabeth II Street<br />Kebena, Addis Ababa, Ethiopia</span>
+              <span>Queen Elizabeth II Street<br />Kebena · Addis Ababa · Ethiopia</span>
               <div className="visit-links">
                 <a href="tel:+251901120012">Call us <span>↗</span></a>
                 <a href="https://wa.me/251901120012" target="_blank" rel="noreferrer">WhatsApp <span>↗</span></a>
-                <a href={mapSearchUrl} target="_blank" rel="noreferrer">Get directions <span>↗</span></a>
+                <a href={mapSearchUrl} target="_blank" rel="noreferrer" aria-label="Get directions to Cloud L in Kebena, Addis Ababa">Get directions <span>↗</span></a>
               </div>
             </div>
           </div>
