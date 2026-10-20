@@ -2,7 +2,7 @@ import FoodMenu from "./components/FoodMenu";
 import DrinksMenu from "./components/DrinksMenu";
 import "./site.css";
 
-const mapSearchUrl = "https://www.google.com/maps/search/?api=1&query=2QJF%2BXR2%2C+Queen+Elizabeth+II+Street%2C+Kebena%2C+Addis+Ababa%2C+Ethiopia";
+const mapSearchUrl = "https://maps.app.goo.gl/nCn3gBFXxHHfqp3k9";
 
 const featured = [
   {
