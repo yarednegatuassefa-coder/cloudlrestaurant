@@ -17,7 +17,7 @@ export type DrinkVariant = {
 export type DrinkMenuItem = {
   id: string;
   name: string;
-  /** Draft Amharic name/transliteration; verify against Cloud L's preferred spelling before publishing. */
+  /** Amharic name/transliteration; owner-confirmed when explicitly noted on the item. */
   nameAmharic: string;
   category: DrinkCategory;
   price?: number;
@@ -80,6 +80,7 @@ export const DRINK_MENU_ITEMS: DrinkMenuItem[] = [
   },
   {
     id: "keshir-ginger-tea",
+    // English and Amharic names confirmed by the restaurant owner.
     name: "Keshir Ginger Tea",
     nameAmharic: "ቀሽር ሻይ",
     category: "Tea & infusions",

@@ -256,11 +256,11 @@ function App() {
             <div>
               <p className="eyebrow eyebrow--light"><span />Bring someone</p>
               <h2>Good food is<br /><em>better together.</em></h2>
-              <p>Find our table on Queen Elizabeth II Street in Kebena, Addis Ababa. Tap for turn-by-turn directions.</p>
+              <p>Find our table near Kebena Square Park on Queen Elizabeth II Street in Kebena, Addis Ababa. Tap for turn-by-turn directions.</p>
             </div>
             <div className="visit-card">
               <img src="/assets/restaurant/cloud-l-logo.svg" alt="Cloud L" />
-              <span>Queen Elizabeth II Street<br />Kebena · Addis Ababa · Ethiopia</span>
+              <span>Near Kebena Square Park<br />Queen Elizabeth II Street<br />Kebena · Addis Ababa · Ethiopia</span>
               <div className="visit-links">
                 <a href="tel:+251901120012">Call us <span>↗</span></a>
                 <a href="https://wa.me/251901120012" target="_blank" rel="noreferrer">WhatsApp <span>↗</span></a>
