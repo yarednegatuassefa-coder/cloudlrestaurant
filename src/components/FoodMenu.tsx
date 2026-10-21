@@ -1,13 +1,14 @@
 import { useMemo, useState } from "react";
 import type { OrderSelection } from "./orderTypes";
 
-type Item = { en: string; am: string; price: string };
+type Item = { en: string; am: string; price: string; breakfast?: boolean };
 type Section = {
   id: string;
   eyebrow: string;
   title: string;
   am: string;
   description: string;
+  note?: string;
   image: string;
   imageAlt: string;
   items: Item[];
@@ -16,6 +17,8 @@ type Section = {
 type FoodMenuProps = {
   onAddToOrder?: (item: OrderSelection) => void;
 };
+
+const MENU_LAST_UPDATED = "21 October 2026";
 
 const sections: Section[] = [
   {
@@ -38,8 +41,8 @@ const sections: Section[] = [
       { en: "Bozena Shiro", am: "ቦዘና ሽሮ", price: "300" },
       { en: "Macaroni with Meat", am: "ማካሮኒ ከስጋ ጋር", price: "300" },
       { en: "Kimsha Yefeski", am: "ቅምሻ የፍስክ", price: "300" },
-      { en: "Special Fatira", am: "ስፔሻል ፋጢራ", price: "280" },
-      { en: "Special Ful", am: "ስፔሻል ፉል", price: "300" },
+      { en: "Special Fatira", am: "ስፔሻል ፋጢራ", price: "280", breakfast: true },
+      { en: "Special Ful", am: "ስፔሻል ፉል", price: "300", breakfast: true },
       { en: "Fish Goulash", am: "የዓሳ ጉላሽ", price: "500" },
     ],
   },
@@ -49,6 +52,7 @@ const sections: Section[] = [
     title: "Ethiopian Fasting Foods",
     am: "የጾም ምግቦች",
     description: "Bright, vegetable-rich plates and comforting sauces that let every ingredient speak.",
+    note: "Fasting = Plant-based / Vegan-friendly",
     image: "/assets/restaurant/fasting-platter.webp",
     imageAlt: "A vibrant Ethiopian fasting platter with vegetables and lentil stews",
     items: [
@@ -66,10 +70,10 @@ const sections: Section[] = [
       { en: "Pasta with Tomato Sauce", am: "ፓስታ በቲማቲም ሶስ", price: "220" },
       { en: "Pasta with Vegetables", am: "ፓስታ ከአትክልት ጋር", price: "250" },
       { en: "Salad", am: "ሰላጣ", price: "400" },
-      { en: "Chechebsa", am: "ጨጨብሳ", price: "220" },
+      { en: "Chechebsa", am: "ጨጨብሳ", price: "220", breakfast: true },
       { en: "Half-Half", am: "ሃፍ ሃፍ", price: "400" },
-      { en: "Fatira", am: "ፈጢራ", price: "220" },
-      { en: "Special Chechebsa", am: "ስፔሻል ጨጨብሳ", price: "250" },
+      { en: "Fatira", am: "ፈጢራ", price: "220", breakfast: true },
+      { en: "Special Chechebsa", am: "ስፔሻል ጨጨብሳ", price: "250", breakfast: true },
       { en: "Kimsha", am: "ቅምሻ", price: "1,500" },
     ],
   },
@@ -96,6 +100,21 @@ const sections: Section[] = [
   },
 ];
 
+const mutedNote = { margin: "0 0 12px", fontSize: "0.85rem", opacity: 0.75, letterSpacing: "0.02em" } as const;
+const breakfastTag = {
+  display: "inline-block",
+  marginLeft: "8px",
+  padding: "1px 8px",
+  border: "1px solid currentColor",
+  borderRadius: "999px",
+  fontSize: "0.65rem",
+  fontWeight: 600,
+  letterSpacing: "0.08em",
+  textTransform: "uppercase",
+  opacity: 0.75,
+  verticalAlign: "middle",
+} as const;
+
 export default function FoodMenu({ onAddToOrder }: FoodMenuProps) {
   const [query, setQuery] = useState("");
   const normalizedQuery = query.trim().toLocaleLowerCase();
@@ -103,7 +122,7 @@ export default function FoodMenu({ onAddToOrder }: FoodMenuProps) {
     () => sections.map((section) => ({
       ...section,
       items: section.items.filter((item) =>
-        `${item.en} ${item.am} ${item.price}`.toLocaleLowerCase().includes(normalizedQuery),
+        `${item.en} ${item.am} ${item.price} ${item.breakfast ? "breakfast" : ""}`.toLocaleLowerCase().includes(normalizedQuery),
       ),
     })).filter((section) => section.items.length > 0),
     [normalizedQuery],
@@ -112,6 +131,7 @@ export default function FoodMenu({ onAddToOrder }: FoodMenuProps) {
   return (
     <section className="fm" id="food" aria-label="Food menu">
       <div className="fm__inner">
+        <p style={mutedNote}>Menu last updated: {MENU_LAST_UPDATED}</p>
         <div className="fm__controls">
           <label className="fm__search-wrap">
             <span className="sr-only">Search food menu</span>
@@ -140,10 +160,14 @@ export default function FoodMenu({ onAddToOrder }: FoodMenuProps) {
                 <h2>{section.title}</h2>
                 <p className="fm__amharic" lang="am">{section.am}</p>
                 <p className="fm__description">{section.description}</p>
+                {section.note && <p style={mutedNote}>{section.note}</p>}
                 <div className="fm__grid">
                   {section.items.map((item) => (
                     <article className="fm__item" key={item.en}>
-                      <div className="fm__item-name"><strong>{item.en}</strong><span lang="am">{item.am}</span></div>
+                      <div className="fm__item-name">
+                        <strong>{item.en}{item.breakfast && <span style={breakfastTag}>Breakfast</span>}</strong>
+                        <span lang="am">{item.am}</span>
+                      </div>
                       <strong className="fm__price">{item.price}<small> ETB</small></strong>
                       <button
                         className="fm__add"
