@@ -131,7 +131,7 @@ export default function FoodMenu({ onAddToOrder }: FoodMenuProps) {
   return (
     <section className="fm" id="food" aria-label="Food menu">
       <div className="fm__inner">
-        <p style={mutedNote}>Menu last updated: {MENU_LAST_UPDATED}</p>
+        <p style={mutedNote}>Menu last updated: {MENU_LAST_UPDATED} · All prices include VAT</p>
         <div className="fm__controls">
           <label className="fm__search-wrap">
             <span className="sr-only">Search food menu</span>
