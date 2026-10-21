@@ -1,44 +1,55 @@
-# Cloud L — delivery status
+# Cloud L — status
 
-**Public brand:** Cloud L. **Hours:** daily, 7:00 a.m.–9:00 p.m. **Address:** Queen Elizabeth II Street, Kebena, Addis Ababa. **Directions:** a professional Google Maps link, with the plus code kept inside the destination URL. **Telebirr:** +251 901 120 012, for manual transfers only.
+**Public brand:** Cloud L. **Hours:** daily, 7:00 a.m.–9:00 p.m. **Address:** Queen Elizabeth II Street, Kebena, Addis Ababa. **Telebirr:** +251 901 120 012, manual transfers only. **Recipient name shown to customers:** Lidia.
 
-## Live website — verified
+Last updated: 21 October 2026.
 
-- [x] Editorial Cloud L website and restaurant photography deployed to `cloudlrestaurant.com`.
-- [x] Search-ready prerendered homepage with local restaurant metadata and `LocalBusiness` structured data.
-- [x] Canonical host, robots.txt, sitemap.xml, and Cloud L SVG favicon verified over HTTP on 21 October 2026 (all 200; homepage and crawler files contain expected content).
-- [x] Hours, Kebena address, public brand, click-to-call, and human-friendly directions CTA reflected on the site.
+## Live and tested on production (cloudlrestaurant.com)
 
-## Ordering release — implemented in local source, NOT yet deployed
+- Website with food menu (43 dishes, English and Amharic) and drinks menu (21 drinks).
+- Menu shows last-updated date, "Fasting = Plant-based / Vegan-friendly", Breakfast tags (Fatira, Special Fatira, Special Ful, Chechebsa, Special Chechebsa), and "All prices include VAT".
+- Persistent cart, guest checkout, pickup / delivery / dine-in, cash and manual Telebirr, WhatsApp order fallback.
+- Order saved in Neon (Postgres). Vercel variables set: DATABASE_URL, STAFF_PASSWORD, STAFF_SESSION_SECRET. Never print or commit their values.
+- Customer order reference and private tracking link (token hash stored, not the token).
+- Staff page at /#staff: login, order list, status changes (received, confirmed, preparing, ready, completed), cancel.
+- Customer tracking page shows every status change and the update log.
+- Manual Telebirr path tested: card appears after staff confirm; transaction reference submitted; staff verification marks it paid. Nothing is marked paid from a reference alone.
+- Staff alerts tested: sound and browser notification fire while the staff tab is in the background (pinned tab, Chrome set to keep the site active).
+- Staff-initiated WhatsApp update links for opted-in customers.
+- Local SEO: metadata, structured data, robots.txt, sitemap.xml.
 
-- [x] Persistent cart and WhatsApp as a secondary, user-reviewed fallback.
-- [x] Guest checkout with name and phone; pickup, delivery, or dine-in; delivery address/landmark/notes only for delivery; optional guests/table; special instructions; explicit WhatsApp-status opt-in.
-- [x] Cash preference and manual Telebirr preference. Customer is told to wait for staff confirmation and final total before transferring.
-- [x] Server-side catalog validation and subtotal recalculation; the browser-supplied subtotal is not trusted.
-- [x] Server-generated order reference and a separate unguessable private tracking token; only its hash is stored. Tracking reveals customer-safe items/status/confirmed totals, not phone or address.
-- [x] Customer tracking timeline, staff-set ETA, Telebirr transfer card shown only after staff confirms the order/total, transaction-reference submission, and staff verification before marking paid.
-- [x] Protected staff login/session, order queue, status controls, delivery-fee/ETA input, 15-second refresh, optional sound and browser notification prompts, manual WhatsApp update links for opted-in customers.
-- [x] Neon order schema migration has been applied; migration grants server-role access only. The API and UI are implemented locally and type-check/build successfully.
-- [ ] Publish these local code changes to the production Vercel deployment and verify the production flow.
-- [ ] Required first: grant the Vercel integration permission to the project’s team scope. The connector currently returns 403 for that scope; an environment-variable write was denied. No production test order was placed.
-- [ ] After access, configure production `DATABASE_URL` (pooled Neon URL), `STAFF_PASSWORD`, and `STAFF_SESSION_SECRET`; keep values secret and server-only. Confirm deployment health before enabling customer orders.
-- [ ] Test the complete live journey with a clearly identified, low-value test request, verify its private tracking link and staff board, then remove/cancel test data as appropriate. Do not submit until production configuration succeeds.
+## Test data
 
-## Owner confirmation still needed before claiming/configuring
+Test orders placed on production (TEST, TEST2, TEST3 and the first CL-261021 order) must stay cancelled or declined. There is one Neon database shared by Preview and production.
 
-- [ ] Confirm the Telebirr recipient display name is exactly “Cloud L” in the receiving wallet before instructing customers to transfer.
-- [ ] Define delivery zones, availability, and fees; staff currently confirms fee manually before customer payment.
-- [ ] Approve cancellation/refund rules and provide a CBE Birr receiving account/name only if it should be offered. No unconfirmed CBE number or automated payment gateway is published.
-- [ ] Confirm whether a specific customer-service WhatsApp recipient differs from the public/Telebirr number. No staff destination is assumed from the public number.
+## Not built yet
 
-## Later improvements (not required for first online ordering)
+- "Needs clarification" order status (not in the database).
+- Staff sold-out toggle (database table exists; no screen).
+- Allergen and dietary data and filters (do not guess food facts; verify with the kitchen).
+- Telegram ordering button.
+- CBE Birr (only if the owner provides a real account and name).
+- Automatic delivery fee calculator (staff set the fee per order).
+- QR pickup pass for real orders (the Manus demo was never in this repo).
+- Dish descriptions (checklist items 5 and 6).
+- Customer reorder, favorites, order editing, cancellation flow.
+- Automatic WhatsApp / Telegram messages, kitchen display, printing, audit log, inventory.
 
-- [ ] Staff-managed sold-out controls/UI, although the API checks availability when present.
-- [ ] Verified allergen and dietary attributes/filters; do not guess food facts.
-- [ ] Customer reorder/favorites, editing and cancellation workflow.
-- [ ] Automatic WhatsApp/Telegram notifications only after consent, sender/channel setup, and cost approval; current free approach is staff-initiated manual sending.
-- [ ] Kitchen display, printing, role separation, audit log, inventory/shift handover, offline mode.
+## Needs owner decision
 
-## Free-first boundary
+- Delivery zones, availability and fees.
+- Cancellation and refund rules.
+- Whether to offer CBE Birr, and with which account.
+- Whether a staff WhatsApp number differs from the public number.
+- A real nearby landmark for the address (checklist item 7).
+- Keshir Ginger Tea: confirm the name with the kitchen. Guder or Gouder wine spelling.
+- Native-speaker proofreading of all Amharic text.
 
-Keep Neon on its free tier and monitor quotas. Do not enable paid hosting, payment gateway, WhatsApp Business API, or add-ons without the owner’s explicit approval. Manual Telebirr transfer is not an online payment integration.
+## Rules
+
+- Free first: check free options before any paid tool. No subscription, payment gateway, WhatsApp Business API or add-on without the owner's explicit approval.
+- Keep Neon on its free tier and watch quotas.
+- No sending, publishing, purchasing, deleting or live account changes without human approval.
+- Telebirr is manual: staff verify in the wallet. A submitted reference never means paid.
+- Fee, price and provider terms stay "needs verification" until checked from current official sources.
+- Try a task manually before automating it.
