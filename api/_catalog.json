@@ -1,0 +1,400 @@
+[
+  {
+    "id": "food-non-fasting-dulet",
+    "name": "Dulet",
+    "nameAmharic": "ዱለት",
+    "price": 350
+  },
+  {
+    "id": "food-non-fasting-tibs",
+    "name": "Tibs",
+    "nameAmharic": "ጥብስ",
+    "price": 500
+  },
+  {
+    "id": "food-non-fasting-kuanta-firfir",
+    "name": "Kuanta Firfir",
+    "nameAmharic": "ቋንጣ ፍርፍር",
+    "price": 350
+  },
+  {
+    "id": "food-non-fasting-tibs-firfir",
+    "name": "Tibs Firfir",
+    "nameAmharic": "ጥብስ ፍርፍር",
+    "price": 350
+  },
+  {
+    "id": "food-non-fasting-pasta-with-meat",
+    "name": "Pasta with Meat",
+    "nameAmharic": "ፓስታ ከስጋ ጋር",
+    "price": 300
+  },
+  {
+    "id": "food-non-fasting-enkulal-firfir",
+    "name": "Enkulal Firfir",
+    "nameAmharic": "እንቁላል ፍርፍር",
+    "price": 280
+  },
+  {
+    "id": "food-non-fasting-enkulal-sils",
+    "name": "Enkulal Sils",
+    "nameAmharic": "እንቁላል ስልስ",
+    "price": 260
+  },
+  {
+    "id": "food-non-fasting-chikina",
+    "name": "Chikina",
+    "nameAmharic": "ጭቅና",
+    "price": 500
+  },
+  {
+    "id": "food-non-fasting-bozena-shiro",
+    "name": "Bozena Shiro",
+    "nameAmharic": "ቦዘና ሽሮ",
+    "price": 300
+  },
+  {
+    "id": "food-non-fasting-macaroni-with-meat",
+    "name": "Macaroni with Meat",
+    "nameAmharic": "ማካሮኒ ከስጋ ጋር",
+    "price": 300
+  },
+  {
+    "id": "food-non-fasting-kimsha-yefeski",
+    "name": "Kimsha Yefeski",
+    "nameAmharic": "ቅምሻ የፍስክ",
+    "price": 300
+  },
+  {
+    "id": "food-non-fasting-special-fatira",
+    "name": "Special Fatira",
+    "nameAmharic": "ስፔሻል ፋጢራ",
+    "price": 280
+  },
+  {
+    "id": "food-non-fasting-special-ful",
+    "name": "Special Ful",
+    "nameAmharic": "ስፔሻል ፉል",
+    "price": 300
+  },
+  {
+    "id": "food-non-fasting-fish-goulash",
+    "name": "Fish Goulash",
+    "nameAmharic": "የዓሳ ጉላሽ",
+    "price": 500
+  },
+  {
+    "id": "food-fasting-beyaynetu",
+    "name": "Beyaynetu",
+    "nameAmharic": "በያይነቱ",
+    "price": 450
+  },
+  {
+    "id": "food-fasting-firfir",
+    "name": "Firfir",
+    "nameAmharic": "ፍርፍር",
+    "price": 250
+  },
+  {
+    "id": "food-fasting-dirkosh-firfir",
+    "name": "Dirkosh Firfir",
+    "nameAmharic": "ድርቆሽ ፍርፍር",
+    "price": 350
+  },
+  {
+    "id": "food-fasting-shiro-feses",
+    "name": "Shiro Feses",
+    "nameAmharic": "ሽሮ ፈሰስ",
+    "price": 200
+  },
+  {
+    "id": "food-fasting-tegabino",
+    "name": "Tegabino",
+    "nameAmharic": "ተጋቢኖ",
+    "price": 250
+  },
+  {
+    "id": "food-fasting-telba-fitfit",
+    "name": "Telba Fitfit",
+    "nameAmharic": "ተልባ ፍትፍት",
+    "price": 250
+  },
+  {
+    "id": "food-fasting-shiro-fitfit",
+    "name": "Shiro Fitfit",
+    "nameAmharic": "ሽሮ ፍትፍት",
+    "price": 250
+  },
+  {
+    "id": "food-fasting-ye-tsom-agelgil",
+    "name": "Ye Tsom Agelgil",
+    "nameAmharic": "የጾም አገልግል",
+    "price": 700
+  },
+  {
+    "id": "food-fasting-rice-with-vegetables",
+    "name": "Rice with Vegetables",
+    "nameAmharic": "ሩዝ ከአትክልት ጋር",
+    "price": 250
+  },
+  {
+    "id": "food-fasting-macaroni-with-tomato-sauce",
+    "name": "Macaroni with Tomato Sauce",
+    "nameAmharic": "ማካሮኒ በቲማቲም ሶስ",
+    "price": 300
+  },
+  {
+    "id": "food-fasting-timatim-kurte-tomato-salad",
+    "name": "Timatim Kurte (Tomato Salad)",
+    "nameAmharic": "ቲማቲም ቁርጥ",
+    "price": 250
+  },
+  {
+    "id": "food-fasting-pasta-with-tomato-sauce",
+    "name": "Pasta with Tomato Sauce",
+    "nameAmharic": "ፓስታ በቲማቲም ሶስ",
+    "price": 220
+  },
+  {
+    "id": "food-fasting-pasta-with-vegetables",
+    "name": "Pasta with Vegetables",
+    "nameAmharic": "ፓስታ ከአትክልት ጋር",
+    "price": 250
+  },
+  {
+    "id": "food-fasting-salad",
+    "name": "Salad",
+    "nameAmharic": "ሰላጣ",
+    "price": 400
+  },
+  {
+    "id": "food-fasting-chechebsa",
+    "name": "Chechebsa",
+    "nameAmharic": "ጨጨብሳ",
+    "price": 220
+  },
+  {
+    "id": "food-fasting-half-half",
+    "name": "Half-Half",
+    "nameAmharic": "ሃፍ ሃፍ",
+    "price": 400
+  },
+  {
+    "id": "food-fasting-fatira",
+    "name": "Fatira",
+    "nameAmharic": "ፈጢራ",
+    "price": 220
+  },
+  {
+    "id": "food-fasting-special-chechebsa",
+    "name": "Special Chechebsa",
+    "nameAmharic": "ስፔሻል ጨጨብሳ",
+    "price": 250
+  },
+  {
+    "id": "food-fasting-kimsha",
+    "name": "Kimsha",
+    "nameAmharic": "ቅምሻ",
+    "price": 1500
+  },
+  {
+    "id": "food-american-special-burger",
+    "name": "Special Burger",
+    "nameAmharic": "ስፔሻል በርገር",
+    "price": 500
+  },
+  {
+    "id": "food-american-special-pizza",
+    "name": "Special Pizza",
+    "nameAmharic": "ስፔሻል ፒዛ",
+    "price": 700
+  },
+  {
+    "id": "food-american-sandwich",
+    "name": "Sandwich",
+    "nameAmharic": "ሳንድዊች",
+    "price": 300
+  },
+  {
+    "id": "food-american-club-sandwich",
+    "name": "Club Sandwich",
+    "nameAmharic": "ክለብ ሳንድዊች",
+    "price": 500
+  },
+  {
+    "id": "food-american-vegetable-pizza",
+    "name": "Vegetable Pizza",
+    "nameAmharic": "የአትክልት ፒዛ",
+    "price": 400
+  },
+  {
+    "id": "food-american-cheese-pizza",
+    "name": "Cheese Pizza",
+    "nameAmharic": "ቺዝ ፒዛ",
+    "price": 500
+  },
+  {
+    "id": "food-american-margherita-pizza",
+    "name": "Margherita Pizza",
+    "nameAmharic": "ማርጋሪታ ፒዛ",
+    "price": 500
+  },
+  {
+    "id": "food-american-tuna-pizza",
+    "name": "Tuna Pizza",
+    "nameAmharic": "ቱና ፒዛ",
+    "price": 700
+  },
+  {
+    "id": "food-american-vegetable-sandwich",
+    "name": "Vegetable Sandwich",
+    "nameAmharic": "የአትክልት ሳንድዊች",
+    "price": 200
+  },
+  {
+    "id": "food-american-french-fries",
+    "name": "French Fries",
+    "nameAmharic": "ፍሬንች ፍራይስ",
+    "price": 280
+  },
+  {
+    "id": "soda",
+    "name": "Soda",
+    "nameAmharic": "ሶዳ",
+    "price": 70
+  },
+  {
+    "id": "ambo",
+    "name": "Ambo",
+    "nameAmharic": "አምቦ ውሃ",
+    "price": 50
+  },
+  {
+    "id": "tea",
+    "name": "Tea",
+    "nameAmharic": "ሻይ",
+    "price": 40
+  },
+  {
+    "id": "peanut-tea",
+    "name": "Peanut Tea",
+    "nameAmharic": "የኦቾሎኒ ሻይ",
+    "price": 70
+  },
+  {
+    "id": "keshir-ginger-tea",
+    "name": "Keshir Ginger Tea",
+    "nameAmharic": "ቀሽር ሻይ",
+    "price": 60
+  },
+  {
+    "id": "special-tea",
+    "name": "Special Tea",
+    "nameAmharic": "ልዩ ሻይ",
+    "price": 90
+  },
+  {
+    "id": "lemon-tea",
+    "name": "Lemon Tea",
+    "nameAmharic": "የሎሚ ሻይ",
+    "price": 60
+  },
+  {
+    "id": "macchiato",
+    "name": "Macchiato",
+    "nameAmharic": "ማኪያቶ",
+    "price": 70
+  },
+  {
+    "id": "coffee",
+    "name": "Coffee",
+    "nameAmharic": "ቡና",
+    "price": 60
+  },
+  {
+    "id": "spiris",
+    "name": "Spiris",
+    "nameAmharic": "ስፕሪስ",
+    "price": 60
+  },
+  {
+    "id": "cappuccino",
+    "name": "Cappuccino",
+    "nameAmharic": "ካፑቺኖ",
+    "price": 130
+  },
+  {
+    "id": "milk",
+    "name": "Milk",
+    "nameAmharic": "ወተት",
+    "price": 80
+  },
+  {
+    "id": "draft-beer",
+    "name": "Draft Beer",
+    "nameAmharic": "ድራፍት ቢራ",
+    "price": 65
+  },
+  {
+    "id": "beer",
+    "name": "Beer",
+    "nameAmharic": "ቢራ",
+    "price": 110
+  },
+  {
+    "id": "special-beer",
+    "name": "Special Beer",
+    "nameAmharic": "ልዩ ቢራ",
+    "price": 150
+  },
+  {
+    "id": "gebeta-wine",
+    "name": "Gebeta Wine",
+    "nameAmharic": "ገበታ ወይን",
+    "price": 2000
+  },
+  {
+    "id": "qine-wine",
+    "name": "Q'ine Wine",
+    "nameAmharic": "ቅኔ ወይን",
+    "price": 2200
+  },
+  {
+    "id": "guder-wine",
+    "name": "Guder Wine",
+    "nameAmharic": "ጉደር ወይን",
+    "price": 1000
+  },
+  {
+    "id": "geez-wine",
+    "name": "Ge'ez Wine",
+    "nameAmharic": "ግዕዝ ወይን",
+    "price": 2200
+  },
+  {
+    "id": "bg-reserve-cabernet-sauvignon",
+    "name": "Barton & Guestier (B&G) Reserve Cabernet Sauvignon",
+    "nameAmharic": "ባርተን እና ጌስቲየር ሪዘርቭ ካበርኔ ሶቪኞን",
+    "price": 5500
+  },
+  {
+    "id": "mary-taylor-wine",
+    "name": "Mary Taylor Wine",
+    "nameAmharic": "ሜሪ ቴይለር ወይን",
+    "price": 5500
+  },
+  {
+    "id": "mary-taylor-wine-3l",
+    "name": "Mary Taylor Wine",
+    "nameAmharic": "ሜሪ ቴይለር ወይን",
+    "price": 5500,
+    "size": "3 L"
+  },
+  {
+    "id": "mary-taylor-wine-5l",
+    "name": "Mary Taylor Wine",
+    "nameAmharic": "ሜሪ ቴይለር ወይን",
+    "price": 8500,
+    "size": "5 L"
+  }
+]

@@ -1,7 +1,9 @@
-import { useSyncExternalStore, useState } from "react";
+import { useEffect, useSyncExternalStore, useState } from "react";
 import FoodMenu from "./components/FoodMenu";
 import DrinksMenu from "./components/DrinksMenu";
 import OrderCart from "./components/OrderCart";
+import OrderTrackingPage from "./components/OrderTrackingPage";
+import StaffOrders from "./components/StaffOrders";
 import type { CartLine, OrderSelection } from "./components/orderTypes";
 import "./site.css";
 
@@ -104,6 +106,19 @@ const formatMoney = (value: number) => value.toLocaleString("en-US");
 function App() {
   const cart = useSyncExternalStore(subscribeToCart, getCartSnapshot, getServerCartSnapshot);
   const [cartOpen, setCartOpen] = useState(false);
+  const [trackingToken, setTrackingToken] = useState("");
+  const [staffMode, setStaffMode] = useState(false);
+
+  useEffect(() => {
+    const readTrackingToken = () => {
+      const match = window.location.hash.match(/^#track\/([A-Za-z0-9_-]{40,50})$/);
+      setTrackingToken(match?.[1] ?? "");
+      setStaffMode(window.location.hash === "#staff");
+    };
+    readTrackingToken();
+    window.addEventListener("hashchange", readTrackingToken);
+    return () => window.removeEventListener("hashchange", readTrackingToken);
+  }, []);
 
   const addToCart = (selection: OrderSelection) => {
     updateCart((current) => {
@@ -135,6 +150,9 @@ function App() {
   const whatsappHref = cart.length
     ? `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(whatsappMessage)}`
     : undefined;
+
+  if (trackingToken) return <OrderTrackingPage token={trackingToken} />;
+  if (staffMode) return <StaffOrders />;
 
   return (
     <div className="cloudl-app">
@@ -260,6 +278,7 @@ function App() {
         subtotal={subtotal}
         isOpen={cartOpen}
         whatsappHref={whatsappHref}
+        onOrderPlaced={() => updateCart(() => emptyCart)}
         onOpen={() => setCartOpen(true)}
         onClose={() => setCartOpen(false)}
         onSetQuantity={setQuantity}
