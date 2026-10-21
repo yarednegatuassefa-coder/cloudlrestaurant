@@ -153,6 +153,55 @@ const dishImages: Record<string, DishImage> = {
   },
 };
 
+// Short menu descriptions. For entries whose exact recipe or "special"
+// additions were not supplied, the copy avoids guessing and invites the
+// customer to ask Cloud L staff for the current ingredients.
+const dishDescriptions: Record<string, string> = {
+  "Dulet": "A richly seasoned Ethiopian classic, served warm.",
+  "Tibs": "An Ethiopian favorite prepared in the traditional tibs style.",
+  "Kuanta Firfir": "Injera pieces and kuanta come together in this hearty Ethiopian favorite.",
+  "Tibs Firfir": "Injera and tibs come together in a satisfying, savory plate.",
+  "Pasta with Meat": "Pasta paired with meat in a filling, familiar dish.",
+  "Enkulal Firfir": "Scrambled egg and injera come together in this comforting Ethiopian favorite.",
+  "Enkulal Sils": "An egg dish prepared in the traditional sils style.",
+  "Chikina": "A traditional menu favorite; ask our team about its preparation and ingredients.",
+  "Bozena Shiro": "A hearty shiro-style Ethiopian favorite; ask staff about today's exact preparation.",
+  "Macaroni with Meat": "Macaroni with meat, prepared by the Cloud L kitchen.",
+  "Kimsha Yefeski": "A house-menu selection; ask our team about its ingredients and serving details.",
+  "Special Fatira": "Our house-style fatira; ask staff what is included in today's special preparation.",
+  "Special Ful": "Our house-style ful; ask our team about today's preparation and toppings.",
+  "Fish Goulash": "Fish prepared in a goulash-style dish; ask staff about today's fish selection.",
+  "Beyaynetu": "A colorful assortment of Ethiopian fasting dishes served together.",
+  "Firfir": "Plant-based injera firfir, served with a savory sauce.",
+  "Dirkosh Firfir": "A fasting firfir made with dried injera and savory sauce.",
+  "Shiro Feses": "A smooth, comforting plant-based shiro served Ethiopian-style.",
+  "Tegabino": "A warming plant-based Ethiopian stew, served in traditional tegabino style.",
+  "Telba Fitfit": "A plant-based fitfit featuring telba, an Ethiopian flaxseed favorite.",
+  "Shiro Fitfit": "Shiro and injera come together in this plant-based Ethiopian favorite.",
+  "Ye Tsom Agelgil": "A generous fasting assortment; ask our team what is included and how many it serves.",
+  "Rice with Vegetables": "A comforting serving of rice prepared with vegetables.",
+  "Macaroni with Tomato Sauce": "Macaroni served with a tomato-based sauce.",
+  "Timatim Kurte (Tomato Salad)": "A refreshing Ethiopian tomato salad.",
+  "Pasta with Tomato Sauce": "Pasta served with a tomato-based sauce.",
+  "Pasta with Vegetables": "A plant-based pasta dish prepared with vegetables.",
+  "Salad": "A fresh salad; ask our team which ingredients are included today.",
+  "Chechebsa": "A beloved Ethiopian breakfast of seasoned flatbread pieces, prepared plant-based.",
+  "Half-Half": "A mixed menu selection; ask staff which two items are paired today.",
+  "Fatira": "Traditional Ethiopian breakfast flatbread, served warm.",
+  "Special Chechebsa": "Our house-style chechebsa; ask staff about today's special additions.",
+  "Kimsha": "A generous house-menu selection; contact our team for its contents and serving size.",
+  "Special Burger": "Our house special burger, made to order; ask staff about the included toppings.",
+  "Special Pizza": "Cloud L's house special pizza; ask our team about its toppings.",
+  "Sandwich": "A made-to-order sandwich; ask us which fillings are included today.",
+  "Club Sandwich": "A layered club-style sandwich; ask our team about its exact ingredients.",
+  "Vegetable Pizza": "A vegetable-topped pizza; the selection may vary.",
+  "Cheese Pizza": "A classic pizza topped with cheese.",
+  "Margherita Pizza": "A classic Margherita-style pizza.",
+  "Tuna Pizza": "A pizza topped with tuna; ask staff about any additional toppings.",
+  "Vegetable Sandwich": "A vegetable sandwich made to order; ask our team which vegetables are included today.",
+  "French Fries": "Crisp fries, served as a familiar favorite.",
+};
+
 const sections: Section[] = [
   {
     id: "non-fasting",
@@ -262,7 +311,7 @@ export default function FoodMenu({ onAddToOrder }: FoodMenuProps) {
       .map((section) => ({
         ...section,
         items: section.items.filter((item) =>
-          `${item.en} ${item.am} ${item.price} ${item.breakfast ? "breakfast" : ""}`
+          `${item.en} ${item.am} ${item.price} ${dishDescriptions[item.en] ?? ""} ${item.breakfast ? "breakfast" : ""}`
             .toLocaleLowerCase()
             .includes(normalizedQuery),
         ),
@@ -373,6 +422,9 @@ export default function FoodMenu({ onAddToOrder }: FoodMenuProps) {
                               {item.breakfast && <span style={breakfastTag}>Breakfast</span>}
                             </strong>
                             <span lang="am">{item.am}</span>
+                            <span className="fm__item-description">
+                              {dishDescriptions[item.en]}
+                            </span>
                           </div>
                         </div>
                         <strong className="fm__price">
