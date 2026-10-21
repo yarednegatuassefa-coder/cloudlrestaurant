@@ -142,7 +142,7 @@ function App() {
   const itemCount = cart.reduce((total, item) => total + item.quantity, 0);
   const subtotal = cart.reduce((total, item) => total + item.price * item.quantity, 0);
   const whatsappMessage = [
-    "Hello Cloud L, I would like to request this order:",
+    "Hello Cloud L, I would like to place this order:",
     ...cart.map((item) => `${item.quantity} × ${item.name}${item.size ? ` (${item.size})` : ""} — ${formatMoney(item.price * item.quantity)} ETB`),
     `Menu subtotal: ${formatMoney(subtotal)} ETB`,
     "Please confirm availability and the final amount before preparing. Thank you.",
