@@ -13,12 +13,145 @@ type Section = {
   imageAlt: string;
   items: Item[];
 };
-
 type FoodMenuProps = {
   onAddToOrder?: (item: OrderSelection) => void;
 };
+type DishImage = { src: string; alt: string; illustrative: boolean };
 
 const MENU_LAST_UPDATED = "21 October 2026";
+
+// The 22 generated entries from mapping.json are embedded here so this file
+// works without a separate JSON import or TypeScript configuration change.
+// Generated images are illustrative, not photographs of Cloud L's actual food.
+const dishImages: Record<string, DishImage> = {
+  Dulet: {
+    src: "/assets/restaurant/dishes/dulet.webp",
+    alt: "Illustrative image of Ethiopian dulet served in a small ceramic dish.",
+    illustrative: true,
+  },
+  "Kuanta Firfir": {
+    src: "/assets/restaurant/dishes/kuanta-firfir.webp",
+    alt: "Illustrative image of kuanta firfir, injera mixed with dried meat.",
+    illustrative: true,
+  },
+  "Tibs Firfir": {
+    src: "/assets/restaurant/dishes/tibs-firfir.webp",
+    alt: "Illustrative image of tibs firfir, tibs with injera.",
+    illustrative: true,
+  },
+  "Enkulal Firfir": {
+    src: "/assets/restaurant/dishes/enkulal-firfir.webp",
+    alt: "Illustrative image of enkulal firfir, scrambled egg with injera.",
+    illustrative: true,
+  },
+  "Bozena Shiro": {
+    src: "/assets/restaurant/dishes/bozena-shiro.webp",
+    alt: "Illustrative image of bozena shiro with meat.",
+    illustrative: true,
+  },
+  Firfir: {
+    src: "/assets/restaurant/dishes/firfir.webp",
+    alt: "Illustrative image of plant-based Ethiopian firfir.",
+    illustrative: true,
+  },
+  "Dirkosh Firfir": {
+    src: "/assets/restaurant/dishes/dirkosh-firfir.webp",
+    alt: "Illustrative image of fasting dirkosh firfir.",
+    illustrative: true,
+  },
+  "Shiro Feses": {
+    src: "/assets/restaurant/dishes/shiro-feses.webp",
+    alt: "Illustrative image of plant-based shiro feses.",
+    illustrative: true,
+  },
+  Tegabino: {
+    src: "/assets/restaurant/dishes/tegabino.webp",
+    alt: "Illustrative image of plant-based Ethiopian tegabino.",
+    illustrative: true,
+  },
+  "Telba Fitfit": {
+    src: "/assets/restaurant/dishes/telba-fitfit.webp",
+    alt: "Illustrative image of plant-based telba fitfit.",
+    illustrative: true,
+  },
+  "Shiro Fitfit": {
+    src: "/assets/restaurant/dishes/shiro-fitfit.webp",
+    alt: "Illustrative image of plant-based shiro fitfit.",
+    illustrative: true,
+  },
+  "Rice with Vegetables": {
+    src: "/assets/restaurant/dishes/rice-with-vegetables.webp",
+    alt: "Illustrative image of fasting rice with vegetables.",
+    illustrative: true,
+  },
+  "Macaroni with Tomato Sauce": {
+    src: "/assets/restaurant/dishes/macaroni-with-tomato-sauce.webp",
+    alt: "Illustrative image of macaroni with tomato sauce.",
+    illustrative: true,
+  },
+  "Timatim Kurte (Tomato Salad)": {
+    src: "/assets/restaurant/dishes/timatim-kurte-tomato-salad.webp",
+    alt: "Illustrative image of Timatim Kurte tomato salad.",
+    illustrative: true,
+  },
+  "Pasta with Tomato Sauce": {
+    src: "/assets/restaurant/dishes/pasta-with-tomato-sauce.webp",
+    alt: "Illustrative image of pasta with tomato sauce.",
+    illustrative: true,
+  },
+  "Pasta with Vegetables": {
+    src: "/assets/restaurant/dishes/pasta-with-vegetables.webp",
+    alt: "Illustrative image of plant-based pasta with vegetables.",
+    illustrative: true,
+  },
+  Chechebsa: {
+    src: "/assets/restaurant/dishes/chechebsa.webp",
+    alt: "Illustrative image of plant-based Ethiopian chechebsa.",
+    illustrative: true,
+  },
+  Fatira: {
+    src: "/assets/restaurant/dishes/fatira.webp",
+    alt: "Illustrative image of plain fasting Ethiopian fatira.",
+    illustrative: true,
+  },
+  "Cheese Pizza": {
+    src: "/assets/restaurant/dishes/cheese-pizza.webp",
+    alt: "Illustrative image of a plain cheese pizza.",
+    illustrative: true,
+  },
+  "Margherita Pizza": {
+    src: "/assets/restaurant/dishes/margherita-pizza.webp",
+    alt: "Illustrative image of Margherita pizza with tomato, mozzarella, and basil.",
+    illustrative: true,
+  },
+  "Tuna Pizza": {
+    src: "/assets/restaurant/dishes/tuna-pizza.webp",
+    alt: "Illustrative image of tuna pizza.",
+    illustrative: true,
+  },
+  "French Fries": {
+    src: "/assets/restaurant/dishes/french-fries.webp",
+    alt: "Illustrative image of plain French fries.",
+    illustrative: true,
+  },
+
+  // Keep these three existing dish photos in their original location.
+  Beyaynetu: {
+    src: "/assets/restaurant/dish-beyaynetu.webp",
+    alt: "A vibrant Ethiopian fasting platter served on injera",
+    illustrative: false,
+  },
+  Tibs: {
+    src: "/assets/restaurant/dish-tibs.webp",
+    alt: "Ethiopian tibs served in a traditional dish",
+    illustrative: false,
+  },
+  "Special Pizza": {
+    src: "/assets/restaurant/dish-special-pizza.webp",
+    alt: "Cloud L special pizza",
+    illustrative: false,
+  },
+};
 
 const sections: Section[] = [
   {
@@ -100,7 +233,13 @@ const sections: Section[] = [
   },
 ];
 
-const mutedNote = { margin: "0 0 12px", fontSize: "0.85rem", opacity: 0.75, letterSpacing: "0.02em" } as const;
+const mutedNote = {
+  margin: "0 0 12px",
+  fontSize: "0.85rem",
+  opacity: 0.75,
+  letterSpacing: "0.02em",
+} as const;
+
 const breakfastTag = {
   display: "inline-block",
   marginLeft: "8px",
@@ -110,21 +249,25 @@ const breakfastTag = {
   fontSize: "0.65rem",
   fontWeight: 600,
   letterSpacing: "0.08em",
-  textTransform: "uppercase",
+  textTransform: "uppercase" as const,
   opacity: 0.75,
   verticalAlign: "middle",
-} as const;
+};
 
 export default function FoodMenu({ onAddToOrder }: FoodMenuProps) {
   const [query, setQuery] = useState("");
   const normalizedQuery = query.trim().toLocaleLowerCase();
   const visibleSections = useMemo(
-    () => sections.map((section) => ({
-      ...section,
-      items: section.items.filter((item) =>
-        `${item.en} ${item.am} ${item.price} ${item.breakfast ? "breakfast" : ""}`.toLocaleLowerCase().includes(normalizedQuery),
-      ),
-    })).filter((section) => section.items.length > 0),
+    () => sections
+      .map((section) => ({
+        ...section,
+        items: section.items.filter((item) =>
+          `${item.en} ${item.am} ${item.price} ${item.breakfast ? "breakfast" : ""}`
+            .toLocaleLowerCase()
+            .includes(normalizedQuery),
+        ),
+      }))
+      .filter((section) => section.items.length > 0),
     [normalizedQuery],
   );
 
@@ -145,7 +288,11 @@ export default function FoodMenu({ onAddToOrder }: FoodMenuProps) {
             />
           </label>
           <nav className="fm__tabs" aria-label="Food menu categories">
-            {sections.map((section) => <a key={section.id} href={`#${section.id}`}>{section.title.replace("Ethiopian ", "")}</a>)}
+            {sections.map((section) => (
+              <a key={section.id} href={`#${section.id}`}>
+                {section.title.replace("Ethiopian ", "")}
+              </a>
+            ))}
           </nav>
         </div>
         <div className="fm__sections">
@@ -162,33 +309,98 @@ export default function FoodMenu({ onAddToOrder }: FoodMenuProps) {
                 <p className="fm__description">{section.description}</p>
                 {section.note && <p style={mutedNote}>{section.note}</p>}
                 <div className="fm__grid">
-                  {section.items.map((item) => (
-                    <article className="fm__item" key={item.en}>
-                      <div className="fm__item-name">
-                        <strong>{item.en}{item.breakfast && <span style={breakfastTag}>Breakfast</span>}</strong>
-                        <span lang="am">{item.am}</span>
-                      </div>
-                      <strong className="fm__price">{item.price}<small> ETB</small></strong>
-                      <button
-                        className="fm__add"
-                        type="button"
-                        aria-label={`Add ${item.en} to order`}
-                        onClick={() => onAddToOrder?.({
-                          id: `food-${section.id}-${item.en.toLocaleLowerCase().replace(/[^a-z0-9]+/g, "-")}`,
-                          name: item.en,
-                          nameAmharic: item.am,
-                          price: Number(item.price.replaceAll(",", "")),
-                        })}
-                      >
-                        <span aria-hidden="true">+</span>
-                      </button>
-                    </article>
-                  ))}
+                  {section.items.map((item) => {
+                    const dishImage = dishImages[item.en];
+                    return (
+                      <article className="fm__item" key={item.en}>
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "10px",
+                            minWidth: 0,
+                            flex: "1 1 auto",
+                          }}
+                        >
+                          {dishImage && (
+                            <div
+                              style={{
+                                position: "relative",
+                                flex: "0 0 auto",
+                                width: "clamp(56px, 7vw, 76px)",
+                                height: "clamp(42px, 5.25vw, 57px)",
+                                overflow: "hidden",
+                                borderRadius: "5px",
+                                background: "#eee7dc",
+                              }}
+                            >
+                              <img
+                                src={dishImage.src}
+                                alt={dishImage.alt}
+                                loading="lazy"
+                                decoding="async"
+                                style={{
+                                  display: "block",
+                                  width: "100%",
+                                  height: "100%",
+                                  objectFit: "cover",
+                                }}
+                              />
+                              {dishImage.illustrative && (
+                                <span
+                                  aria-label="Illustrative image, not a photograph of the actual dish"
+                                  style={{
+                                    position: "absolute",
+                                    left: "3px",
+                                    bottom: "3px",
+                                    padding: "2px 4px",
+                                    borderRadius: "3px",
+                                    background: "rgba(40, 42, 49, 0.9)",
+                                    color: "#fffaf2",
+                                    fontSize: "8px",
+                                    lineHeight: 1.2,
+                                    whiteSpace: "nowrap",
+                                  }}
+                                >
+                                  Illustrative
+                                </span>
+                              )}
+                            </div>
+                          )}
+                          <div className="fm__item-name">
+                            <strong>
+                              {item.en}
+                              {item.breakfast && <span style={breakfastTag}>Breakfast</span>}
+                            </strong>
+                            <span lang="am">{item.am}</span>
+                          </div>
+                        </div>
+                        <strong className="fm__price">
+                          {item.price}<small> ETB</small>
+                        </strong>
+                        <button
+                          className="fm__add"
+                          type="button"
+                          aria-label={`Add ${item.en} to order`}
+                          onClick={() => onAddToOrder?.({
+                            id: `food-${section.id}-${item.en.toLocaleLowerCase().replace(/[^a-z0-9]+/g, "-")}`,
+                            name: item.en,
+                            nameAmharic: item.am,
+                            price: Number(item.price.replaceAll(",", "")),
+                          })}
+                        >
+                          <span aria-hidden="true">+</span>
+                        </button>
+                      </article>
+                    );
+                  })}
                 </div>
               </div>
             </section>
           ))}
-          {visibleSections.length === 0 && <p className="fm__empty">No dishes found. Try another search.</p>}
+          {visibleSections.length === 0 && (
+            <p className="fm__empty">No dishes found. Try another search.</p>
+          )}
         </div>
       </div>
     </section>
