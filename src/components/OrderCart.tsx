@@ -8,6 +8,7 @@ type OrderCartProps = {
   subtotal: number;
   isOpen: boolean;
   whatsappHref?: string;
+  telegramHref?: string;
   onOpen: () => void;
   onClose: () => void;
   onSetQuantity: (id: string, quantity: number) => void;
@@ -16,7 +17,7 @@ type OrderCartProps = {
 
 const formatMoney = (value: number) => value.toLocaleString("en-US");
 
-export default function OrderCart({ items, itemCount, subtotal, isOpen, whatsappHref, onOpen, onClose, onSetQuantity, onOrderPlaced }: OrderCartProps) {
+export default function OrderCart({ items, itemCount, subtotal, isOpen, whatsappHref, telegramHref, onOpen, onClose, onSetQuantity, onOrderPlaced }: OrderCartProps) {
   const [receipt, setReceipt] = useState<{ reference: string; trackingUrl: string } | null>(null);
   return (
     <>
@@ -32,7 +33,7 @@ export default function OrderCart({ items, itemCount, subtotal, isOpen, whatsapp
             <ul className="order-cart__items">{items.map((item) => <li className="order-cart__item" key={item.id}><div className="order-cart__item-copy"><strong>{item.name}{item.size ? ` · ${item.size}` : ""}</strong>{item.nameAmharic && <span lang="am">{item.nameAmharic}</span>}<small>{formatMoney(item.price)} ETB each</small></div><div className="order-cart__quantity" aria-label={`Quantity for ${item.name}`}><button type="button" aria-label={`Remove one ${item.name}`} onClick={() => onSetQuantity(item.id, item.quantity - 1)}>−</button><span aria-live="polite">{item.quantity}</span><button type="button" aria-label={`Add one ${item.name}`} onClick={() => onSetQuantity(item.id, item.quantity + 1)}>+</button></div><strong className="order-cart__line-total">{formatMoney(item.price * item.quantity)} ETB</strong></li>)}</ul>
             <div className="order-cart__subtotal"><span>Menu subtotal</span><strong>{formatMoney(subtotal)} ETB</strong></div>
             <CheckoutForm items={items} subtotal={subtotal} onPlaced={(trackingUrl, reference) => { onOrderPlaced(); setReceipt({ trackingUrl, reference }); }} />
-            {whatsappHref && <div className="checkout-whatsapp-fallback"><p>Prefer to request your order in chat?</p><a href={whatsappHref} target="_blank" rel="noreferrer">Continue with WhatsApp <span aria-hidden="true">↗</span></a></div>}
+            {(whatsappHref || telegramHref) && <div className="checkout-whatsapp-fallback"><p>Prefer to request your order in chat?</p><div className="checkout-chat-actions">{whatsappHref && <a href={whatsappHref} target="_blank" rel="noreferrer">Continue with WhatsApp <span aria-hidden="true">↗</span></a>}{telegramHref && <a href={telegramHref} target="_blank" rel="noreferrer">Continue with Telegram <span aria-hidden="true">↗</span></a>}</div>{telegramHref && <small className="checkout-chat-note">Choose the recipient in Telegram before sending your prepared order.</small>}</div>}
           </>}
         </aside>
       </>}

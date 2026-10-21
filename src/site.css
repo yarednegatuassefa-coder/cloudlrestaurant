@@ -65,3 +65,6 @@
 /* Compact per-dish copy, visually subordinate to the dish name and price. */
 .fm__item-name .fm__item-description{display:block;margin-top:5px;color:#746c63;font-size:11px;font-weight:400;line-height:1.45;letter-spacing:0;max-width:48ch}
 @media(max-width:680px){.fm__item-name .fm__item-description{font-size:10px;line-height:1.4}}
+.checkout-chat-actions{display:flex;flex-direction:column;align-items:flex-start;gap:7px}
+.checkout-whatsapp-fallback .checkout-chat-note{display:block;margin:7px 0 0;color:#77716a;font-size:9px;line-height:1.5}
+.checkout-chat-actions a:focus-visible{outline:2px solid #d5a17f;outline-offset:3px}

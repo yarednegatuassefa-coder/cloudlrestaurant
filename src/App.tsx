@@ -150,6 +150,9 @@ function App() {
   const whatsappHref = cart.length
     ? `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(whatsappMessage)}`
     : undefined;
+  const telegramHref = cart.length
+    ? `https://t.me/share/url?url=${encodeURIComponent("https://www.cloudlrestaurant.com/")}&text=${encodeURIComponent(whatsappMessage)}`
+    : undefined;
 
   if (trackingToken) return <OrderTrackingPage token={trackingToken} />;
   if (staffMode) return <StaffOrders />;
@@ -278,6 +281,7 @@ function App() {
         subtotal={subtotal}
         isOpen={cartOpen}
         whatsappHref={whatsappHref}
+        telegramHref={telegramHref}
         onOrderPlaced={() => updateCart(() => emptyCart)}
         onOpen={() => setCartOpen(true)}
         onClose={() => setCartOpen(false)}
