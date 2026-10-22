@@ -59,7 +59,7 @@ export default async function handler(req: Req, res: Res) {
     const address = validString(body.deliveryAddress, 400);
     if (name.length < 2 || !phone) return reply(res, 400, { error: "Enter your name and an Ethiopian mobile number, such as +251 9…" });
     if (!["pickup", "delivery", "dine_in"].includes(String(fulfillment))) return reply(res, 400, { error: "Choose pickup, delivery, or dine-in." });
-    if (!["cash", "telebirr_manual"].includes(String(paymentMethod))) return reply(res, 400, { error: "Choose cash or manual Telebirr transfer." });
+    if (!["cash", "telebirr_manual", "bunna_bank_qr_manual", "dashen_bank_manual"].includes(String(paymentMethod))) return reply(res, 400, { error: "Choose one of the available payment methods." });
     if (fulfillment === "delivery" && address.length < 5) return reply(res, 400, { error: "Add the delivery address so staff can confirm coverage and fee." });
     if (rows.length < 1 || rows.length > 30) return reply(res, 400, { error: "Your order must contain 1–30 menu lines." });
     const items: (CatalogEntry & { quantity: number })[] = [];
@@ -126,18 +126,18 @@ export default async function handler(req: Req, res: Res) {
   if (action === "payment-reference") {
     const token = typeof body.token === "string" ? body.token : "";
     const paymentReference = validString(body.paymentReference, 100);
-    if (!/^[A-Za-z0-9_-]{40,50}$/.test(token) || paymentReference.length < 4) return reply(res, 400, { error: "Enter the Telebirr transaction reference shown in your receipt." });
+    if (!/^[A-Za-z0-9_-]{40,50}$/.test(token) || paymentReference.length < 4) return reply(res, 400, { error: "Enter the transaction reference or receipt ID shown by your payment method." });
     const client = await pool.connect();
     try {
       await client.query("BEGIN");
       const result = await client.query("SELECT id, payment_method, payment_status FROM public.orders WHERE tracking_token_hash=$1 FOR UPDATE", [tokenHash(token)]);
       if (!result.rowCount) { await client.query("ROLLBACK"); return reply(res, 404, { error: "We could not find that order." }); }
       const order = result.rows[0];
-      if (order.payment_method !== "telebirr_manual" || !["awaiting_transfer", "submitted"].includes(order.payment_status)) { await client.query("ROLLBACK"); return reply(res, 409, { error: "This order is not waiting for a Telebirr reference." }); }
+      if (!["telebirr_manual", "bunna_bank_qr_manual", "dashen_bank_manual"].includes(order.payment_method) || !["awaiting_transfer", "submitted"].includes(order.payment_status)) { await client.query("ROLLBACK"); return reply(res, 409, { error: "This order is not waiting for a manual payment reference." }); }
       await client.query("UPDATE public.orders SET customer_payment_reference=$2, customer_payment_submitted_at=now(), payment_status='submitted', updated_at=now() WHERE id=$1", [order.id, paymentReference]);
-      await client.query("INSERT INTO public.order_events (order_id, actor_type, event_type, message, customer_visible) VALUES ($1,'customer','payment_submitted','Telebirr reference submitted — awaiting staff verification.',true)", [order.id]);
+      await client.query("INSERT INTO public.order_events (order_id, actor_type, event_type, message, customer_visible) VALUES ($1,'customer','payment_submitted','Manual payment reference submitted — awaiting staff verification.',true)", [order.id]);
       await client.query("COMMIT");
-      return reply(res, 200, { paymentStatus: "submitted", message: "Reference received. Cloud L will verify it in Telebirr." });
+      return reply(res, 200, { paymentStatus: "submitted", message: "Reference received. Cloud L staff will verify the transfer manually." });
     } catch (error) {
       await client.query("ROLLBACK").catch(() => undefined);
       console.error("payment_reference_failed", error instanceof Error ? error.message : "unknown");

@@ -16,6 +16,7 @@ const customerMessages: Record<string, string> = {
   declined: "Cloud L is unable to accept this order. Please contact us for assistance.",
   cancelled: "This order has been cancelled. Please contact Cloud L if you have questions.",
 };
+const manualPaymentMethods = new Set(["telebirr_manual", "bunna_bank_qr_manual", "dashen_bank_manual"]);
 
 type RouteReq = ApiReq & { query?: Record<string, string | string[] | undefined> };
 export default async function handler(req: RouteReq, res: ApiRes) {
@@ -35,9 +36,9 @@ export default async function handler(req: RouteReq, res: ApiRes) {
     if (!found.rowCount) { await client.query("ROLLBACK"); return reject(res, 404, "Order not found."); }
     const order = found.rows[0];
     if (body.action === "verify-payment") {
-      if (order.payment_method !== "telebirr_manual" || order.payment_status !== "submitted" || body.confirmed !== true) { await client.query("ROLLBACK"); return reject(res, 409, "Only a submitted Telebirr reference can be marked paid, after checking the wallet transaction."); }
+      if (!manualPaymentMethods.has(order.payment_method) || order.payment_status !== "submitted" || body.confirmed !== true) { await client.query("ROLLBACK"); return reject(res, 409, "Only a submitted manual transfer can be marked paid, after checking the matching receiving account."); }
       await client.query("UPDATE public.orders SET payment_status='paid', staff_payment_verified_at=now(), updated_at=now() WHERE id=$1", [orderId]);
-      await client.query("INSERT INTO public.order_events (order_id, actor_type, actor_label, event_type, message, customer_visible) VALUES ($1,'staff','Cloud L staff','payment_verified','Telebirr payment verified by Cloud L staff.',true)", [orderId]);
+      await client.query("INSERT INTO public.order_events (order_id, actor_type, actor_label, event_type, message, customer_visible) VALUES ($1,'staff','Cloud L staff','payment_verified','Manual payment verified by Cloud L staff.',true)", [orderId]);
       await client.query("COMMIT");
       return res.status(200).json({ paymentStatus: "paid" });
     }
@@ -55,7 +56,7 @@ export default async function handler(req: RouteReq, res: ApiRes) {
       const minutes = Number(body.estimatedMinutes);
       if (Number.isInteger(minutes) && minutes >= 1 && minutes <= 240) eta = new Date(Date.now() + minutes * 60_000).toISOString();
       await client.query(
-        "UPDATE public.orders SET status='confirmed', delivery_fee_etb=$2, total_etb=$3, estimated_ready_at=$4, payment_status=CASE WHEN payment_method='telebirr_manual' THEN 'awaiting_transfer' ELSE payment_status END, updated_at=now() WHERE id=$1",
+        "UPDATE public.orders SET status='confirmed', delivery_fee_etb=$2, total_etb=$3, estimated_ready_at=$4, payment_status=CASE WHEN payment_method <> 'cash' THEN 'awaiting_transfer' ELSE payment_status END, updated_at=now() WHERE id=$1",
         [orderId, deliveryFee, total, eta],
       );
     } else {

@@ -2,7 +2,7 @@
 
 **Owner direction:** The owner delegated product and implementation decisions (“full free reign”), asked for a professional order flow that supports home delivery, and prefers free workarounds. This plan is the first release, not a promise that paid payment or messaging services are free.
 
-**Current state (21 October 2026):** The redesigned public website remains live. Guest checkout, trusted pricing, private tracking, staff login/board, and manual Telebirr confirmation are implemented in the local source; the initial Neon order-schema migration is applied. The production ordering release is not live: the Vercel connector currently gets HTTP 403 for the project’s team scope, so production environment-variable configuration is blocked. Do not submit customer orders or run a production test until Vercel team access is granted, `DATABASE_URL`, `STAFF_PASSWORD`, and `STAFF_SESSION_SECRET` are configured server-side, and the deployment is verified.
+**Current state (22 October 2026):** The redesigned public website and the base online-order flow are live. The latest upstream project checklist records that `DATABASE_URL`, `STAFF_PASSWORD`, and `STAFF_SESSION_SECRET` are set in Vercel and the manual Telebirr order path has been tested in production. The new Bunna Bank QR and Dashen Bank choices are added in this source update; the payment-method migration was approved and applied to Neon without changing existing orders. The code/QR update is pending push and deployment. Do not claim the new bank-transfer paths have been production-tested until deployed and verified.
 
 ## Product decision
 
@@ -14,15 +14,15 @@ After the server has durably recorded an order, show a human-readable order refe
 
 ## Payment decision — free-first, no false checkout
 
-The owner confirms the Telebirr number is **+251 901 120 012**. Use it in a polished manual-transfer card, not as a fake gateway link or unexplained number. The card appears only after staff accepts the order and confirms any delivery fee, so the customer sees the exact total and order reference before paying. Instruct the customer to verify that the recipient name shown in their Telebirr app is Cloud L; let them submit a transaction reference, but keep payment status pending until staff verifies the payment in Telebirr. A screenshot can be offered as optional evidence, never as proof of payment.
+The owner provided three manual-transfer methods: Telebirr **+251 901 120 012**, with recipient name **Lidia** as shown in the current upstream tracking update; the Buna/Bunna Bank merchant QR for **Cloud L Trading PLC** (merchant ID **450043**); and a separate Dashen Bank account **0194970006011**, also under **Cloud L Trading PLC**. Keep these methods distinct. The QR asset was regenerated from the exact payload decoded from the supplied photo and independently decoded again to confirm the payload matches. None is an automated payment gateway. Instructions appear only after staff accepts the order and confirms any delivery fee and exact total. Customers may submit a transaction reference, but payment remains pending until staff checks the correct receiving account. A screenshot is not proof of payment; the Telebirr UI tells customers not to transfer if the displayed recipient is not Lidia.
 
-Support **cash on pickup** and **cash on delivery** in the initial checkout. Do not request a transfer before the order/final amount is confirmed. CBE Birr is not configured because the receiving number/account is not confirmed. Automatic online Telebirr checkout is a separate later phase: Ethio telecom’s official merchant information distinguishes free in-person proximity payments from online/remote API payments, which require API integration and a facilitation fee. Do not enable a paid gateway or paid plan without the owner’s approval.
+Support **cash on pickup**, **cash on delivery**, and cash at the restaurant. Do not request a transfer before the order/final amount is confirmed. CBE Birr is not configured because the receiving number/account is not confirmed. Automatic online Telebirr checkout is a separate later phase: Ethio telecom’s official merchant information distinguishes free in-person proximity payments from online/remote API payments, which require API integration and a facilitation fee. Do not enable a paid gateway or paid plan without the owner’s approval.
 
 Official source: [Ethio telecom — Telebirr merchant registration and payment types](https://www.ethiotelecom.et/telebirr/telebirr-registration-requirements-with-registration-form/).
 
 ## Free-first backend and cost boundary
 
-Use **Neon Postgres Free** for durable order data, accessed only by Vercel serverless functions. Neon’s official pricing currently lists a $0 Free plan with **100 CU-hours per project per month** and **1 GB storage per project**. The new endpoint was created with `suspend_timeout_seconds=0`; Neon’s official guide says zero selects the default **300-second/five-minute idle suspension**. These quotas are finite; monitor usage and do not upgrade or enable paid usage without explicit owner authorization. Vercel Marketplace integration discovery for the project previously returned 403, so wire the database through a server-only Vercel environment variable rather than assuming a Marketplace connection exists.
+Use **Neon Postgres Free** for durable order data, accessed only by Vercel serverless functions. Neon’s official pricing currently lists a $0 Free plan with **100 CU-hours per project per month** and **1 GB storage per project**. The new endpoint was created with `suspend_timeout_seconds=0`; Neon’s official guide says zero selects the default **300-second/five-minute idle suspension**. These quotas are finite; monitor usage and do not upgrade or enable paid usage without explicit owner authorization. Store the Neon connection only as a sensitive, server-side Vercel environment variable; never assume a Marketplace connection or expose it to the client.
 
 The public React app must never receive the database URL or staff secret. The API revalidates every cart item ID, variant, and quantity using the shared menu catalog, calculates the subtotal on the server, and rejects unknown/sold-out items. A staff-only session protects order details and state changes. The database stores only fulfillment data the restaurant needs; do not put personal information in public HTML, analytics, or application logs.
 
@@ -49,7 +49,7 @@ Continue the established contemporary Ethiopian restaurant editorial style: warm
 - `src/data/menuCatalog.ts` — one shared trusted catalog for food/drinks/variants, imported by UI and server API.
 - `src/components/OrderCart.tsx` — preserve the accessible, persistent cart; make web checkout primary and WhatsApp fallback secondary.
 - `src/components/CheckoutForm.tsx` — guest details, pickup/delivery/dine-in, special instructions, optional guest/table fields, payment choice, review and submit.
-- `src/components/OrderStatusPage.tsx` — private tracking view and manual Telebirr reference submission.
+- `src/components/OrderTrackingPage.tsx` — private tracking view, method-specific transfer instructions, and manual transaction-reference submission.
 - `src/components/StaffOrders.tsx` — authenticated staff queue, status/payment actions, ETA and delivery-fee confirmation, one-click WhatsApp drafts.
 - `src/components/orderTypes.ts` — shared cart, order, status, and payment types.
 - `api/orders.ts`, `api/orders/track.ts`, `api/orders/payment-reference.ts`, `api/admin/*` — Vercel endpoints for order creation, tracking, customer payment-reference submission, staff login and staff operations.
@@ -58,7 +58,7 @@ Continue the established contemporary Ethiopian restaurant editorial style: warm
 
 ## Dependencies and remaining owner setup
 
-- Neon project/branch are ready; Vercel still needs the Neon URL stored as a sensitive server-side environment variable. Do not expose it in source, logs, client JS, or chat.
-- Before exposing the staff board, obtain a staff password through a secure input and store only in Vercel’s sensitive environment configuration; fail closed if missing.
-- Delivery zones/fees, cancellation/refund wording, staff WhatsApp notification recipient, and the exact recipient name displayed for Telebirr still need operational confirmation. Until then, require staff review; do not invent fees or policies.
+- The Neon project is ready; `DATABASE_URL` is recorded in the latest upstream project checklist as configured in Vercel. Do not expose it in source, logs, client JS, or chat.
+- The latest upstream project checklist records the staff password and session secret as configured in Vercel; keep both server-only and fail closed if either is missing.
+- Delivery zones/fees, cancellation/refund wording, and the staff WhatsApp notification recipient still need operational confirmation. Until then, require staff review; do not invent fees or policies.
 - Automatic WhatsApp, Telegram, CBE Birr, remote Telebirr API, paid gateways, refunds, and split payments are not required for the free-first release.
