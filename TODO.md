@@ -18,14 +18,15 @@ Last updated: 22 October 2026.
 - Staff-initiated WhatsApp update links for opted-in customers.
 - Local SEO: metadata, structured data, `robots.txt`, and `sitemap.xml`.
 
-## New payment-method update — code committed locally, deployment pending
+## New payment-method update — deployed; Bunna/Dashen order paths not end-to-end tested
 
-- Checkout adds separate manual payment choices for Bunna Bank QR and Dashen Bank, in addition to cash and Telebirr.
-- The Bunna Bank merchant QR was regenerated from the exact payload decoded from the owner-supplied photo; it is associated with Cloud L Trading PLC, merchant ID 450043.
-- Dashen Bank is a separate account, 0194970006011, under Cloud L Trading PLC.
-- Transfer instructions appear only after staff confirms the order and exact total. Customers may submit a transaction reference; staff must verify payment against the correct receiving account before marking it paid.
-- Neon migration 002 was tested on a temporary branch and applied to production with approval. It expands allowed payment-method values without changing existing order records.
-- The code, QR asset, and migration still need to be pushed/deployed. The new Bunna/Dashen paths have not been end-to-end tested in production; do not place a payment or test transfer for them without owner approval.
+- Checkout now offers cash, Telebirr, Bunna Bank QR, and a separate Dashen Bank transfer.
+- The Bunna Bank merchant QR is for Cloud L Trading PLC, merchant ID 450043. Its asset was regenerated from the exact payload decoded from the owner-supplied photo, then decoded again to verify the payload match.
+- Dashen Bank account 0194970006011 is under Cloud L Trading PLC. Bunna and Dashen are separate payment destinations.
+- Transfer instructions are shown only after staff confirms the order and exact total. Customers may submit a transaction reference; staff must verify it against the correct receiving account before marking it paid.
+- Neon migration 002 was tested on a temporary branch and applied to production with approval. It expands the accepted method values without changing existing order records.
+- Commit `d1d8912` is pushed to `main` and is live. The production homepage serves the matching build bundle; the Bunna QR image and order API route return successfully. The deployed bundle contains the method identifiers and payment details.
+- No production order or payment was placed to test Bunna or Dashen. Do not treat those paths as end-to-end payment-verified.
 
 ## Test data
 
@@ -56,7 +57,7 @@ Test orders placed on production (TEST, TEST2, TEST3 and the first CL-261021 ord
 
 ## Rules
 
-- Free first: check free options before any paid tool. No subscription, payment gateway, WhatsApp Business API or add-on without the owner’s explicit approval.
+- Free first: check free options before any paid tool. No subscription, payment gateway, WhatsApp Business API or add-on without the owner's explicit approval.
 - Keep Neon on its free tier and watch quotas.
 - No sending, publishing, purchasing, deleting or live account changes without human approval.
 - Manual transfer references are not proof of payment; staff must verify in the receiving account.

@@ -2,7 +2,7 @@
 
 **Owner direction:** The owner delegated product and implementation decisions (“full free reign”), asked for a professional order flow that supports home delivery, and prefers free workarounds. This plan is the first release, not a promise that paid payment or messaging services are free.
 
-**Current state (22 October 2026):** The redesigned public website and the base online-order flow are live. The latest upstream project checklist records that `DATABASE_URL`, `STAFF_PASSWORD`, and `STAFF_SESSION_SECRET` are set in Vercel and the manual Telebirr order path has been tested in production. The new Bunna Bank QR and Dashen Bank choices are added in this source update; the payment-method migration was approved and applied to Neon without changing existing orders. The code/QR update is pending push and deployment. Do not claim the new bank-transfer paths have been production-tested until deployed and verified.
+**Current state (22 October 2026):** The redesigned public website and base ordering flow are live. The latest upstream project checklist records that `DATABASE_URL`, `STAFF_PASSWORD`, and `STAFF_SESSION_SECRET` are configured in Vercel and the manual Telebirr order path was tested in production. Commit `d1d8912` adds separate Bunna Bank QR and Dashen Bank manual-transfer choices and is live on `cloudlrestaurant.com`; the public bundle and QR asset were verified. Neon migration 002 was tested on a temporary branch and approved/applied without changing existing orders. The new Bunna/Dashen paths have not been end-to-end tested with a production order or payment.
 
 ## Product decision
 
