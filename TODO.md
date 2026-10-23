@@ -11,7 +11,7 @@ Last updated: 24 October 2026.
 - Persistent cart, guest checkout, pickup / delivery / dine-in, cash and manual Telebirr, WhatsApp order fallback.
 - Order saved in Neon (Postgres). Vercel variables set: `DATABASE_URL`, `STAFF_PASSWORD`, `STAFF_SESSION_SECRET`. Never print or commit their values.
 - Customer order reference and private tracking link (token hash stored, not the token).
-- Staff page at `/#staff`: login, order list, status changes (received, confirmed, preparing, ready, completed), cancel.
+- Staff page at `/#staff`: login, order list, and status changes through received, needs clarification, confirmed, preparing, ready for pickup, out for delivery, delivered, completed, declined, and cancelled.
 - Customer tracking page shows every status change and the update log.
 - Needs-clarification workflow is live (commit `f1a6ee0`): staff can record a required customer-facing message in the private tracking history, then confirm or decline after resolving it. The action does not automatically send a message.
 - Neon migration 003 is applied in production without changing existing orders. The live bundle contains the staff controls and tracking copy; anonymous staff API access correctly returns 401. No production test order was created for this feature.

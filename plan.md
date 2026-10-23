@@ -30,7 +30,7 @@ Sources: [Neon pricing](https://neon.com/pricing), [Neon compute suspension sett
 
 ## Customer tracking and staff notifications
 
-Order lifecycle: **Received — awaiting staff confirmation → Confirmed → Preparing → Ready for pickup / Out for delivery → Completed / Delivered**. Staff may decline or cancel with a customer-visible explanation. The customer sees an ETA only after staff sets it. For a delivery order, staff confirms coverage/fee and the exact total before the customer is asked to pay.
+Order lifecycle: **Received → (optional Needs clarification — awaiting customer → Confirmed or Declined) → Confirmed → Preparing → (Ready for pickup → Completed / Out for delivery → Delivered → Completed)**. Staff may decline or cancel with a customer-visible explanation. Payment status is separate: verifying a transfer marks the payment as paid but does not advance the order; staff explicitly starts preparation when ready. The customer sees an ETA only after staff sets it. For a delivery order, staff confirms coverage/fee and the exact total before the customer is asked to pay.
 
 The staff order board is the free, reliable source of truth while open. It refreshes/polls for new orders, provides a clear new-order badge and a sound alert after staff enables audio in the browser, and can request browser notifications. Browser alerts are device/session dependent; do not promise an alert while the dashboard is closed.
 
