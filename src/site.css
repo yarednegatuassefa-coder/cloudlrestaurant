@@ -77,3 +77,7 @@
 .payment-account p { margin: 0; color: #6b655d; font-size: 10px; }
 .payment-account p strong { font-size: 11px; }
 .checkout-payment-note { margin-top: -4px; }
+
+
+/* Staff clarification workflow */
+.staff-clarification{width:100%;display:grid;gap:8px;padding:10px 12px;border:1px solid #e4d8c9;background:#fbf7f0}.staff-clarification>summary{color:#6f4837;font-size:9px;font-weight:700;cursor:pointer}.staff-clarification>label{display:grid;gap:5px;color:#77716a;font-size:8px}.staff-clarification textarea{width:min(100%,560px);min-height:68px;padding:8px;border:1px solid #d8ccbd;background:#fff;color:var(--ink);font:inherit;font-size:10px;resize:vertical}.staff-clarification>p{margin:0;color:#82786d;font-size:8px;line-height:1.5}.staff-clarification>button{justify-self:start;min-height:32px;padding:0 12px;border:1px solid #a96d51;background:#6f4837;color:#fffaf2;font-size:9px;font-weight:700;cursor:pointer}.staff-clarification>button:disabled{opacity:.5;cursor:not-allowed}.staff-clarification-note{width:100%;margin:0;padding:8px 10px;border-left:2px solid #a96d51;background:#fbf7f0;color:#5c534b;font-size:9px;line-height:1.5}.staff-clarification-note strong{color:#6f4837}

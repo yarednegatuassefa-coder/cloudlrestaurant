@@ -1,7 +1,8 @@
 import { pool, isAllowedOrigin, reject, validSession, type ApiReq, type ApiRes } from "../../_server.js";
 
 const transitions: Record<string, string[]> = {
-  received: ["confirmed", "declined", "cancelled"],
+  received: ["confirmed", "needs_clarification", "declined", "cancelled"],
+  needs_clarification: ["confirmed", "declined", "cancelled"],
   confirmed: ["preparing", "cancelled"],
   preparing: ["ready_for_pickup", "out_for_delivery", "cancelled"],
   ready_for_pickup: ["completed", "cancelled"],
@@ -44,6 +45,11 @@ export default async function handler(req: RouteReq, res: ApiRes) {
     }
     const next = typeof body.status === "string" ? body.status : "";
     if (!transitions[order.status]?.includes(next)) { await client.query("ROLLBACK"); return reject(res, 409, "That status change is not allowed from the current state."); }
+    const clarificationMessage = typeof body.message === "string" ? body.message.trim() : "";
+    if (next === "needs_clarification" && (clarificationMessage.length < 5 || clarificationMessage.length > 500)) {
+      await client.query("ROLLBACK");
+      return reject(res, 400, "Enter a customer-facing clarification message between 5 and 500 characters.");
+    }
     let deliveryFee: number | null = null;
     let total: number | null = null;
     let eta: string | null = null;
@@ -62,7 +68,7 @@ export default async function handler(req: RouteReq, res: ApiRes) {
     } else {
       await client.query("UPDATE public.orders SET status=$2, updated_at=now() WHERE id=$1", [orderId, next]);
     }
-    const message = customerMessages[next] || "Your Cloud L order has been updated.";
+    const message = next === "needs_clarification" ? clarificationMessage : customerMessages[next] || "Your Cloud L order has been updated.";
     await client.query("INSERT INTO public.order_events (order_id, actor_type, actor_label, event_type, status, message, customer_visible) VALUES ($1,'staff','Cloud L staff','status_changed',$2,$3,true)", [orderId, next, message]);
     await client.query("COMMIT");
     return res.status(200).json({ status: next, totalEtb: total, deliveryFeeEtb: deliveryFee, estimatedReadyAt: eta });

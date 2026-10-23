@@ -7,12 +7,18 @@ type StaffOrder = {
   customer_name: string; customer_phone: string; fulfillment: string; delivery_address: string | null; delivery_landmark: string | null;
   delivery_notes: string | null; special_instructions: string | null; guest_count: number | null; table_number: string | null; subtotal_etb: number; delivery_fee_etb: number | null;
   total_etb: number | null; estimated_ready_at: string | null; wants_whatsapp_updates: boolean;
-  customer_payment_reference: string | null; items: StaffItem[];
+  customer_payment_reference: string | null; clarification_message: string | null; items: StaffItem[];
 };
 const money = (value: number) => Number(value).toLocaleString("en-US");
-const statusName: Record<string, string> = { received: "New · needs review", confirmed: "Confirmed", preparing: "Preparing", ready_for_pickup: "Ready for pickup", out_for_delivery: "Out for delivery", delivered: "Delivered", completed: "Complete", declined: "Declined", cancelled: "Cancelled" };
+const statusName: Record<string, string> = { received: "New · needs review", needs_clarification: "Needs clarification · awaiting customer", confirmed: "Confirmed", preparing: "Preparing", ready_for_pickup: "Ready for pickup", out_for_delivery: "Out for delivery", delivered: "Delivered", completed: "Complete", declined: "Declined", cancelled: "Cancelled" };
 const paymentName: Record<string, string> = { cash: "Cash", telebirr_manual: "Telebirr", bunna_bank_qr_manual: "Bunna Bank QR", dashen_bank_manual: "Dashen Bank" };
-const nextActions: Record<string, [string, string][]> = { received: [["confirmed", "Confirm order"], ["declined", "Decline"]], confirmed: [["preparing", "Start preparing"]], preparing: [["ready_for_pickup", "Mark ready for pickup"], ["out_for_delivery", "Send out for delivery"]], ready_for_pickup: [["completed", "Complete order"]], out_for_delivery: [["delivered", "Mark delivered"]], delivered: [["completed", "Complete order"]] };
+const nextActions: Record<string, [string, string][]> = { received: [["confirmed", "Confirm order"], ["declined", "Decline"]], needs_clarification: [["confirmed", "Confirm order"], ["declined", "Decline"]], confirmed: [["preparing", "Start preparing"]], preparing: [["ready_for_pickup", "Mark ready for pickup"], ["out_for_delivery", "Send out for delivery"]], ready_for_pickup: [["completed", "Complete order"]], out_for_delivery: [["delivered", "Mark delivered"]], delivered: [["completed", "Complete order"]] };
+
+function whatsappText(order: StaffOrder) {
+  const status = statusName[order.status] || order.status;
+  const clarification = order.status === "needs_clarification" && order.clarification_message ? `We need you to clarify: ${order.clarification_message}. ` : "";
+  return `Hello ${order.customer_name}, Cloud L order ${order.public_reference}: ${status}. ${clarification}Please use your private tracking link for the latest details. Reply here if you need help.`;
+}
 
 export default function StaffOrders() {
   const [password, setPassword] = useState("");
@@ -24,6 +30,7 @@ export default function StaffOrders() {
   const lastSeen = useRef<string[]>([]);
   const [feeById, setFeeById] = useState<Record<string, string>>({});
   const [etaById, setEtaById] = useState<Record<string, string>>({});
+  const [clarificationById, setClarificationById] = useState<Record<string, string>>({});
   const [passwordVisible, setPasswordVisible] = useState(false);
   const audioRef = useRef<AudioContext | null>(null);
 
@@ -76,13 +83,14 @@ export default function StaffOrders() {
     return actions;
   }
 
-  async function changeStatus(order: StaffOrder, status: string) {
+  async function changeStatus(order: StaffOrder, status: string, message?: string) {
     if (status === "declined" && !window.confirm(`Decline ${order.public_reference}?`)) return;
     setBusy(true); setError("");
     try {
-      const response = await fetch(`/api/admin/orders/${encodeURIComponent(order.id)}`, { method: "PATCH", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status, deliveryFeeEtb: feeById[order.id] === undefined ? order.delivery_fee_etb : Number(feeById[order.id]), estimatedMinutes: etaById[order.id] ? Number(etaById[order.id]) : undefined }) });
+      const response = await fetch(`/api/admin/orders/${encodeURIComponent(order.id)}`, { method: "PATCH", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status, message, deliveryFeeEtb: feeById[order.id] === undefined ? (order.delivery_fee_etb ?? undefined) : Number(feeById[order.id]), estimatedMinutes: etaById[order.id] ? Number(etaById[order.id]) : undefined }) });
       const data = await response.json() as { error?: string };
       if (!response.ok) throw new Error(data.error || "The order could not be updated.");
+      if (status === "needs_clarification") setClarificationById((current) => ({ ...current, [order.id]: "" }));
       await loadOrders(true);
     } catch (cause) { setError(cause instanceof Error ? cause.message : "The order could not be updated."); }
     finally { setBusy(false); }
@@ -112,10 +120,11 @@ export default function StaffOrders() {
     <header><div><small>{order.public_reference} · {new Date(order.created_at).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" })}</small><h2>{order.customer_name}</h2></div><span className={`staff-status status-${order.status}`}>{statusName[order.status] || order.status}</span></header>
     <div className="staff-order__body"><section><h3>Order details</h3><ul>{order.items.map((item, index) => <li key={`${item.name}-${index}`}>{item.quantity} × {item.name}{item.size ? ` · ${item.size}` : ""}<strong>{money(item.lineTotalEtb)} ETB</strong></li>)}</ul><p>Menu subtotal <strong>{money(order.subtotal_etb)} ETB</strong></p>{order.delivery_fee_etb !== null && <p>Delivery <strong>{money(order.delivery_fee_etb)} ETB</strong></p>}{order.total_etb !== null && <p>Confirmed total <strong>{money(order.total_etb)} ETB</strong></p>}</section>
       <section><h3>Customer & fulfillment</h3><a href={`tel:${order.customer_phone}`}>{order.customer_phone}</a><p>{order.fulfillment === "delivery" ? "Delivery" : order.fulfillment === "pickup" ? "Pickup" : "Dine in"}</p>{order.delivery_address && <p>{order.delivery_address}{order.delivery_landmark ? ` · ${order.delivery_landmark}` : ""}</p>}{order.delivery_notes && <p>Delivery notes: {order.delivery_notes}</p>}{order.special_instructions && <p>Kitchen: {order.special_instructions}</p>}{order.guest_count && <p>Guests: {order.guest_count}</p>}{order.table_number && <p>Table: {order.table_number}</p>}</section></div>
-    <footer className="staff-order__actions">{order.status === "received" && order.fulfillment === "delivery" && <label>Delivery fee (ETB)<input inputMode="numeric" type="number" min="0" max="10000" value={feeById[order.id] ?? ""} onChange={(event) => setFeeById({ ...feeById, [order.id]: event.currentTarget.value })} placeholder="Set before confirming" /></label>}{order.status === "received" && <label>Ready in (minutes)<input inputMode="numeric" type="number" min="1" max="240" value={etaById[order.id] ?? ""} onChange={(event) => setEtaById({ ...etaById, [order.id]: event.currentTarget.value })} placeholder="Optional estimate" /></label>}
+    {order.clarification_message && <p className="staff-clarification-note"><strong>Latest clarification request:</strong> {order.clarification_message}</p>}
+    <footer className="staff-order__actions">{order.status === "received" && <details className="staff-clarification"><summary>Request clarification</summary><label>Message for the customer<textarea aria-label="Customer-facing clarification message" rows={3} maxLength={500} value={clarificationById[order.id] ?? ""} onChange={(event) => setClarificationById({ ...clarificationById, [order.id]: event.currentTarget.value })} placeholder="Tell the customer exactly what detail is needed." /></label><p>Updates the private tracking page only; no message is sent automatically. Contact the customer separately, or use the opted-in WhatsApp link below.</p><button type="button" disabled={busy || (clarificationById[order.id] ?? "").trim().length < 5} onClick={() => void changeStatus(order, "needs_clarification", (clarificationById[order.id] ?? "").trim())}>Mark as needs clarification</button></details>}{["received", "needs_clarification"].includes(order.status) && order.fulfillment === "delivery" && <label>Delivery fee (ETB)<input inputMode="numeric" type="number" min="0" max="10000" value={feeById[order.id] ?? ""} onChange={(event) => setFeeById({ ...feeById, [order.id]: event.currentTarget.value })} placeholder="Set before confirming" /></label>}{["received", "needs_clarification"].includes(order.status) && <label>Ready in (minutes)<input inputMode="numeric" type="number" min="1" max="240" value={etaById[order.id] ?? ""} onChange={(event) => setEtaById({ ...etaById, [order.id]: event.currentTarget.value })} placeholder="Optional estimate" /></label>}
       <span className="staff-payment">{paymentName[order.payment_method] || order.payment_method} · {order.payment_status}{order.payment_status === "submitted" ? ` · Reference: ${order.customer_payment_reference || "submitted"}` : ""}</span>
       {availableActions(order).map(([status, label]) => <button key={status} type="button" disabled={busy} onClick={() => void changeStatus(order, status)}>{label}</button>)}
       {order.payment_method !== "cash" && order.payment_status === "submitted" && <button type="button" disabled={busy} onClick={() => void verifyPayment(order)}>Verify transfer & mark paid</button>}
-      {order.wants_whatsapp_updates && !["declined", "cancelled"].includes(order.status) && <a className="staff-whatsapp" href={`https://wa.me/${order.customer_phone.replace(/\D/g, "")}?text=${encodeURIComponent(`Hello ${order.customer_name}, Cloud L order ${order.public_reference}: ${statusName[order.status] || order.status}. Please use your private tracking link for the latest details. Reply here if you need help.`)}`} target="_blank" rel="noreferrer">Review WhatsApp update ↗</a>}{order.wants_whatsapp_updates && <small className="staff-optin">Customer opted in to manual WhatsApp status updates</small>}</footer>
+      {order.wants_whatsapp_updates && !["declined", "cancelled"].includes(order.status) && <a className="staff-whatsapp" href={`https://wa.me/${order.customer_phone.replace(/\D/g, "")}?text=${encodeURIComponent(whatsappText(order))}`} target="_blank" rel="noreferrer">Review WhatsApp update ↗</a>}{order.wants_whatsapp_updates && <small className="staff-optin">Customer opted in to manual WhatsApp status updates</small>}</footer>
   </article>)}</div>}</section></main>;
 }

@@ -9,7 +9,7 @@ type Order = {
   events: Event[];
 };
 const money = (value: number) => Number(value).toLocaleString("en-US");
-const labels: Record<string, string> = { received: "Received · awaiting confirmation", confirmed: "Confirmed", preparing: "Being prepared", ready_for_pickup: "Ready for pickup", out_for_delivery: "On the way", delivered: "Delivered", completed: "Complete", declined: "Unable to accept", cancelled: "Cancelled" };
+const labels: Record<string, string> = { received: "Received · awaiting confirmation", needs_clarification: "Needs clarification", confirmed: "Confirmed", preparing: "Being prepared", ready_for_pickup: "Ready for pickup", out_for_delivery: "On the way", delivered: "Delivered", completed: "Complete", declined: "Unable to accept", cancelled: "Cancelled" };
 const journey = ["received", "confirmed", "preparing", "ready_for_pickup", "completed"];
 const paymentLabels: Record<string, string> = {
   telebirr_manual: "Telebirr",
@@ -52,7 +52,7 @@ export default function OrderTrackingPage({ token }: { token: string }) {
     finally { setSending(false); }
   }
 
-  const currentIndex = order ? journey.indexOf(order.status) : -1;
+  const currentIndex = order ? (order.status === "needs_clarification" ? 0 : journey.indexOf(order.status)) : -1;
   const paymentName = order ? paymentLabels[order.payment_method] || "your selected method" : "your selected method";
   const awaitingTransfer = Boolean(order && manualPaymentMethods.has(order.payment_method) && order.status === "confirmed" && order.payment_status === "awaiting_transfer");
   const manualTransferPending = Boolean(order && manualPaymentMethods.has(order.payment_method) && ["received", "confirmed"].includes(order.status) && !awaitingTransfer);
@@ -64,7 +64,7 @@ export default function OrderTrackingPage({ token }: { token: string }) {
     {!loading && error && <div className="tracking-error" role="alert"><p>{error}</p><button type="button" onClick={() => { setLoading(true); void load(); }}>Try again</button></div>}
     {order && <>
       <div className="tracking-reference"><small>ORDER REFERENCE</small><strong>{order.public_reference}</strong><span>{new Date(order.created_at).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" })}</span></div>
-      <section className="tracking-status" aria-label="Order progress"><div className="tracking-status__current"><span>Current status</span><strong>{labels[order.status] || "In progress"}</strong></div><ol>{journey.map((step, index) => <li key={step} className={`${index <= currentIndex ? "is-done" : ""} ${order.status === step ? "is-current" : ""}`}><i aria-hidden="true" /><span>{labels[step]}</span></li>)}</ol>{order.status === "out_for_delivery" && <p className="tracking-live-status">Your order is on its way.</p>}{order.status === "delivered" && <p className="tracking-live-status">Your order has been delivered.</p>}</section>
+      <section className="tracking-status" aria-label="Order progress"><div className="tracking-status__current"><span>Current status</span><strong>{labels[order.status] || "In progress"}</strong></div><ol>{journey.map((step, index) => <li key={step} className={`${index <= currentIndex ? "is-done" : ""} ${order.status === step ? "is-current" : ""}`}><i aria-hidden="true" /><span>{labels[step]}</span></li>)}</ol>{order.status === "needs_clarification" && <p className="tracking-live-status">Cloud L needs a detail before confirming your order. See the latest update below, then contact us if you need help.</p>}{order.status === "out_for_delivery" && <p className="tracking-live-status">Your order is on its way.</p>}{order.status === "delivered" && <p className="tracking-live-status">Your order has been delivered.</p>}</section>
       {order.estimated_ready_at && <p className="tracking-eta">Estimated ready · <strong>{new Date(order.estimated_ready_at).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" })}</strong></p>}
       <section className="tracking-summary"><h2>Your order</h2><ul>{order.items.map((item, index) => <li key={`${item.name}-${index}`}><span>{item.quantity} × {item.name}{item.size ? ` · ${item.size}` : ""}</span><strong>{money(item.lineTotalEtb)} ETB</strong></li>)}</ul><div><span>Menu subtotal</span><strong>{money(order.subtotal_etb)} ETB</strong></div>{order.delivery_fee_etb !== null && <div><span>Delivery</span><strong>{money(order.delivery_fee_etb)} ETB</strong></div>}{order.total_etb !== null && <div className="tracking-summary__total"><span>Confirmed total</span><strong>{money(order.total_etb)} ETB</strong></div>}</section>
       <p className="tracking-fulfillment">{order.fulfillment === "pickup" ? "Pickup at Cloud L" : order.fulfillment === "delivery" ? "Home delivery · details confirmed by staff" : "Dine in at Cloud L"}</p>

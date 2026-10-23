@@ -12,6 +12,7 @@ export default async function handler(req: ApiReq, res: ApiRes) {
               o.fulfillment, o.delivery_address, o.delivery_landmark, o.delivery_notes, o.special_instructions, o.guest_count, o.table_number,
               o.subtotal_etb, o.delivery_fee_etb, o.total_etb, o.estimated_ready_at, o.wants_whatsapp_updates,
               o.customer_payment_reference, o.customer_payment_submitted_at,
+              (SELECT e.message FROM public.order_events e WHERE e.order_id=o.id AND e.event_type='status_changed' AND e.status='needs_clarification' ORDER BY e.created_at DESC LIMIT 1) AS clarification_message,
               COALESCE(json_agg(json_build_object('name', i.name, 'nameAmharic', i.name_amharic, 'menuItemId', i.menu_item_id, 'size', i.size, 'quantity', i.quantity, 'unitPriceEtb', i.unit_price_etb, 'lineTotalEtb', i.line_total_etb) ORDER BY i.id) FILTER (WHERE i.id IS NOT NULL), '[]') AS items
        FROM public.orders o LEFT JOIN public.order_items i ON i.order_id=o.id
        WHERE o.created_at > now() - interval '14 days'
