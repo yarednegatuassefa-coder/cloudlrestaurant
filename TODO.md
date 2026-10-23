@@ -2,7 +2,7 @@
 
 **Public brand:** Cloud L. **Hours:** daily, 7:00 a.m.–9:00 p.m. **Address:** Queen Elizabeth II Street, Kebena, Addis Ababa. **Telebirr:** +251 901 120 012, manual transfers only; recipient name shown to customers: Lidia. **Bunna Bank QR:** Cloud L Trading PLC, merchant ID 450043. **Dashen Bank:** Cloud L Trading PLC, account 0194970006011.
 
-Last updated: 22 October 2026.
+Last updated: 24 October 2026.
 
 ## Live and tested on production (cloudlrestaurant.com)
 
@@ -13,6 +13,8 @@ Last updated: 22 October 2026.
 - Customer order reference and private tracking link (token hash stored, not the token).
 - Staff page at `/#staff`: login, order list, status changes (received, confirmed, preparing, ready, completed), cancel.
 - Customer tracking page shows every status change and the update log.
+- Needs-clarification workflow is live (commit `f1a6ee0`): staff can record a required customer-facing message in the private tracking history, then confirm or decline after resolving it. The action does not automatically send a message.
+- Neon migration 003 is applied in production without changing existing orders. The live bundle contains the staff controls and tracking copy; anonymous staff API access correctly returns 401. No production test order was created for this feature.
 - Manual Telebirr path tested: card appears after staff confirm; transaction reference submitted; staff verification marks it paid. Nothing is marked paid from a reference alone.
 - Staff alerts tested: sound and browser notification fire while the staff tab is in the background (pinned tab, Chrome set to keep the site active).
 - Staff-initiated WhatsApp update links for opted-in customers.
@@ -34,7 +36,7 @@ Test orders placed on production (TEST, TEST2, TEST3 and the first CL-261021 ord
 
 ## Not built yet
 
-- “Needs clarification” order status (not in the database).
+- Admin settings to update or add payment receiving details. Current destinations are code-managed; adding a payment method also requires API and database changes.
 - Staff sold-out toggle (database table exists; no screen).
 - Allergen and dietary data and filters (do not guess food facts; verify with the kitchen).
 - Telegram ordering button.
