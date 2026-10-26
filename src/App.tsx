@@ -108,6 +108,25 @@ function App() {
   const [cartOpen, setCartOpen] = useState(false);
   const [trackingToken, setTrackingToken] = useState("");
   const [staffMode, setStaffMode] = useState(false);
+  const [soldOutItemIds, setSoldOutItemIds] = useState<Set<string>>(() => new Set());
+
+  useEffect(() => {
+    let active = true;
+    const refreshAvailability = async () => {
+      try {
+        const response = await fetch("/api/menu-availability", { cache: "no-store" });
+        if (!response.ok) return;
+        const data = await response.json() as { soldOutItemIds?: unknown };
+        if (active && Array.isArray(data.soldOutItemIds) && data.soldOutItemIds.every((id) => typeof id === "string")) {
+          setSoldOutItemIds(new Set(data.soldOutItemIds));
+        }
+      } catch { /* Availability is advisory; order validation remains authoritative. */ }
+    };
+    void refreshAvailability();
+    const timer = window.setInterval(() => void refreshAvailability(), 30_000);
+    window.addEventListener("focus", refreshAvailability);
+    return () => { active = false; window.clearInterval(timer); window.removeEventListener("focus", refreshAvailability); };
+  }, []);
 
   useEffect(() => {
     const readTrackingToken = () => {
@@ -248,8 +267,8 @@ function App() {
           <p>43 dishes, shown in English and Amharic.<br />Prices in ETB · Fasting choices are plant-based.</p>
         </section>
 
-        <FoodMenu onAddToOrder={addToCart} />
-        <DrinksMenu currencySuffix="ETB" onAddToOrder={addToCart} />
+        <FoodMenu onAddToOrder={addToCart} soldOutItemIds={soldOutItemIds} />
+        <DrinksMenu currencySuffix="ETB" onAddToOrder={addToCart} soldOutItemIds={soldOutItemIds} />
 
         <section className="visit-section" id="visit">
           <div className="visit-inner content-wrap">

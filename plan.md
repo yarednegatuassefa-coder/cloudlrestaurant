@@ -55,15 +55,17 @@ Continue the established contemporary Ethiopian restaurant editorial style: warm
 
 ## Project structure
 
-- `src/data/menuCatalog.ts` — one shared trusted catalog for food/drinks/variants, imported by UI and server API.
+- `src/components/FoodMenu.tsx` and `src/components/DrinksMenu.tsx` — customer menu data and selectable cart IDs; `api/_catalog.json` — trusted server IDs and prices. These are separate sources and must remain in exact ID parity for order validation and availability control.
 - `src/components/OrderCart.tsx` — preserve the accessible, persistent cart; make web checkout primary and WhatsApp fallback secondary.
 - `src/components/CheckoutForm.tsx` — guest details, pickup/delivery/dine-in, special instructions, optional guest/table fields, payment choice, review and submit.
 - `src/components/OrderTrackingPage.tsx` — private tracking view, method-specific transfer instructions, and manual transaction-reference submission.
 - `src/components/StaffOrders.tsx` — authenticated staff queue, status/payment actions, ETA and delivery-fee confirmation, one-click WhatsApp drafts.
+- `src/components/StaffMenuAvailability.tsx` — authenticated single-item sold-out controls with the latest update timestamp and shared staff label.
 - `src/components/StaffPaymentSettings.tsx` — authenticated add/edit/disable form for manual payment destinations and change history.
 - `src/components/orderTypes.ts` — shared cart, order, status, and payment types.
-- `api/orders.ts`, `api/payment-methods.ts`, `api/admin/payment-methods.ts`, `api/admin/*` — Vercel endpoints for order creation, dynamic payment choices, tracking, references, staff login, order operations, and protected destination settings.
+- `api/orders.ts`, `api/payment-methods.ts`, `api/menu-availability.ts`, `api/admin/menu-availability.ts`, `api/admin/payment-methods.ts`, `api/admin/*` — Vercel endpoints for order creation, dynamic payment choices, public sold-out IDs, authenticated availability updates, tracking, references, staff login, order operations, and protected destination settings.
 - `db/migrations/` — versioned schema for orders, line items, event history, sold-out state, payment destinations/assets/audit history, and immutable order snapshots.
+- The existing `menu_availability` table is the sold-out source of truth. Missing rows mean available; the authenticated staff API writes item-level overrides; a public read-only API returns sold-out IDs; both menus disable those choices. Order creation and staff toggles take the same transaction-scoped per-item advisory lock before reading or writing availability, so the server recheck rejects stale carts without a first-override race. No schema migration is needed for this item.
 - Existing `scripts/prerender.mjs`, `index.html`, `public/robots.txt` and `public/sitemap.xml` remain the crawler-visible home experience; private track/admin views stay out of the route manifest and SEO content.
 
 ## Dependencies and remaining owner setup

@@ -1,5 +1,5 @@
 import { createHash, randomBytes } from "node:crypto";
-import { pool } from "./_server.js";
+import { MENU_AVAILABILITY_LOCK_SQL, pool } from "./_server.js";
 import catalogData from "./_catalog.json" with { type: "json" };
 
 type Req = { method?: string; headers: Record<string, string | string[] | undefined>; body?: unknown; socket?: { remoteAddress?: string } };
@@ -77,6 +77,21 @@ export default async function handler(req: Req, res: Res) {
     const client = await pool.connect();
     try {
       await client.query("BEGIN");
+      const selectedItemIds = [...new Set(items.map((item) => item.id))].sort();
+      for (const itemId of selectedItemIds) {
+        await client.query(MENU_AVAILABILITY_LOCK_SQL, [itemId]);
+      }
+      const availabilityResult = await client.query(
+        "SELECT menu_item_id FROM public.menu_availability WHERE menu_item_id = ANY($1::text[]) AND is_sold_out=true FOR SHARE",
+        [selectedItemIds],
+      );
+      if (availabilityResult.rowCount) {
+        const soldOutNames = availabilityResult.rows
+          .map((row) => catalog.get(row.menu_item_id as string)?.name)
+          .filter((name): name is string => typeof name === "string");
+        await client.query("ROLLBACK");
+        return reply(res, 409, { error: `Some selected items just sold out${soldOutNames.length ? `: ${soldOutNames.join(", ")}` : ""}. Remove them from your cart and try again.` });
+      }
       const methodResult = await client.query(`SELECT p.id,p.label,p.payment_type,p.bank_name,p.recipient_name,p.phone_number,p.account_number,p.merchant_id,p.instructions,p.qr_asset_id FROM public.payment_methods p WHERE p.id=$1 AND p.is_enabled=true FOR SHARE`, [paymentMethod]);
       if (!methodResult.rowCount) { await client.query("ROLLBACK"); return reply(res, 400, { error: "That payment method is unavailable. Refresh the page and choose another method." }); }
       const method = methodResult.rows[0];

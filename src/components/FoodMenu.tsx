@@ -15,10 +15,17 @@ type Section = {
 };
 type FoodMenuProps = {
   onAddToOrder?: (item: OrderSelection) => void;
+  soldOutItemIds?: Set<string>;
 };
 type DishImage = { src: string; alt: string; illustrative: boolean };
 
 const MENU_LAST_UPDATED = "21 October 2026";
+
+function foodItemOrderId(sectionId: string, name: string) {
+  const catalogName = sectionId === "american-special" ? name.replace(/^Special\s+/i, "") : name;
+  const slug = catalogName.toLocaleLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+  return `food-${sectionId}-${slug}`;
+}
 
 // The 22 generated entries from mapping.json are embedded here so this file
 // works without a separate JSON import or TypeScript configuration change.
@@ -254,7 +261,7 @@ const breakfastTag = {
   verticalAlign: "middle",
 };
 
-export default function FoodMenu({ onAddToOrder }: FoodMenuProps) {
+export default function FoodMenu({ onAddToOrder, soldOutItemIds = new Set<string>() }: FoodMenuProps) {
   const [query, setQuery] = useState("");
   const normalizedQuery = query.trim().toLocaleLowerCase();
   const visibleSections = useMemo(
@@ -311,8 +318,10 @@ export default function FoodMenu({ onAddToOrder }: FoodMenuProps) {
                 <div className="fm__grid">
                   {section.items.map((item) => {
                     const dishImage = dishImages[item.en];
+                    const itemId = foodItemOrderId(section.id, item.en);
+                    const isSoldOut = soldOutItemIds.has(itemId);
                     return (
-                      <article className="fm__item" key={item.en}>
+                      <article className={`fm__item${isSoldOut ? " is-sold-out" : ""}`} key={item.en}>
                         <div
                           style={{
                             display: "flex",
@@ -373,6 +382,7 @@ export default function FoodMenu({ onAddToOrder }: FoodMenuProps) {
                               {item.breakfast && <span style={breakfastTag}>Breakfast</span>}
                             </strong>
                             <span lang="am">{item.am}</span>
+                            {isSoldOut && <span className="menu-sold-out">Sold out</span>}
                           </div>
                         </div>
                         <strong className="fm__price">
@@ -381,9 +391,10 @@ export default function FoodMenu({ onAddToOrder }: FoodMenuProps) {
                         <button
                           className="fm__add"
                           type="button"
-                          aria-label={`Add ${item.en} to order`}
+                          disabled={isSoldOut}
+                          aria-label={isSoldOut ? `${item.en} sold out` : `Add ${item.en} to order`}
                           onClick={() => onAddToOrder?.({
-                            id: `food-${section.id}-${item.en.toLocaleLowerCase().replace(/[^a-z0-9]+/g, "-")}`,
+                            id: itemId,
                             name: item.en,
                             nameAmharic: item.am,
                             price: Number(item.price.replaceAll(",", "")),

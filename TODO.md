@@ -45,9 +45,15 @@ Test orders placed on production (TEST, TEST2, TEST3 and the first CL-261021 ord
 - **Payment destination settings (live):** In the authenticated staff dashboard, owner-authorized staff can add, edit, and disable manual bank/wallet methods; enter the display name, bank/institution, recipient, account/phone/merchant ID, instructions, and optional QR image. Keep method IDs immutable and disable rather than delete methods. Checkout receives only enabled method names; transfer details appear on the private tracking page only after staff confirms the order and total. Each order keeps the exact destination snapshot selected at order time, unaffected by later edits. Log each create, edit, and enable/disable action. All transfers remain manual and require staff verification.
 - **Payment-to-preparation gate (live):** For a manual-transfer order, the dashboard and API block **Start preparing** until staff verify funds in the matching Cloud L account and mark the payment paid. Cash orders may proceed without prepayment. Payment verification does not automatically advance order status; after verification staff explicitly selects **Start preparing**. The gate is code-reviewed but has not been tested using a production order.
 
+## In progress — staff sold-out controls
+
+- Staff can mark any of the 65 purchasable options (43 food items and 22 drink/size options) sold out or available from the authenticated dashboard; the item IDs match the server catalog and drink sizes stay distinct. Persist overrides in the existing Neon `menu_availability` table with the update timestamp and generic `Cloud L staff` label; the shared login cannot attribute an individual staff member.
+- An absent availability row means available; only `is_sold_out=true` is sold out. The public menu shows a clear sold-out state and disables adding that item/size. Staff changes affect new orders and current customer pages after refresh.
+- The order API takes the same per-item transaction lock as a staff toggle, then rechecks every selected menu ID before inserting an order. This serializes a first-time sold-out override against checkout; stale carts that lose the race get a helpful error and no order is created.
+- Existing production availability table was read-only checked on 26 October: 0 overrides and 0 items marked sold out. Do not change a real item's availability during validation.
+
 ## Not built yet
 
-- Staff sold-out toggle (database table exists; no screen).
 - Allergen and dietary data and filters (do not guess food facts; verify with the kitchen).
 - Telegram ordering button.
 - CBE Birr (only if the owner provides a real account and name).

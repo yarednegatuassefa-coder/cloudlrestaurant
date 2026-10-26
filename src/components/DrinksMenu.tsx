@@ -251,6 +251,7 @@ export type DrinksMenuProps = {
   currencySuffix?: string;
   /** Map drink IDs plus `wine-category` to WebDev-managed image URLs. */
   imageUrlById?: Partial<Record<string, string>>;
+  soldOutItemIds?: Set<string>;
 };
 
 const formatPrice = (price: number, currencySuffix: string) =>
@@ -260,6 +261,7 @@ export default function DrinksMenu({
   onAddToOrder,
   currencySuffix = "",
   imageUrlById = {},
+  soldOutItemIds = new Set<string>(),
 }: DrinksMenuProps) {
   const [query, setQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState<CategoryFilter>("All drinks");
@@ -295,9 +297,9 @@ export default function DrinksMenu({
 
   const selectedVariant = (item: DrinkMenuItem) => {
     if (!item.variants?.length) return undefined;
-    return (
-      item.variants.find((variant) => variant.id === selectedVariants[item.id]) ?? item.variants[0]
-    );
+    const chosen = item.variants.find((variant) => variant.id === selectedVariants[item.id]);
+    if (chosen && !soldOutItemIds.has(`${item.id}-${chosen.id}`)) return chosen;
+    return item.variants.find((variant) => !soldOutItemIds.has(`${item.id}-${variant.id}`)) ?? chosen ?? item.variants[0];
   };
 
   const addItem = (item: DrinkMenuItem) => {
@@ -419,6 +421,12 @@ export default function DrinksMenu({
                           {subgroupItems.map((item) => {
                             const variant = selectedVariant(item);
                             const displayedPrice = variant?.price ?? item.price ?? 0;
+                            const itemSoldOut = item.variants?.length
+                              ? item.variants.every((option) => soldOutItemIds.has(`${item.id}-${option.id}`))
+                              : soldOutItemIds.has(item.id);
+                            const selectedSoldOut = item.variants?.length
+                              ? !variant || soldOutItemIds.has(`${item.id}-${variant.id}`)
+                              : itemSoldOut;
                             return (
                               <article
                                 className={`drinks-menu__card${item.category === "Wine" ? " drinks-menu__card--text-only" : ""}`}
@@ -452,9 +460,10 @@ export default function DrinksMenu({
                                           type="button"
                                           key={option.id}
                                           aria-pressed={variant?.id === option.id}
+                                          disabled={soldOutItemIds.has(`${item.id}-${option.id}`)}
                                           onClick={() => selectVariant(item.id, option.id)}
                                         >
-                                          <span>{option.size}</span>
+                                          <span>{option.size}{soldOutItemIds.has(`${item.id}-${option.id}`) ? " · Sold out" : ""}</span>
                                           <span>{formatPrice(option.price, currencySuffix)}</span>
                                         </button>
                                       ))}
@@ -464,15 +473,17 @@ export default function DrinksMenu({
                                     <p className="drinks-menu__price">
                                       {formatPrice(displayedPrice, currencySuffix)}
                                       {variant && <span className="drinks-menu__price-size"> / {variant.size}</span>}
+                                      {!item.variants?.length && itemSoldOut && <span className="menu-sold-out">Sold out</span>}
                                     </p>
                                     {onAddToOrder && (
                                       <button
                                         className="drinks-menu__add"
                                         type="button"
                                         onClick={() => addItem(item)}
-                                        aria-label={`Add ${item.name}${variant ? ` ${variant.size}` : ""} to order`}
+                                        disabled={selectedSoldOut}
+                                        aria-label={selectedSoldOut ? `${item.name}${variant ? ` ${variant.size}` : ""} sold out` : `Add ${item.name}${variant ? ` ${variant.size}` : ""} to order`}
                                       >
-                                        Add to order
+                                        {selectedSoldOut ? "Sold out" : "Add to order"}
                                       </button>
                                     )}
                                   </div>

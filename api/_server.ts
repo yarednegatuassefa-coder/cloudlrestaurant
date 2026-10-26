@@ -5,6 +5,9 @@ const globalForPool = globalThis as typeof globalThis & { cloudlPool?: Pool };
 export const pool = globalForPool.cloudlPool ?? new Pool({ connectionString: process.env.DATABASE_URL, max: 3, idleTimeoutMillis: 10_000, connectionTimeoutMillis: 7_000, ssl: { rejectUnauthorized: true } });
 globalForPool.cloudlPool = pool;
 
+export const MENU_AVAILABILITY_LOCK_SQL =
+  "SELECT pg_advisory_xact_lock(hashtextextended('cloudl-menu-availability:' || $1::text, 0))";
+
 export type ApiReq = { method?: string; headers: Record<string, string | string[] | undefined>; body?: unknown; query?: Record<string, string | string[] | undefined>; socket?: { remoteAddress?: string } };
 export type ApiRes = { status: (code: number) => ApiRes; setHeader: (name: string, value: string | number) => void; json: (data: unknown) => void; end: () => void };
 export const COOKIE_NAME = "cloudl_staff_session";
