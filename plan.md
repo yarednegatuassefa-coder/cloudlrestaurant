@@ -2,7 +2,7 @@
 
 **Owner direction:** The owner delegated product and implementation decisions (“full free reign”), asked for a professional order flow that supports home delivery, and prefers free workarounds. This plan is the first release, not a promise that paid payment or messaging services are free.
 
-**Current state (24 October 2026):** The redesigned public website and base ordering flow are live. The latest upstream checklist records `DATABASE_URL`, `STAFF_PASSWORD`, and `STAFF_SESSION_SECRET` configured in Vercel and the manual Telebirr order path tested in production. Commit `d1d8912` adds separate Bunna Bank QR and Dashen Bank manual-transfer choices; they are live, but neither bank path has been end-to-end tested with a production order or payment. Commit `f1a6ee0` adds the needs-clarification staff workflow and private tracking message; Neon migration 003 is applied. The new bundle and protected staff endpoint were checked without creating a production order. Payment destinations remain code-managed; the staff dashboard has no settings screen to add or edit receiving details.
+**Current state (26 October 2026):** The redesigned public website and base ordering flow are live. The latest upstream checklist records `DATABASE_URL`, `STAFF_PASSWORD`, and `STAFF_SESSION_SECRET` configured in Vercel and the manual Telebirr order path tested in production. Commit `d1d8912` adds separate Bunna Bank QR and Dashen Bank manual-transfer choices; they are live, but neither bank path has been end-to-end tested with a production order or payment. Commit `f1a6ee0` adds the needs-clarification staff workflow; Neon migration 003 is applied. Migration 004 for editable receiving destinations and immutable order snapshots has now been applied to production after temporary-branch validation and read-only integrity checks. The matching website/API code builds and type-checks locally but is not pushed/deployed yet; no order or payment was created for this rollout.
 
 ## Product decision
 
@@ -19,6 +19,14 @@ The owner provided three manual-transfer methods: Telebirr **+251 901 120 012**,
 Support **cash on pickup**, **cash on delivery**, and cash at the restaurant. Do not request a transfer before the order/final amount is confirmed. CBE Birr is not configured because the receiving number/account is not confirmed. Automatic online Telebirr checkout is a separate later phase: Ethio telecom’s official merchant information distinguishes free in-person proximity payments from online/remote API payments, which require API integration and a facilitation fee. Do not enable a paid gateway or paid plan without the owner’s approval.
 
 Official source: [Ethio telecom — Telebirr merchant registration and payment types](https://www.ethiotelecom.et/telebirr/telebirr-registration-requirements-with-registration-form/).
+
+## Owner-managed payment destinations and preparation gate
+
+- Put payment settings inside the existing authenticated staff dashboard, using the current shared `STAFF_PASSWORD` session. Because there are no separate staff roles today, the settings page must warn that anyone with this password can change receiving instructions; keep it restricted to owner-authorized staff. Do not expose credentials or payment details in public HTML.
+- Add a Neon-backed `payment_methods` registry for the built-in cash and manual-transfer options. Staff can add a manual bank/wallet method, edit its label, bank/institution, recipient, account/phone/merchant ID, instructions, and optional QR image, or disable it. IDs stay immutable; disable instead of delete so old orders retain their references. Log creates, edits, and enable/disable changes in an audit table.
+- Checkout fetches only enabled method IDs, labels, and type. It never receives account details. At order creation, save an immutable snapshot of the selected method and exact destination; later settings edits must not rewrite earlier orders. The private tracking API returns transfer instructions only after staff confirms the order and exact total. The authenticated staff board shows the order snapshot used for verification.
+- Keep every non-cash method manual; no gateway or automatic payment confirmation is introduced. For manual transfers, both the UI and API must block `Preparing` until staff verifies the received funds and sets payment status to `paid`. Cash orders may proceed without prepayment. Marking a transfer paid does not automatically start kitchen preparation; staff explicitly selects **Start preparing**.
+- Known permissions limit: Neon denied a SQL attempt to revoke `neon_superuser` membership from `cloudl_app` even on the temporary branch. Keep the existing role unchanged for now as approved; do not claim migration 004's object grants eliminate its inherited privileges. Resolve only with a supported Neon role-management path.
 
 ## Free-first backend and cost boundary
 
@@ -51,9 +59,10 @@ Continue the established contemporary Ethiopian restaurant editorial style: warm
 - `src/components/CheckoutForm.tsx` — guest details, pickup/delivery/dine-in, special instructions, optional guest/table fields, payment choice, review and submit.
 - `src/components/OrderTrackingPage.tsx` — private tracking view, method-specific transfer instructions, and manual transaction-reference submission.
 - `src/components/StaffOrders.tsx` — authenticated staff queue, status/payment actions, ETA and delivery-fee confirmation, one-click WhatsApp drafts.
+- `src/components/StaffPaymentSettings.tsx` — authenticated add/edit/disable form for manual payment destinations and change history.
 - `src/components/orderTypes.ts` — shared cart, order, status, and payment types.
-- `api/orders.ts`, `api/orders/track.ts`, `api/orders/payment-reference.ts`, `api/admin/*` — Vercel endpoints for order creation, tracking, customer payment-reference submission, staff login and staff operations.
-- `db/migrations/` — versioned schema for orders, line items, event history and sold-out state.
+- `api/orders.ts`, `api/payment-methods.ts`, `api/admin/payment-methods.ts`, `api/admin/*` — Vercel endpoints for order creation, dynamic payment choices, tracking, references, staff login, order operations, and protected destination settings.
+- `db/migrations/` — versioned schema for orders, line items, event history, sold-out state, payment destinations/assets/audit history, and immutable order snapshots.
 - Existing `scripts/prerender.mjs`, `index.html`, `public/robots.txt` and `public/sitemap.xml` remain the crawler-visible home experience; private track/admin views stay out of the route manifest and SEO content.
 
 ## Dependencies and remaining owner setup

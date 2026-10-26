@@ -2,7 +2,7 @@
 
 **Public brand:** Cloud L. **Hours:** daily, 7:00 a.m.–9:00 p.m. **Address:** Queen Elizabeth II Street, Kebena, Addis Ababa. **Telebirr:** +251 901 120 012, manual transfers only; recipient name shown to customers: Lidia. **Bunna Bank QR:** Cloud L Trading PLC, merchant ID 450043. **Dashen Bank:** Cloud L Trading PLC, account 0194970006011.
 
-Last updated: 24 October 2026.
+Last updated: 26 October 2026.
 
 ## Live and tested on production (cloudlrestaurant.com)
 
@@ -34,9 +34,16 @@ Last updated: 24 October 2026.
 
 Test orders placed on production (TEST, TEST2, TEST3 and the first CL-261021 order) must stay cancelled or declined. There is one Neon database shared by Preview and production.
 
+## Feature code complete locally; production website deployment pending
+
+- Production Neon migration 004 is applied after temporary-branch validation. It seeded Cash, Telebirr, Bunna QR, and Dashen; added a versioned QR path, immutable order snapshots, and payment-method settings/audit tables. Read-only production checks found all four methods, zero unknown payment methods, and zero empty snapshots. No order or payment was created for this release.
+- The matching website/API source builds and type-checks locally. It has not yet been pushed/deployed, so the new dashboard settings and preparation gate are not yet live.
+
+- **Payment destination settings:** In the authenticated staff dashboard, owner-authorized staff can add, edit, and disable manual bank/wallet methods; enter the display name, bank/institution, recipient, account/phone/merchant ID, instructions, and optional QR image. Keep method IDs immutable and disable rather than delete methods. Checkout receives only enabled method names; transfer details appear on the private tracking page only after staff confirms the order and total. Each order keeps the exact destination snapshot selected at order time, unaffected by later edits. Log each create, edit, and enable/disable action. All transfers remain manual and require staff verification.
+- **Payment-to-preparation gate:** For a manual-transfer order, the dashboard and API block **Start preparing** until staff verify funds in the matching Cloud L account and mark the payment paid. Cash orders may proceed without prepayment. Payment verification does not automatically advance order status; after verification staff explicitly selects **Start preparing**.
+
 ## Not built yet
 
-- Admin settings to update or add payment receiving details. Current destinations are code-managed; adding a payment method also requires API and database changes.
 - Staff sold-out toggle (database table exists; no screen).
 - Allergen and dietary data and filters (do not guess food facts; verify with the kitchen).
 - Telegram ordering button.
@@ -61,6 +68,7 @@ Test orders placed on production (TEST, TEST2, TEST3 and the first CL-261021 ord
 
 - Free first: check free options before any paid tool. No subscription, payment gateway, WhatsApp Business API or add-on without the owner's explicit approval.
 - Keep Neon on its free tier and watch quotas.
+- Known Neon role limitation: `cloudl_app` inherits `neon_superuser`; SQL revocation was denied on a temporary branch, so it remains unchanged. Object-level grants in migration 004 do not remove inherited privileges; revisit only through a supported Neon role-management path.
 - No sending, publishing, purchasing, deleting or live account changes without human approval.
 - Manual transfer references are not proof of payment; staff must verify in the receiving account.
 - Fee, price and provider terms stay “needs verification” until checked from current official sources.

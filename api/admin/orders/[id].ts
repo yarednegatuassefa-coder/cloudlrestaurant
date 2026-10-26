@@ -17,7 +17,6 @@ const customerMessages: Record<string, string> = {
   declined: "Cloud L is unable to accept this order. Please contact us for assistance.",
   cancelled: "This order has been cancelled. Please contact Cloud L if you have questions.",
 };
-const manualPaymentMethods = new Set(["telebirr_manual", "bunna_bank_qr_manual", "dashen_bank_manual"]);
 
 type RouteReq = ApiReq & { query?: Record<string, string | string[] | undefined> };
 export default async function handler(req: RouteReq, res: ApiRes) {
@@ -33,11 +32,11 @@ export default async function handler(req: RouteReq, res: ApiRes) {
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
-    const found = await client.query("SELECT id, status, fulfillment, payment_method, payment_status, subtotal_etb FROM public.orders WHERE id=$1 FOR UPDATE", [orderId]);
+    const found = await client.query("SELECT id, status, fulfillment, payment_method, payment_destination_snapshot, payment_status, subtotal_etb FROM public.orders WHERE id=$1 FOR UPDATE", [orderId]);
     if (!found.rowCount) { await client.query("ROLLBACK"); return reject(res, 404, "Order not found."); }
     const order = found.rows[0];
     if (body.action === "verify-payment") {
-      if (!manualPaymentMethods.has(order.payment_method) || order.payment_status !== "submitted" || body.confirmed !== true) { await client.query("ROLLBACK"); return reject(res, 409, "Only a submitted manual transfer can be marked paid, after checking the matching receiving account."); }
+      if (order.payment_method === "cash" || order.payment_status !== "submitted" || body.confirmed !== true) { await client.query("ROLLBACK"); return reject(res, 409, "Only a submitted manual transfer can be marked paid, after checking the matching receiving account."); }
       await client.query("UPDATE public.orders SET payment_status='paid', staff_payment_verified_at=now(), updated_at=now() WHERE id=$1", [orderId]);
       await client.query("INSERT INTO public.order_events (order_id, actor_type, actor_label, event_type, message, customer_visible) VALUES ($1,'staff','Cloud L staff','payment_verified','Manual payment verified by Cloud L staff.',true)", [orderId]);
       await client.query("COMMIT");
@@ -45,6 +44,7 @@ export default async function handler(req: RouteReq, res: ApiRes) {
     }
     const next = typeof body.status === "string" ? body.status : "";
     if (!transitions[order.status]?.includes(next)) { await client.query("ROLLBACK"); return reject(res, 409, "That status change is not allowed from the current state."); }
+    if (next === "preparing" && order.payment_method !== "cash" && order.payment_status !== "paid") { await client.query("ROLLBACK"); return reject(res, 409, "Verify the manual transfer before starting preparation."); }
     const clarificationMessage = typeof body.message === "string" ? body.message.trim() : "";
     if (next === "needs_clarification" && (clarificationMessage.length < 5 || clarificationMessage.length > 500)) {
       await client.query("ROLLBACK");

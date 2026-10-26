@@ -59,7 +59,7 @@ export default async function handler(req: Req, res: Res) {
     const address = validString(body.deliveryAddress, 400);
     if (name.length < 2 || !phone) return reply(res, 400, { error: "Enter your name and an Ethiopian mobile number, such as +251 9…" });
     if (!["pickup", "delivery", "dine_in"].includes(String(fulfillment))) return reply(res, 400, { error: "Choose pickup, delivery, or dine-in." });
-    if (!["cash", "telebirr_manual", "bunna_bank_qr_manual", "dashen_bank_manual"].includes(String(paymentMethod))) return reply(res, 400, { error: "Choose one of the available payment methods." });
+    if (typeof paymentMethod !== "string" || !/^[a-zA-Z0-9_-]{1,100}$/.test(paymentMethod)) return reply(res, 400, { error: "Choose one of the available payment methods." });
     if (fulfillment === "delivery" && address.length < 5) return reply(res, 400, { error: "Add the delivery address so staff can confirm coverage and fee." });
     if (rows.length < 1 || rows.length > 30) return reply(res, 400, { error: "Your order must contain 1–30 menu lines." });
     const items: (CatalogEntry & { quantity: number })[] = [];
@@ -77,6 +77,10 @@ export default async function handler(req: Req, res: Res) {
     const client = await pool.connect();
     try {
       await client.query("BEGIN");
+      const methodResult = await client.query(`SELECT p.id,p.label,p.payment_type,p.bank_name,p.recipient_name,p.phone_number,p.account_number,p.merchant_id,p.instructions,p.qr_asset_id FROM public.payment_methods p WHERE p.id=$1 AND p.is_enabled=true FOR SHARE`, [paymentMethod]);
+      if (!methodResult.rowCount) { await client.query("ROLLBACK"); return reply(res, 400, { error: "That payment method is unavailable. Refresh the page and choose another method." }); }
+      const method = methodResult.rows[0];
+      const paymentSnapshot = { id: method.id, label: method.label, payment_type: method.payment_type, bank_name: method.bank_name, recipient_name: method.recipient_name, phone_number: method.phone_number, account_number: method.account_number, merchant_id: method.merchant_id, instructions: method.instructions, qr_asset_id: method.qr_asset_id };
       let reference = "";
       for (let attempt = 0; attempt < 3; attempt++) {
         const candidate = makeReference();
@@ -85,9 +89,9 @@ export default async function handler(req: Req, res: Res) {
       }
       if (!reference) throw new Error("Unable to allocate order reference");
       const inserted = await client.query(
-        `INSERT INTO public.orders (public_reference, tracking_token_hash, payment_method, payment_status, fulfillment, customer_name, customer_phone, delivery_address, delivery_landmark, delivery_notes, special_instructions, guest_count, table_number, subtotal_etb, total_etb, wants_whatsapp_updates)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$14,$15) RETURNING id`,
-        [reference, tokenHash(trackingToken), paymentMethod, "unpaid", fulfillment, name, phone, fulfillment === "delivery" ? address : null, validString(body.deliveryLandmark, 200) || null, validString(body.deliveryNotes, 500) || null, validString(body.specialInstructions, 500) || null, Number.isInteger(body.guestCount) && Number(body.guestCount) >= 1 && Number(body.guestCount) <= 40 ? Number(body.guestCount) : null, validString(body.tableNumber, 40) || null, subtotal, body.wantsWhatsAppUpdates === true],
+        `INSERT INTO public.orders (public_reference, tracking_token_hash, payment_method, payment_destination_snapshot, payment_status, fulfillment, customer_name, customer_phone, delivery_address, delivery_landmark, delivery_notes, special_instructions, guest_count, table_number, subtotal_etb, total_etb, wants_whatsapp_updates)
+         VALUES ($1,$2,$3,$4::jsonb,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$15,$16) RETURNING id`,
+        [reference, tokenHash(trackingToken), paymentMethod, JSON.stringify(paymentSnapshot), "unpaid", fulfillment, name, phone, fulfillment === "delivery" ? address : null, validString(body.deliveryLandmark, 200) || null, validString(body.deliveryNotes, 500) || null, validString(body.specialInstructions, 500) || null, Number.isInteger(body.guestCount) && Number(body.guestCount) >= 1 && Number(body.guestCount) <= 40 ? Number(body.guestCount) : null, validString(body.tableNumber, 40) || null, subtotal, body.wantsWhatsAppUpdates === true],
       );
       const orderId = inserted.rows[0].id as string;
       for (const item of items) await client.query(
@@ -110,9 +114,10 @@ export default async function handler(req: Req, res: Res) {
     try {
       const result = await pool.query(
         `SELECT o.public_reference, o.created_at, o.status, o.fulfillment, o.payment_method, o.payment_status, o.subtotal_etb, o.delivery_fee_etb, o.total_etb, o.estimated_ready_at,
+                CASE WHEN o.status IN ('confirmed','preparing','ready_for_pickup','out_for_delivery','delivered','completed') THEN COALESCE(NULLIF(o.payment_destination_snapshot,'{}'::jsonb),jsonb_build_object('id',p.id,'label',p.label,'payment_type',p.payment_type,'bank_name',p.bank_name,'recipient_name',p.recipient_name,'phone_number',p.phone_number,'account_number',p.account_number,'merchant_id',p.merchant_id,'instructions',p.instructions,'qr_asset_id',p.qr_asset_id)) || jsonb_build_object('qr_code_data_url', q.data_url) ELSE jsonb_build_object('id',COALESCE(o.payment_destination_snapshot->>'id',p.id),'label',COALESCE(o.payment_destination_snapshot->>'label',p.label),'payment_type',COALESCE(o.payment_destination_snapshot->>'payment_type',p.payment_type)) END AS payment_destination_snapshot,
                 COALESCE(json_agg(json_build_object('name', i.name, 'nameAmharic', i.name_amharic, 'size', i.size, 'quantity', i.quantity, 'unitPriceEtb', i.unit_price_etb, 'lineTotalEtb', i.line_total_etb) ORDER BY i.id) FILTER (WHERE i.id IS NOT NULL), '[]') AS items,
                 COALESCE((SELECT json_agg(json_build_object('at', e.created_at, 'status', e.status, 'message', e.message) ORDER BY e.created_at) FROM public.order_events e WHERE e.order_id=o.id AND e.customer_visible=true), '[]') AS events
-         FROM public.orders o LEFT JOIN public.order_items i ON i.order_id=o.id WHERE o.tracking_token_hash=$1 GROUP BY o.id`,
+         FROM public.orders o LEFT JOIN public.order_items i ON i.order_id=o.id LEFT JOIN public.payment_methods p ON p.id=o.payment_method LEFT JOIN public.payment_qr_assets q ON q.id=COALESCE(NULLIF(o.payment_destination_snapshot->>'qr_asset_id',''),p.qr_asset_id) WHERE o.tracking_token_hash=$1 GROUP BY o.id,p.id,q.data_url`,
         [tokenHash(token)],
       );
       if (!result.rowCount) return reply(res, 404, { error: "We could not find that order. Check the private tracking link." });
@@ -133,7 +138,7 @@ export default async function handler(req: Req, res: Res) {
       const result = await client.query("SELECT id, payment_method, payment_status FROM public.orders WHERE tracking_token_hash=$1 FOR UPDATE", [tokenHash(token)]);
       if (!result.rowCount) { await client.query("ROLLBACK"); return reply(res, 404, { error: "We could not find that order." }); }
       const order = result.rows[0];
-      if (!["telebirr_manual", "bunna_bank_qr_manual", "dashen_bank_manual"].includes(order.payment_method) || !["awaiting_transfer", "submitted"].includes(order.payment_status)) { await client.query("ROLLBACK"); return reply(res, 409, { error: "This order is not waiting for a manual payment reference." }); }
+      if (order.payment_method === "cash" || !["awaiting_transfer", "submitted"].includes(order.payment_status)) { await client.query("ROLLBACK"); return reply(res, 409, { error: "This order is not waiting for a manual payment reference." }); }
       await client.query("UPDATE public.orders SET customer_payment_reference=$2, customer_payment_submitted_at=now(), payment_status='submitted', updated_at=now() WHERE id=$1", [order.id, paymentReference]);
       await client.query("INSERT INTO public.order_events (order_id, actor_type, event_type, message, customer_visible) VALUES ($1,'customer','payment_submitted','Manual payment reference submitted — awaiting staff verification.',true)", [order.id]);
       await client.query("COMMIT");
