@@ -34,13 +34,15 @@ Last updated: 26 October 2026.
 
 Test orders placed on production (TEST, TEST2, TEST3 and the first CL-261021 order) must stay cancelled or declined. There is one Neon database shared by Preview and production.
 
-## Feature code complete locally; production website deployment pending
+## Deployed; first staff validation still pending
 
 - Production Neon migration 004 is applied after temporary-branch validation. It seeded Cash, Telebirr, Bunna QR, and Dashen; added a versioned QR path, immutable order snapshots, and payment-method settings/audit tables. Read-only production checks found all four methods, zero unknown payment methods, and zero empty snapshots. No order or payment was created for this release.
-- The matching website/API source builds and type-checks locally. It has not yet been pushed/deployed, so the new dashboard settings and preparation gate are not yet live.
+- Commit `e931e54` is pushed to `main` and live. The production JavaScript bundle matches the local build byte-for-byte.
+- The public payment-method API returns only method IDs, labels, and payment types for all four seeded methods. The admin settings endpoint returns 401 without staff authentication. The versioned QR asset returns HTTP 200 as a 1,462-byte PNG.
+- No staff login, real order, transfer, or production payment was used for this smoke test. The bank paths and payment-before-preparation behavior have not been exercised with a live order.
 
-- **Payment destination settings:** In the authenticated staff dashboard, owner-authorized staff can add, edit, and disable manual bank/wallet methods; enter the display name, bank/institution, recipient, account/phone/merchant ID, instructions, and optional QR image. Keep method IDs immutable and disable rather than delete methods. Checkout receives only enabled method names; transfer details appear on the private tracking page only after staff confirms the order and total. Each order keeps the exact destination snapshot selected at order time, unaffected by later edits. Log each create, edit, and enable/disable action. All transfers remain manual and require staff verification.
-- **Payment-to-preparation gate:** For a manual-transfer order, the dashboard and API block **Start preparing** until staff verify funds in the matching Cloud L account and mark the payment paid. Cash orders may proceed without prepayment. Payment verification does not automatically advance order status; after verification staff explicitly selects **Start preparing**.
+- **Payment destination settings (live):** In the authenticated staff dashboard, owner-authorized staff can add, edit, and disable manual bank/wallet methods; enter the display name, bank/institution, recipient, account/phone/merchant ID, instructions, and optional QR image. Keep method IDs immutable and disable rather than delete methods. Checkout receives only enabled method names; transfer details appear on the private tracking page only after staff confirms the order and total. Each order keeps the exact destination snapshot selected at order time, unaffected by later edits. Log each create, edit, and enable/disable action. All transfers remain manual and require staff verification.
+- **Payment-to-preparation gate (live):** For a manual-transfer order, the dashboard and API block **Start preparing** until staff verify funds in the matching Cloud L account and mark the payment paid. Cash orders may proceed without prepayment. Payment verification does not automatically advance order status; after verification staff explicitly selects **Start preparing**. The gate is code-reviewed but has not been tested using a production order.
 
 ## Not built yet
 
