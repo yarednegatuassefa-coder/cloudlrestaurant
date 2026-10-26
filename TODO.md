@@ -27,7 +27,7 @@ Last updated: 26 October 2026.
 - Dashen Bank account 0194970006011 is under Cloud L Trading PLC. Bunna and Dashen are separate payment destinations.
 - Transfer instructions are shown only after staff confirms the order and exact total. Customers may submit a transaction reference; staff must verify it against the correct receiving account before marking it paid.
 - Neon migration 002 was tested on a temporary branch and applied to production with approval. It expands the accepted method values without changing existing order records.
-- Commit `d1d8912` is pushed to `main` and is live. The production homepage serves the matching build bundle; the Bunna QR image and order API route return successfully. The deployed bundle contains the method identifiers and payment details.
+- Commit `d1d8912` is pushed to `main` and is live. The public payment-method API exposes only method IDs, labels, and types; recipient/account/QR details are read from the order’s private snapshot after staff confirmation, or by authenticated staff.
 - No production order or payment was placed to test Bunna or Dashen. Do not treat those paths as end-to-end payment-verified.
 
 ## Test data
@@ -38,6 +38,7 @@ Test orders placed on production (TEST, TEST2, TEST3 and the first CL-261021 ord
 
 - Production Neon migration 004 is applied after temporary-branch validation. It seeded Cash, Telebirr, Bunna QR, and Dashen; added a versioned QR path, immutable order snapshots, and payment-method settings/audit tables. Read-only production checks found all four methods, zero unknown payment methods, and zero empty snapshots. No order or payment was created for this release.
 - Commit `e931e54` is pushed to `main` and live. The production JavaScript bundle matches the local build byte-for-byte.
+- Follow-up commit `91f81b4` fixes text-only edits for destinations with existing QR assets; new destinations start disabled and must be explicitly reviewed and enabled.
 - The public payment-method API returns only method IDs, labels, and payment types for all four seeded methods. The admin settings endpoint returns 401 without staff authentication. The versioned QR asset returns HTTP 200 as a 1,462-byte PNG.
 - No staff login, real order, transfer, or production payment was used for this smoke test. The bank paths and payment-before-preparation behavior have not been exercised with a live order.
 
