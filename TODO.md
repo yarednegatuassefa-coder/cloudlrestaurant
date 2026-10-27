@@ -2,7 +2,7 @@
 
 **Public brand:** Cloud L. **Hours:** daily, 7:00 a.m.–9:00 p.m. **Address:** Queen Elizabeth II Street, Kebena, Addis Ababa. **Telebirr:** +251 901 120 012, manual transfers only; recipient name shown to customers: Lidia. **Bunna Bank QR:** Cloud L Trading PLC, merchant ID 450043. **Dashen Bank:** Cloud L Trading PLC, account 0194970006011.
 
-Last updated: 26 October 2026.
+Last updated: 27 October 2026.
 
 ## Live and tested on production (cloudlrestaurant.com)
 
@@ -52,6 +52,15 @@ Test orders placed on production (TEST, TEST2, TEST3 and the first CL-261021 ord
 - The order API takes the same per-item transaction lock as a staff toggle, then rechecks every selected menu ID before inserting an order. This serializes a first-time sold-out override against checkout; stale carts that lose the race get a helpful error and no order is created.
 - Existing production availability table was read-only checked on 26 October: 0 overrides and 0 items marked sold out. Do not change a real item's availability during validation.
 
+## Implemented on feature branch — one-tap reorder (checklist item 31; not deployed)
+
+- From the existing private tracking link of a completed, delivered, declined, or cancelled order, let the customer add that order's items to the persistent cart in one action; do not offer reorder while an order is still being processed.
+- Match historical lines to current catalog entries and current prices, preserve each item/size and quantity, and identify items that are discontinued or currently sold out instead of silently adding them. If current availability cannot be verified, leave the cart unchanged and ask the customer to try again.
+- If the current cart already contains items, ask before replacing it; never silently discard the customer's cart.
+- Reorder creates only a new cart. It does not reuse the old order's customer, delivery, fulfillment, payment, or confirmation details; checkout and its server-side availability check are still required.
+- Keep the feature on a separate GitHub feature branch. Do not write to the shared Neon database, submit a production order, or deploy to production while implementing it.
+- Local validation: production build passed; targeted lint passed with 0 warnings/errors; full lint passed with 0 errors and 15 warnings in unchanged project files. No browser checkout, Neon write, production order, or deployment was performed.
+
 ## Not built yet
 
 - Allergen and dietary data and filters (do not guess food facts; verify with the kitchen).
@@ -60,7 +69,7 @@ Test orders placed on production (TEST, TEST2, TEST3 and the first CL-261021 ord
 - Automatic delivery fee calculator (staff set the fee per order).
 - QR pickup pass for real orders (the Manus demo was never in this repo).
 - Dish descriptions (checklist items 5 and 6).
-- Customer reorder, favorites, order editing, cancellation flow.
+- Customer favorites, order editing, and cancellation flow.
 - Automatic WhatsApp / Telegram messages, kitchen display, printing, audit log, inventory.
 
 ## Needs owner decision

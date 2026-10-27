@@ -106,6 +106,7 @@ const formatMoney = (value: number) => value.toLocaleString("en-US");
 function App() {
   const cart = useSyncExternalStore(subscribeToCart, getCartSnapshot, getServerCartSnapshot);
   const [cartOpen, setCartOpen] = useState(false);
+  const [cartNotice, setCartNotice] = useState("");
   const [trackingToken, setTrackingToken] = useState("");
   const [staffMode, setStaffMode] = useState(false);
   const [soldOutItemIds, setSoldOutItemIds] = useState<Set<string>>(() => new Set());
@@ -158,6 +159,17 @@ function App() {
       : current.map((line) => line.id === id ? { ...line, quantity } : line));
   };
 
+  const reorderFromOrder = (items: CartLine[], warnings: string[]) => {
+    if (items.length === 0) return false;
+    if (cart.length > 0 && !window.confirm("Your cart already has items. Replace it with the items from this previous order?")) return false;
+    updateCart(() => items);
+    const warningText = warnings.length ? `Not added or adjusted: ${warnings.join(", ")}. ` : "";
+    setCartNotice(`${warningText}Today's menu prices apply. Review current availability and your order details before sending a new request.`);
+    window.location.hash = "#food";
+    setCartOpen(true);
+    return true;
+  };
+
   const itemCount = cart.reduce((total, item) => total + item.quantity, 0);
   const subtotal = cart.reduce((total, item) => total + item.price * item.quantity, 0);
   const whatsappMessage = [
@@ -170,7 +182,7 @@ function App() {
     ? `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(whatsappMessage)}`
     : undefined;
 
-  if (trackingToken) return <OrderTrackingPage token={trackingToken} />;
+  if (trackingToken) return <OrderTrackingPage token={trackingToken} onReorder={reorderFromOrder} />;
   if (staffMode) return <StaffOrders />;
 
   return (
@@ -295,11 +307,13 @@ function App() {
         items={cart}
         itemCount={itemCount}
         subtotal={subtotal}
+        notice={cartNotice}
         isOpen={cartOpen}
         whatsappHref={whatsappHref}
         onOrderPlaced={() => updateCart(() => emptyCart)}
         onOpen={() => setCartOpen(true)}
         onClose={() => setCartOpen(false)}
+        onDismissNotice={() => setCartNotice("")}
         onSetQuantity={setQuantity}
       />
     </div>
