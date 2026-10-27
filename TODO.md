@@ -68,8 +68,9 @@ Test orders placed on production (TEST, TEST2, TEST3 and the first CL-261021 ord
 - Save only stable menu item IDs in this browser's local storage; do not require an account or send favorites to the server, Neon, analytics, or third parties. Explain that favorites are device/browser-specific.
 - Drink favorites refer to the menu item, not a selected wine size; preserve the existing variant, sold-out, and add-to-cart behavior.
 - Food category links follow the sections visible after search and Favorites filtering so they never point to hidden content.
+- Add automated browser E2E tests for bilingual food/drink heart toggles, keyboard activation, local persistence, favorites-only filters, empty states, and category links. Run them against local Vite with menu availability mocked; do not access Neon or create orders.
 - Keep this change on a separate feature branch. Do not write to Neon, submit a production order, or deploy to production.
-- Local validation: production build passed; focused lint had 0 errors and 1 pre-existing warning in the drinks catalog export; full lint had 0 errors and 15 existing warnings. No interactive browser or screen-reader test, Neon write, production order, or deployment was performed.
+- Validation: `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium npm run test:e2e` passed 3/3; the command first type-checks the config/specs. Production build passed; full lint had 0 errors and 15 existing warnings; npm reported 0 vulnerabilities. Tests ran against local Vite with availability mocked. No Neon write, production order, production service, deployment, or manual screen-reader test was performed.
 
 ## Not built yet
 
