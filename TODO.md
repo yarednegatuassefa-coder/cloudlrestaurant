@@ -61,6 +61,16 @@ Test orders placed on production (TEST, TEST2, TEST3 and the first CL-261021 ord
 - Keep the feature on a separate GitHub feature branch. Do not write to the shared Neon database, submit a production order, or deploy to production while implementing it.
 - Local validation: production build passed; targeted lint passed with 0 warnings/errors; full lint passed with 0 errors and 15 warnings in unchanged project files. No browser checkout, Neon write, production order, or deployment was performed.
 
+## Implemented on feature branch — favorites / heart system (checklist item 32; not deployed)
+
+- Add a subtle, refined heart control to food and drink menu cards. It must be keyboard-accessible, expose its saved state to assistive technology, and use bilingual English/Amharic labels that fit Cloud L's navy, terracotta, and cream design.
+- Let customers filter each menu to their saved favorites, show the relevant saved-item count, and explain when the filtered list is empty.
+- Save only stable menu item IDs in this browser's local storage; do not require an account or send favorites to the server, Neon, analytics, or third parties. Explain that favorites are device/browser-specific.
+- Drink favorites refer to the menu item, not a selected wine size; preserve the existing variant, sold-out, and add-to-cart behavior.
+- Food category links follow the sections visible after search and Favorites filtering so they never point to hidden content.
+- Keep this change on a separate feature branch. Do not write to Neon, submit a production order, or deploy to production.
+- Local validation: production build passed; focused lint had 0 errors and 1 pre-existing warning in the drinks catalog export; full lint had 0 errors and 15 existing warnings. No interactive browser or screen-reader test, Neon write, production order, or deployment was performed.
+
 ## Not built yet
 
 - Allergen and dietary data and filters (do not guess food facts; verify with the kitchen).
@@ -69,7 +79,7 @@ Test orders placed on production (TEST, TEST2, TEST3 and the first CL-261021 ord
 - Automatic delivery fee calculator (staff set the fee per order).
 - QR pickup pass for real orders (the Manus demo was never in this repo).
 - Dish descriptions (checklist items 5 and 6).
-- Customer favorites, order editing, and cancellation flow.
+- Customer order editing and cancellation flow.
 - Automatic WhatsApp / Telegram messages, kitchen display, printing, audit log, inventory.
 
 ## Needs owner decision

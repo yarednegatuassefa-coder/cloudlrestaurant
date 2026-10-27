@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import "./DrinksMenu.css";
+import FavoriteButton from "./FavoriteButton";
 
 export type DrinkCategory =
   | "Soft drinks & bottled water"
@@ -252,6 +253,8 @@ export type DrinksMenuProps = {
   /** Map drink IDs plus `wine-category` to WebDev-managed image URLs. */
   imageUrlById?: Partial<Record<string, string>>;
   soldOutItemIds?: Set<string>;
+  favoriteIds?: string[];
+  onToggleFavorite?: (id: string) => void;
 };
 
 const formatPrice = (price: number, currencySuffix: string) =>
@@ -262,16 +265,22 @@ export default function DrinksMenu({
   currencySuffix = "",
   imageUrlById = {},
   soldOutItemIds = new Set<string>(),
+  favoriteIds = [],
+  onToggleFavorite,
 }: DrinksMenuProps) {
   const [query, setQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState<CategoryFilter>("All drinks");
+  const [favoritesOnly, setFavoritesOnly] = useState(false);
   const [selectedVariants, setSelectedVariants] = useState<Record<string, string>>({});
+  const favoriteIdSet = useMemo(() => new Set(favoriteIds), [favoriteIds]);
+  const favoriteCount = DRINK_MENU_ITEMS.filter((item) => favoriteIdSet.has(item.id)).length;
   const normalizedQuery = query.trim().toLocaleLowerCase();
 
   const visibleItems = useMemo(
     () =>
       DRINK_MENU_ITEMS.filter((item) => {
         const matchesCategory = activeCategory === "All drinks" || item.category === activeCategory;
+        const matchesFavorites = !favoritesOnly || favoriteIdSet.has(item.id);
         const searchableText = [
           item.name,
           item.nameAmharic,
@@ -282,9 +291,9 @@ export default function DrinksMenu({
         ]
           .join(" ")
           .toLocaleLowerCase();
-        return matchesCategory && (!normalizedQuery || searchableText.includes(normalizedQuery));
+        return matchesCategory && matchesFavorites && (!normalizedQuery || searchableText.includes(normalizedQuery));
       }),
-    [activeCategory, normalizedQuery],
+    [activeCategory, favoritesOnly, favoriteIdSet, normalizedQuery],
   );
 
   const visibleCategories = CATEGORY_META.filter(({ id }) =>
@@ -350,7 +359,18 @@ export default function DrinksMenu({
             />
           </label>
 
-          <div className="drinks-menu__filters" role="group" aria-label="Filter drinks by category">
+          <div className="drinks-menu__filters" role="group" aria-label="Filter drinks by category or favorites">
+            {onToggleFavorite && <button
+              className={`drinks-menu__filter${favoritesOnly ? " is-active" : ""}`}
+              type="button"
+              aria-pressed={favoritesOnly}
+              onClick={() => setFavoritesOnly((value) => !value)}
+            >
+              <span aria-hidden="true">♥</span>
+              <span>{favoritesOnly ? "Show all" : "Favorites"}</span>
+              <span className="drinks-menu__filter-amharic" lang="am">{favoritesOnly ? "ሁሉንም አሳይ" : "ተወዳጆች"}</span>
+              <span aria-live="polite">{favoriteCount}</span>
+            </button>}
             {(["All drinks", ...CATEGORY_META.map(({ id }) => id)] as CategoryFilter[]).map(
               (category) => {
                 const meta = CATEGORY_META.find((entry) => entry.id === category);
@@ -369,11 +389,16 @@ export default function DrinksMenu({
               },
             )}
           </div>
+          {onToggleFavorite && <p className="drinks-menu__favorites-note">Saved only in this browser / በዚህ አሳሽ ላይ ብቻ ይቀመጣሉ።</p>}
         </div>
 
         {visibleItems.length === 0 ? (
           <p className="drinks-menu__empty" role="status">
-            No drinks match that search. / በዚህ ፍለጋ የሚመሳሰሉ መጠጦች የሉም።
+            {favoritesOnly
+              ? favoriteCount === 0
+                ? "No drink favorites yet. Tap a heart to save a drink. / ገና የመጠጥ ተወዳጅ የለም፤ ለማስቀመጥ የልብ ምልክቱን ይጫኑ።"
+                : "No saved drinks match this search or category. / ከዚህ ፍለጋ ወይም ምድብ ጋር የሚዛመድ የተቀመጠ መጠጥ የለም።"
+              : "No drinks match that search. / በዚህ ፍለጋ የሚመሳሰሉ መጠጦች የሉም።"}
           </p>
         ) : (
           <div className="drinks-menu__sections">
@@ -448,6 +473,7 @@ export default function DrinksMenu({
                                       <h4 className="drinks-menu__item-name">{item.name}</h4>
                                       <p className="drinks-menu__amharic" lang="am">{item.nameAmharic}</p>
                                     </div>
+                                    {onToggleFavorite && <FavoriteButton itemId={item.id} name={item.name} nameAmharic={item.nameAmharic} isFavorite={favoriteIdSet.has(item.id)} onToggle={onToggleFavorite} />}
                                   </div>
                                   {item.description && (
                                     <p className="drinks-menu__description">{item.description}</p>

@@ -5,6 +5,7 @@ import OrderCart from "./components/OrderCart";
 import OrderTrackingPage from "./components/OrderTrackingPage";
 import StaffOrders from "./components/StaffOrders";
 import type { CartLine, OrderSelection } from "./components/orderTypes";
+import { getFavoriteIdsSnapshot, getServerFavoriteIdsSnapshot, subscribeToFavoriteIds, toggleFavoriteId } from "./components/favoritesStore";
 import "./site.css";
 
 const mapSearchUrl = "https://www.google.com/maps/dir/?api=1&destination=2QJF%2BXR2%2C%20Kebena%2C%20Addis%20Ababa%2C%20Ethiopia";
@@ -105,6 +106,7 @@ const formatMoney = (value: number) => value.toLocaleString("en-US");
 
 function App() {
   const cart = useSyncExternalStore(subscribeToCart, getCartSnapshot, getServerCartSnapshot);
+  const favoriteIds = useSyncExternalStore(subscribeToFavoriteIds, getFavoriteIdsSnapshot, getServerFavoriteIdsSnapshot);
   const [cartOpen, setCartOpen] = useState(false);
   const [cartNotice, setCartNotice] = useState("");
   const [trackingToken, setTrackingToken] = useState("");
@@ -279,8 +281,8 @@ function App() {
           <p>43 dishes, shown in English and Amharic.<br />Prices in ETB · Fasting choices are plant-based.</p>
         </section>
 
-        <FoodMenu onAddToOrder={addToCart} soldOutItemIds={soldOutItemIds} />
-        <DrinksMenu currencySuffix="ETB" onAddToOrder={addToCart} soldOutItemIds={soldOutItemIds} />
+        <FoodMenu onAddToOrder={addToCart} soldOutItemIds={soldOutItemIds} favoriteIds={favoriteIds} onToggleFavorite={toggleFavoriteId} />
+        <DrinksMenu currencySuffix="ETB" onAddToOrder={addToCart} soldOutItemIds={soldOutItemIds} favoriteIds={favoriteIds} onToggleFavorite={toggleFavoriteId} />
 
         <section className="visit-section" id="visit">
           <div className="visit-inner content-wrap">

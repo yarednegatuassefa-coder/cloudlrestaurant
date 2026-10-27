@@ -120,6 +120,13 @@
   gap: 0.55rem;
 }
 
+.drinks-menu__favorites-note {
+  margin: -0.35rem 0 0;
+  color: var(--drinks-muted);
+  font-size: 0.72rem;
+  line-height: 1.5;
+}
+
 .drinks-menu__filter {
   display: inline-flex;
   min-height: 2.6rem;
