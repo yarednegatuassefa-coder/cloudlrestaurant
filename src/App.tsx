@@ -278,15 +278,15 @@ function App() {
                     <button
                       className="featured-add"
                       type="button"
-                      disabled={soldOutItemIds.has(dish.name === "Beyaynetu" ? "food-fasting-beyaynetu" : dish.name === "Tibs" ? "food-non-fasting-tibs" : "food-american-special-pizza")}
+                      disabled={soldOutItemIds.has(dish.name === "Beyaynetu" ? "food-fasting-beyaynetu" : dish.name === "Tibs" ? "food-non-fasting-tibs" : "food-american-pizza")}
                       onClick={() => addToCart({
-                        id: dish.name === "Beyaynetu" ? "food-fasting-beyaynetu" : dish.name === "Tibs" ? "food-non-fasting-tibs" : "food-american-special-pizza",
+                        id: dish.name === "Beyaynetu" ? "food-fasting-beyaynetu" : dish.name === "Tibs" ? "food-non-fasting-tibs" : "food-american-pizza",
                         name: dish.name,
                         nameAmharic: dish.amharic,
                         price: Number(dish.price),
                       })}
                     >
-                      {soldOutItemIds.has(dish.name === "Beyaynetu" ? "food-fasting-beyaynetu" : dish.name === "Tibs" ? "food-non-fasting-tibs" : "food-american-special-pizza") ? "Currently unavailable" : "Add to order"} <span aria-hidden="true">↗</span>
+                      {soldOutItemIds.has(dish.name === "Beyaynetu" ? "food-fasting-beyaynetu" : dish.name === "Tibs" ? "food-non-fasting-tibs" : "food-american-pizza") ? "Currently unavailable" : "Add to order"} <span aria-hidden="true">↗</span>
                     </button>
                   </div>
                 </article>
