@@ -5,6 +5,7 @@ import catalogData from "./_catalog.json" with { type: "json" };
 type Req = { method?: string; headers: Record<string, string | string[] | undefined>; body?: unknown; socket?: { remoteAddress?: string } };
 type Res = { status: (code: number) => Res; setHeader: (name: string, value: string | number) => void; json: (data: unknown) => void; end: () => void };
 type CatalogEntry = { id: string; name: string; nameAmharic: string; price: number; size?: string };
+type HistoricalOrderItem = { menuItemId?: string | null; name: string; nameAmharic: string; size: string | null; quantity: number; unitPriceEtb: number; lineTotalEtb: number };
 const catalog = new Map((catalogData as CatalogEntry[]).map((item) => [item.id, item]));
 const rate = new Map<string, { count: number; until: number }>();
 
@@ -130,13 +131,37 @@ export default async function handler(req: Req, res: Res) {
       const result = await pool.query(
         `SELECT o.public_reference, o.created_at, o.status, o.fulfillment, o.payment_method, o.payment_status, o.subtotal_etb, o.delivery_fee_etb, o.total_etb, o.estimated_ready_at,
                 CASE WHEN o.status IN ('confirmed','preparing','ready_for_pickup','out_for_delivery','delivered','completed') THEN COALESCE(NULLIF(o.payment_destination_snapshot,'{}'::jsonb),jsonb_build_object('id',p.id,'label',p.label,'payment_type',p.payment_type,'bank_name',p.bank_name,'recipient_name',p.recipient_name,'phone_number',p.phone_number,'account_number',p.account_number,'merchant_id',p.merchant_id,'instructions',p.instructions,'qr_asset_id',p.qr_asset_id)) || jsonb_build_object('qr_code_data_url', q.data_url) ELSE jsonb_build_object('id',COALESCE(o.payment_destination_snapshot->>'id',p.id),'label',COALESCE(o.payment_destination_snapshot->>'label',p.label),'payment_type',COALESCE(o.payment_destination_snapshot->>'payment_type',p.payment_type)) END AS payment_destination_snapshot,
-                COALESCE(json_agg(json_build_object('name', i.name, 'nameAmharic', i.name_amharic, 'size', i.size, 'quantity', i.quantity, 'unitPriceEtb', i.unit_price_etb, 'lineTotalEtb', i.line_total_etb) ORDER BY i.id) FILTER (WHERE i.id IS NOT NULL), '[]') AS items,
+                COALESCE(json_agg(json_build_object('menuItemId', i.menu_item_id, 'name', i.name, 'nameAmharic', i.name_amharic, 'size', i.size, 'quantity', i.quantity, 'unitPriceEtb', i.unit_price_etb, 'lineTotalEtb', i.line_total_etb) ORDER BY i.id) FILTER (WHERE i.id IS NOT NULL), '[]') AS items,
                 COALESCE((SELECT json_agg(json_build_object('at', e.created_at, 'status', e.status, 'message', e.message) ORDER BY e.created_at) FROM public.order_events e WHERE e.order_id=o.id AND e.customer_visible=true), '[]') AS events
          FROM public.orders o LEFT JOIN public.order_items i ON i.order_id=o.id LEFT JOIN public.payment_methods p ON p.id=o.payment_method LEFT JOIN public.payment_qr_assets q ON q.id=COALESCE(NULLIF(o.payment_destination_snapshot->>'qr_asset_id',''),p.qr_asset_id) WHERE o.tracking_token_hash=$1 GROUP BY o.id,p.id,q.data_url`,
         [tokenHash(token)],
       );
       if (!result.rowCount) return reply(res, 404, { error: "We could not find that order. Check the private tracking link." });
-      return reply(res, 200, { order: result.rows[0] });
+      const order = result.rows[0] as Record<string, unknown> & { items?: HistoricalOrderItem[] };
+      const historicalItems = Array.isArray(order.items) ? order.items : [];
+      const reorderItems = new Map<string, CatalogEntry & { quantity: number }>();
+      const reorderWarnings: string[] = [];
+      for (const item of historicalItems) {
+        const currentItem = typeof item.menuItemId === "string" ? catalog.get(item.menuItemId) : undefined;
+        const label = `${item.name}${item.size ? ` (${item.size})` : ""}`;
+        if (!currentItem) {
+          reorderWarnings.push(`${label} — no longer on the current menu`);
+          continue;
+        }
+        const previousQuantity = reorderItems.get(currentItem.id)?.quantity ?? 0;
+        const requestedQuantity = previousQuantity + (Number.isInteger(item.quantity) && item.quantity > 0 ? item.quantity : 1);
+        if (requestedQuantity > 10) reorderWarnings.push(`${currentItem.name} — quantity limited to 10`);
+        reorderItems.set(currentItem.id, { ...currentItem, quantity: Math.min(10, requestedQuantity) });
+      }
+      const displayItems = historicalItems.map((item) => ({ name: item.name, nameAmharic: item.nameAmharic, size: item.size, quantity: item.quantity, unitPriceEtb: item.unitPriceEtb, lineTotalEtb: item.lineTotalEtb }));
+      return reply(res, 200, {
+        order: {
+          ...order,
+          items: displayItems,
+          reorderItems: [...reorderItems.values()],
+          reorderWarnings: [...new Set(reorderWarnings)],
+        },
+      });
     } catch (error) {
       console.error("order_track_failed", error instanceof Error ? error.message : "unknown");
       return reply(res, 503, { error: "Tracking is temporarily unavailable. Please try again shortly." });

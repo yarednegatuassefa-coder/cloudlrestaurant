@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import type { OrderSelection } from "./orderTypes";
+import FavoriteButton from "./FavoriteButton";
 
 type Item = { en: string; am: string; price: string; breakfast?: boolean };
 type Section = {
@@ -16,6 +17,8 @@ type Section = {
 type FoodMenuProps = {
   onAddToOrder?: (item: OrderSelection) => void;
   soldOutItemIds?: Set<string>;
+  favoriteIds?: string[];
+  onToggleFavorite?: (id: string) => void;
 };
 type DishImage = { src: string; alt: string; illustrative: boolean };
 
@@ -261,21 +264,34 @@ const breakfastTag = {
   verticalAlign: "middle",
 };
 
-export default function FoodMenu({ onAddToOrder, soldOutItemIds = new Set<string>() }: FoodMenuProps) {
+export default function FoodMenu({
+  onAddToOrder,
+  soldOutItemIds = new Set<string>(),
+  favoriteIds = [],
+  onToggleFavorite,
+}: FoodMenuProps) {
   const [query, setQuery] = useState("");
+  const [favoritesOnly, setFavoritesOnly] = useState(false);
+  const favoriteIdSet = useMemo(() => new Set(favoriteIds), [favoriteIds]);
+  const favoriteCount = sections.reduce(
+    (count, section) => count + section.items.filter((item) => favoriteIdSet.has(foodItemOrderId(section.id, item.en))).length,
+    0,
+  );
   const normalizedQuery = query.trim().toLocaleLowerCase();
   const visibleSections = useMemo(
     () => sections
       .map((section) => ({
         ...section,
-        items: section.items.filter((item) =>
-          `${item.en} ${item.am} ${item.price} ${item.breakfast ? "breakfast" : ""}`
+        items: section.items.filter((item) => {
+          const matchesSearch = `${item.en} ${item.am} ${item.price} ${item.breakfast ? "breakfast" : ""}`
             .toLocaleLowerCase()
-            .includes(normalizedQuery),
-        ),
+            .includes(normalizedQuery);
+          const isFavorite = favoriteIdSet.has(foodItemOrderId(section.id, item.en));
+          return matchesSearch && (!favoritesOnly || isFavorite);
+        }),
       }))
       .filter((section) => section.items.length > 0),
-    [normalizedQuery],
+    [normalizedQuery, favoritesOnly, favoriteIdSet],
   );
 
   return (
@@ -295,13 +311,21 @@ export default function FoodMenu({ onAddToOrder, soldOutItemIds = new Set<string
             />
           </label>
           <nav className="fm__tabs" aria-label="Food menu categories">
-            {sections.map((section) => (
+            {visibleSections.map((section) => (
               <a key={section.id} href={`#${section.id}`}>
                 {section.title.replace("Ethiopian ", "")}
               </a>
             ))}
           </nav>
         </div>
+        {onToggleFavorite && <div className="fm__favorite-tools">
+          <button className={`fm__favorite-filter${favoritesOnly ? " is-active" : ""}`} type="button" aria-pressed={favoritesOnly} onClick={() => setFavoritesOnly((value) => !value)}>
+            <span aria-hidden="true">♥</span>
+            <span>{favoritesOnly ? "All dishes" : "Favorites"} / {favoritesOnly ? "ሁሉም ምግቦች" : "ተወዳጆች"}</span>
+            <strong aria-live="polite">{favoriteCount}</strong>
+          </button>
+          <p className="fm__favorites-note">Saved only in this browser / በዚህ አሳሽ ላይ ብቻ ይቀመጣሉ።</p>
+        </div>}
         <div className="fm__sections">
           {visibleSections.map((section) => (
             <section className="fm__category" key={section.id} id={section.id}>
@@ -388,6 +412,7 @@ export default function FoodMenu({ onAddToOrder, soldOutItemIds = new Set<string
                         <strong className="fm__price">
                           {item.price}<small> ETB</small>
                         </strong>
+                        {onToggleFavorite && <FavoriteButton itemId={itemId} name={item.en} nameAmharic={item.am} isFavorite={favoriteIdSet.has(itemId)} onToggle={onToggleFavorite} />}
                         <button
                           className="fm__add"
                           type="button"
@@ -410,7 +435,11 @@ export default function FoodMenu({ onAddToOrder, soldOutItemIds = new Set<string
             </section>
           ))}
           {visibleSections.length === 0 && (
-            <p className="fm__empty">No dishes found. Try another search.</p>
+            <p className="fm__empty" role="status">{favoritesOnly
+              ? favoriteCount === 0
+                ? "No food favorites yet. Tap a heart to save a dish. / ገና የምግብ ተወዳጅ የለም፤ ለማስቀመጥ የልብ ምልክቱን ይጫኑ።"
+                : "No saved dishes match this search. / ከዚህ ፍለጋ ጋር የሚዛመድ የተቀመጠ ምግብ የለም።"
+              : "No dishes found. Try another search. / ምንም ምግብ አልተገኘም፤ ሌላ ይፈልጉ።"}</p>
           )}
         </div>
       </div>
