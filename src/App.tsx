@@ -112,6 +112,7 @@ function App() {
   const [trackingToken, setTrackingToken] = useState("");
   const [staffMode, setStaffMode] = useState(false);
   const [soldOutItemIds, setSoldOutItemIds] = useState<Set<string>>(() => new Set());
+  const [navScrolled, setNavScrolled] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -129,6 +130,13 @@ function App() {
     const timer = window.setInterval(() => void refreshAvailability(), 30_000);
     window.addEventListener("focus", refreshAvailability);
     return () => { active = false; window.clearInterval(timer); window.removeEventListener("focus", refreshAvailability); };
+  }, []);
+
+  useEffect(() => {
+    const updateNav = () => setNavScrolled(window.scrollY > 24);
+    updateNav();
+    window.addEventListener("scroll", updateNav, { passive: true });
+    return () => window.removeEventListener("scroll", updateNav);
   }, []);
 
   useEffect(() => {
@@ -191,7 +199,7 @@ function App() {
     <div className="cloudl-app">
       <main id="top" className="cloudl-site">
         <section className="hero-shell" aria-label="Cloud L introduction">
-          <header className="site-nav">
+          <header className={`site-nav${navScrolled ? " is-scrolled" : ""}`}>
             <a className="site-brand" href="#top" aria-label="Cloud L home">
               <img src="/assets/restaurant/cloud-l-logo.svg" alt="Cloud L" />
             </a>
@@ -260,12 +268,26 @@ function App() {
               {featured.map((dish) => (
                 <article className="featured-card" key={dish.number}>
                   <div className="featured-photo">
-                    <img src={dish.image} alt={dish.alt} loading="lazy" />
+                    <img src={dish.image} alt={dish.alt} loading="lazy" decoding="async" />
                     <span className="featured-number">{dish.number}</span>
+                    <span className="featured-image-caption">Cloud L · Signature selection</span>
                   </div>
                   <div className="featured-details">
                     <p>{dish.label}</p>
-                    <div><div><h3>{dish.name}</h3><span lang="am">{dish.amharic}</span></div><strong>{dish.price}<small> ETB</small></strong></div>
+                    <div className="featured-details__main"><div><h3>{dish.name}</h3><span lang="am">{dish.amharic}</span></div><strong>{dish.price}<small> ETB</small></strong></div>
+                    <button
+                      className="featured-add"
+                      type="button"
+                      disabled={soldOutItemIds.has(dish.name === "Beyaynetu" ? "food-fasting-beyaynetu" : dish.name === "Tibs" ? "food-non-fasting-tibs" : "food-american-special-pizza")}
+                      onClick={() => addToCart({
+                        id: dish.name === "Beyaynetu" ? "food-fasting-beyaynetu" : dish.name === "Tibs" ? "food-non-fasting-tibs" : "food-american-special-pizza",
+                        name: dish.name,
+                        nameAmharic: dish.amharic,
+                        price: Number(dish.price),
+                      })}
+                    >
+                      {soldOutItemIds.has(dish.name === "Beyaynetu" ? "food-fasting-beyaynetu" : dish.name === "Tibs" ? "food-non-fasting-tibs" : "food-american-special-pizza") ? "Currently unavailable" : "Add to order"} <span aria-hidden="true">↗</span>
+                    </button>
                   </div>
                 </article>
               ))}
