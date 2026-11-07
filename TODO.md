@@ -1,8 +1,8 @@
 # Cloud L — status
 
-**Public brand:** Cloud L. **Hours:** daily, 7:00 a.m.–9:00 p.m. **Address:** Queen Elizabeth II Street, Kebena, Addis Ababa. **Telebirr:** +251 901 120 012, manual transfers only; recipient name shown to customers: Lidia. **Bunna Bank QR:** Cloud L Trading PLC, merchant ID 450043. **Dashen Bank:** Cloud L Trading PLC, account 0194970006011.
+**Public brand:** Cloud L. **Hours:** daily, 7:00 a.m.–9:00 p.m. **Address:** Queen Elizabeth II Street, Kebena, Addis Ababa. **Telebirr:** +251 901 120 012, manual transfers only; recipient name shown to customers: Lidya. **Bunna Bank QR:** Cloud L Trading PLC, merchant ID 450043. **Dashen Bank:** Cloud L Trading PLC, account 0194970006011.
 
-Last updated: 27 October 2026.
+Last updated: 7 November 2026.
 
 ## Live and tested on production (cloudlrestaurant.com)
 
@@ -52,16 +52,16 @@ Test orders placed on production (TEST, TEST2, TEST3 and the first CL-261021 ord
 - The order API takes the same per-item transaction lock as a staff toggle, then rechecks every selected menu ID before inserting an order. This serializes a first-time sold-out override against checkout; stale carts that lose the race get a helpful error and no order is created.
 - Existing production availability table was read-only checked on 26 October: 0 overrides and 0 items marked sold out. Do not change a real item's availability during validation.
 
-## Implemented on feature branch — one-tap reorder (checklist item 31; not deployed)
+## Merged and production-deployed — one-tap reorder (checklist item 31; PR #2)
 
 - From the existing private tracking link of a completed, delivered, declined, or cancelled order, let the customer add that order's items to the persistent cart in one action; do not offer reorder while an order is still being processed.
 - Match historical lines to current catalog entries and current prices, preserve each item/size and quantity, and identify items that are discontinued or currently sold out instead of silently adding them. If current availability cannot be verified, leave the cart unchanged and ask the customer to try again.
 - If the current cart already contains items, ask before replacing it; never silently discard the customer's cart.
 - Reorder creates only a new cart. It does not reuse the old order's customer, delivery, fulfillment, payment, or confirmation details; checkout and its server-side availability check are still required.
-- Keep the feature on a separate GitHub feature branch. Do not write to the shared Neon database, submit a production order, or deploy to production while implementing it.
-- Local validation: production build passed; targeted lint passed with 0 warnings/errors; full lint passed with 0 errors and 15 warnings in unchanged project files. No browser checkout, Neon write, production order, or deployment was performed.
+- Developed on a separate feature branch and merged through PR #2 after GitHub Actions passed. Reorder only creates a new cart and still requires customer checkout; no live order was submitted and no Neon write was used to validate it.
+- Local build and focused lint passed; full lint had 0 errors and 15 existing warnings.
 
-## Implemented on feature branch — favorites / heart system (checklist item 32; not deployed)
+## Merged and production-smoke-tested — favorites / heart system (checklist item 32; PR #2)
 
 - Add a subtle, refined heart control to food and drink menu cards. It must be keyboard-accessible, expose its saved state to assistive technology, and use bilingual English/Amharic labels that fit Cloud L's navy, terracotta, and cream design.
 - Let customers filter each menu to their saved favorites, show the relevant saved-item count, and explain when the filtered list is empty.
@@ -70,8 +70,22 @@ Test orders placed on production (TEST, TEST2, TEST3 and the first CL-261021 ord
 - Food category links follow the sections visible after search and Favorites filtering so they never point to hidden content.
 - Add automated browser E2E tests for bilingual food/drink heart toggles, keyboard activation, local persistence, favorites-only filters, empty states, and category links. Run them against local Vite with menu availability mocked; do not access Neon or create orders.
 - Add visual regression snapshots for unsaved/saved food and drink heart buttons and the bilingual customer Favorites controls. Run these alongside functional E2E tests in a GitHub Actions workflow on pull requests targeting `main`, using Playwright-managed Chromium and read-only repository permissions.
-- Keep this change on a separate feature branch. Do not write to Neon, submit a production order, or deploy to production.
-- Validation: after `npx playwright install chromium`, `npm run test:e2e` passed 5/5 (three functional checks and two visual suites with six snapshots); E2E TypeScript type-check passed. Production build passed; full lint had 0 errors and 15 existing warnings. Tests ran against local Vite with availability mocked. GitHub Actions has not yet run on a PR; no Neon write, production order, production service, deployment, or manual screen-reader test was performed.
+- Developed on a separate feature branch. GitHub Actions passed on PR #2; production smoke tests confirmed food/drink heart controls and Favorites filters, then removed the temporary browser-local favorites. No Neon write or live order was used.
+- Local Playwright E2E passed 5/5 with six visual snapshots; E2E type-check and production build passed. Full lint had 0 errors and 15 existing warnings. No manual screen-reader test was performed.
+
+## Implemented on branch `feat/lighthouse-performance` — Lighthouse performance (not deployed)
+
+- Lighthouse 12.8.2 production baseline on 6 November: mobile score 0.51, LCP 6.1 s, FCP 4.0 s, TBT 710 ms, CLS 0.001; desktop score 0.63, LCP 3.6 s, FCP 3.5 s, TBT 0 ms, CLS 0.
+- The branch adds responsive WebP candidates, hero preload, non-blocking Google Fonts, route/checkout code splitting, and reserved `content-visibility` for long offscreen sections.
+- Same-machine local Lighthouse mobile score improved from 0.61 to 0.92 after containment (LCP 5.0 s → 2.5 s, TBT 710 ms → 220 ms, CLS 0.001); desktop remained 0.99 (LCP 1.0 s → 0.9 s, TBT 50 ms → 20 ms, CLS 0.005). This is not a post-deployment audit.
+- Local build passed, the existing Playwright suite passed 5/5, and full lint had 0 errors and 15 existing warnings. Branch is pushed for review only; no production deployment was triggered.
+
+## Implemented on branch `feat/sentry-error-monitoring` — Sentry error monitoring (inactive pending DSN)
+
+- Load `@sentry/react` only on Cloud L's production custom domain and only when build-time `VITE_SENTRY_DSN` is configured; defer its separate chunk until browser idle, and require a new build after DSN configuration.
+- Send sanitized client-side error type and stack frames only. Remove request URLs/headers/bodies, user identity, query strings/fragments, breadcrumbs, arbitrary contexts/extras/tags, and message text before transmission; the installed browser SDK has no `sendDefaultPii` option, so no PII feature is enabled and the explicit scrubber is authoritative.
+- Do not enable tracing, session replay, user feedback, source-map upload, or capture of customer/order/payment data. No events are sent until the owner supplies a Sentry DSN; do not deploy this branch while the DSN is absent.
+- Local build passed; `npm run test:e2e` passed 7/7, including payload scrubbing and no-DSN network assertions; focused lint reported 0 warnings/errors. Full lint had 0 errors and 15 existing warnings. No real DSN was used and no telemetry or production deployment occurred.
 
 ## Not built yet
 
@@ -91,6 +105,7 @@ Test orders placed on production (TEST, TEST2, TEST3 and the first CL-261021 ord
 - Whether to offer CBE Birr, and with which account.
 - Whether a staff WhatsApp number differs from the public number.
 - A real nearby landmark for the address (checklist item 7).
+- Sentry project DSN (public client DSN only; no Sentry auth token). Add it as a Vercel Production build variable and redeploy only after review/approval.
 - Keshir Ginger Tea: confirm the name with the kitchen. Guder or Gouder wine spelling.
 - Native-speaker proofreading of all Amharic text.
 
