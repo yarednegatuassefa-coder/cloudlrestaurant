@@ -2,7 +2,7 @@
 
 **Public brand:** Cloud L. **Hours:** daily, 7:00 a.m.–9:00 p.m. **Address:** Queen Elizabeth II Street, Kebena, Addis Ababa. **Telebirr:** +251 901 120 012, manual transfers only; recipient name shown to customers: Lidya. **Bunna Bank QR:** Cloud L Trading PLC, merchant ID 450043. **Dashen Bank:** Cloud L Trading PLC, account 0194970006011.
 
-Last updated: 6 November 2026.
+Last updated: 7 November 2026.
 
 ## Live and tested on production (cloudlrestaurant.com)
 
@@ -73,12 +73,19 @@ Test orders placed on production (TEST, TEST2, TEST3 and the first CL-261021 ord
 - Developed on a separate feature branch. GitHub Actions passed on PR #2 before merge; a live smoke test confirmed food and drink hearts, the Favorites filter, and localStorage cleanup. Favorites remain browser-local; no Neon write or production order was used.
 - After installing Playwright Chromium, local `npm run test:e2e` passed 5/5 (three functional checks and two visual suites with six snapshots); E2E TypeScript type-check and production build passed. Full lint had 0 errors and 15 existing warnings. No manual screen-reader test was performed.
 
-## Implemented locally — Lighthouse performance (branch `feat/lighthouse-performance`; not deployed)
+## Merged into `main` — Lighthouse performance
 
 - Lighthouse 12.8.2 production baseline on 6 November: mobile score 0.51, LCP 6.1 s, FCP 4.0 s, TBT 710 ms, CLS 0.001; desktop score 0.63, LCP 3.6 s, FCP 3.5 s, TBT 0 ms, CLS 0.
 - Optimized the local production build with responsive 240/480/960 WebP candidates, a high-priority hero preload, non-blocking Google Fonts, route/checkout code splitting, and size-reserved `content-visibility` for long offscreen sections.
 - On the same local Lighthouse setup, mobile improved from 0.61 to 0.92 after section containment (LCP 5.0 s → 2.5 s, TBT 710 ms → 220 ms, CLS 0.001); desktop remained 0.99 (LCP 1.0 s → 0.9 s, TBT 50 ms → 20 ms, CLS 0.005). This local result is not a post-deployment production audit.
-- Production build passed, E2E passed 5/5, and full lint had 0 errors and 15 existing warnings. No production deployment was made.
+- The combined release candidate passed `npm run build`; `npm run lint` reported 0 errors and 15 warnings; `npm run test:e2e` passed 7/7. The Lighthouse results above are local measurements, not a post-deployment production audit.
+
+## Merged into `main` — Sentry error monitoring (inactive unless a DSN is configured)
+
+- Load `@sentry/react` only on Cloud L's production custom domain and only when build-time `VITE_SENTRY_DSN` is configured; defer its separate chunk until browser idle, and require a new build after DSN configuration.
+- Send sanitized client-side error type and stack frames only. Remove request URLs/headers/bodies, user identity, query strings/fragments, breadcrumbs, arbitrary contexts/extras/tags, and message text before transmission.
+- Do not enable tracing, session replay, user feedback, source-map upload, or capture of customer/order/payment data. No events are sent until the owner supplies a Sentry DSN; this release does not add one.
+- The combined release's E2E suite passed the payload-scrubbing and no-DSN checks. No Sentry DSN was set during validation, so validation sent no telemetry.
 
 ## Not built yet
 
