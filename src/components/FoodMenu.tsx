@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import type { OrderSelection } from "./orderTypes";
 import FavoriteButton from "./FavoriteButton";
+import { responsiveImageProps } from "./responsiveImageProps";
 
 type Item = { en: string; am: string; price: string; breakfast?: boolean };
 type Section = {
@@ -330,7 +331,7 @@ export default function FoodMenu({
           {visibleSections.map((section) => (
             <section className="fm__category" key={section.id} id={section.id}>
               <div className="fm__visual">
-                <img src={section.image} alt={section.imageAlt} loading="lazy" />
+                <img src={section.image} {...responsiveImageProps(section.image, [480, 960], "(max-width: 680px) calc(100vw - 36px), (max-width: 900px) 40vw, 36vw")} alt={section.imageAlt} loading="lazy" decoding="async" />
                 <span>{section.eyebrow}</span>
               </div>
               <div className="fm__category-content">
@@ -369,6 +370,7 @@ export default function FoodMenu({
                             >
                               <img
                                 src={dishImage.src}
+                                {...responsiveImageProps(dishImage.src, [240, 480], "76px")}
                                 alt={dishImage.alt}
                                 loading="lazy"
                                 decoding="async"

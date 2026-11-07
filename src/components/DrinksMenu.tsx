@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import "./DrinksMenu.css";
 import FavoriteButton from "./FavoriteButton";
+import { responsiveImageProps } from "./responsiveImageProps";
 
 export type DrinkCategory =
   | "Soft drinks & bottled water"
@@ -425,6 +426,7 @@ export default function DrinksMenu({
                       <img
                         className="drinks-menu__wine-visual"
                         src={imageUrlById["wine-category"] ?? "/assets/drinks/wine-category.jpg"}
+                        {...responsiveImageProps(imageUrlById["wine-category"] ?? "/assets/drinks/wine-category.jpg", [240, 480], "(max-width: 600px) 108px, 208px")}
                         alt="Two unbranded wine glasses, one red and one white"
                         loading="lazy"
                         decoding="async"
@@ -461,6 +463,7 @@ export default function DrinksMenu({
                                   <div className="drinks-menu__photo">
                                     <img
                                       src={imageUrlById[item.id] ?? item.imageSrc}
+                                      {...responsiveImageProps(imageUrlById[item.id] ?? item.imageSrc, [480, 960], "(max-width: 600px) 36vw, (max-width: 900px) 48vw, 34vw")}
                                       alt={`${item.imageAlt ?? item.name} / ${item.name} — ${item.nameAmharic}`}
                                       loading="lazy"
                                       decoding="async"

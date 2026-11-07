@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import type { CartLine } from "./orderTypes";
-import CheckoutForm from "./CheckoutForm";
+const CheckoutForm = lazy(() => import("./CheckoutForm"));
 
 type OrderCartProps = {
   items: CartLine[];
@@ -69,7 +69,9 @@ export default function OrderCart({
               <strong className="order-cart__line-total">{formatMoney(item.price * item.quantity)} ETB</strong>
             </li>)}</ul>
             <div className="order-cart__subtotal"><span>Menu subtotal</span><strong>{formatMoney(subtotal)} ETB</strong></div>
-            <CheckoutForm items={items} subtotal={subtotal} onPlaced={(trackingUrl, reference) => { onOrderPlaced(); setReceipt({ trackingUrl, reference }); }} />
+            <Suspense fallback={<p className="checkout-note" role="status">Loading secure checkout / የክፍያ መረጃን በመጫን ላይ…</p>}>
+              <CheckoutForm items={items} subtotal={subtotal} onPlaced={(trackingUrl, reference) => { onOrderPlaced(); setReceipt({ trackingUrl, reference }); }} />
+            </Suspense>
             {whatsappHref && <div className="checkout-whatsapp-fallback"><p>Prefer to request your order in chat?</p><a href={whatsappHref} target="_blank" rel="noreferrer">Continue with WhatsApp <span aria-hidden="true">↗</span></a></div>}
           </>}
         </aside>
