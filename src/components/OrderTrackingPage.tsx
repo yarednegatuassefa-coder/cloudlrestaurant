@@ -38,8 +38,13 @@ type Order = {
   events: Event[];
   reorderItems?: CartLine[];
   reorderWarnings?: string[];
+  editable?: boolean;
 };
-type Props = { token: string; onReorder: (items: CartLine[], warnings: string[]) => boolean };
+type Props = {
+  token: string;
+  onReorder: (items: CartLine[], warnings: string[]) => boolean;
+  onEditOrder: (items: CartLine[], warnings: string[], token: string, reference: string) => boolean;
+};
 
 const money = (value: number) => Number(value).toLocaleString("en-US");
 const labels: Record<string, string> = {
@@ -56,8 +61,9 @@ const labels: Record<string, string> = {
 };
 const journey = ["received", "confirmed", "preparing", "ready_for_pickup", "completed"];
 const reorderableStatuses = new Set(["delivered", "completed", "declined", "cancelled"]);
+const editableStatuses = new Set(["received", "needs_clarification"]);
 
-export default function OrderTrackingPage({ token, onReorder }: Props) {
+export default function OrderTrackingPage({ token, onReorder, onEditOrder }: Props) {
   const [order, setOrder] = useState<Order | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
@@ -66,6 +72,7 @@ export default function OrderTrackingPage({ token, onReorder }: Props) {
   const [sending, setSending] = useState(false);
   const [reordering, setReordering] = useState(false);
   const [reorderMessage, setReorderMessage] = useState("");
+  const [editMessage, setEditMessage] = useState("");
 
   const load = useCallback(async () => {
     try {
@@ -149,12 +156,20 @@ export default function OrderTrackingPage({ token, onReorder }: Props) {
     }
   }
 
+  function beginEditingOrder() {
+    if (!order || !order.editable || !editableStatuses.has(order.status) || order.payment_status !== "unpaid") return;
+    if (!onEditOrder(order.reorderItems ?? [], order.reorderWarnings ?? [], token, order.public_reference)) {
+      setEditMessage("Your current cart was left unchanged.");
+    }
+  }
+
   const currentIndex = order ? (order.status === "needs_clarification" ? 0 : journey.indexOf(order.status)) : -1;
   const destination = order?.payment_destination_snapshot;
   const isManual = destination?.payment_type === "manual_transfer";
   const showTransferInstructions = Boolean(order && isManual && order.status === "confirmed" && ["awaiting_transfer", "submitted"].includes(order.payment_status));
   const manualTransferPending = Boolean(order && isManual && ["received", "needs_clarification"].includes(order.status));
   const canReorder = Boolean(order && reorderableStatuses.has(order.status));
+  const canEdit = Boolean(order && order.editable && editableStatuses.has(order.status) && order.payment_status === "unpaid");
 
   return (
     <main className="tracking-page">
@@ -186,9 +201,15 @@ export default function OrderTrackingPage({ token, onReorder }: Props) {
             <ul>{order.items.map((item, index) => <li key={`${item.name}-${index}`}><span>{item.quantity} × {item.name}{item.size ? ` · ${item.size}` : ""}</span><strong>{money(item.lineTotalEtb)} ETB</strong></li>)}</ul>
             <div><span>Menu subtotal</span><strong>{money(order.subtotal_etb)} ETB</strong></div>
             {order.delivery_fee_etb !== null && <div><span>Delivery</span><strong>{money(order.delivery_fee_etb)} ETB</strong></div>}
-            {order.total_etb !== null && <div className="tracking-summary__total"><span>Confirmed total</span><strong>{money(order.total_etb)} ETB</strong></div>}
+            {order.total_etb !== null && ["confirmed", "preparing", "ready_for_pickup", "out_for_delivery", "delivered", "completed"].includes(order.status) && <div className="tracking-summary__total"><span>Confirmed total</span><strong>{money(order.total_etb)} ETB</strong></div>}
           </section>
           <p className="tracking-fulfillment">{order.fulfillment === "pickup" ? "Pickup at Cloud L" : order.fulfillment === "delivery" ? "Home delivery · details confirmed by staff" : "Dine in at Cloud L"}</p>
+          {canEdit && <section className="tracking-edit" aria-labelledby="tracking-edit-title">
+            <h2 id="tracking-edit-title">Make a change before confirmation</h2>
+            <p>You can add, remove, or adjust menu items while Cloud L reviews your request. Today’s menu prices and availability will be checked when you save. Your customer, delivery, and payment details will stay unchanged.</p>
+            <button className="tracking-submit" type="button" onClick={beginEditingOrder}>Edit items in the menu</button>
+            {editMessage && <p className="tracking-reorder__message" role="status">{editMessage}</p>}
+          </section>}
           {canReorder && <section className="tracking-reorder" aria-labelledby="tracking-reorder-title">
             <h2 id="tracking-reorder-title">Order it again</h2>
             <p>Available items will be added to a new cart at today’s menu prices. Your previous payment, delivery details, and special instructions will not be reused; Cloud L will confirm availability again.</p>

@@ -118,6 +118,11 @@ function App() {
   const [cartOpen, setCartOpen] = useState(false);
   const [cartNotice, setCartNotice] = useState("");
   const [trackingToken, setTrackingToken] = useState("");
+  const [editDraft, setEditDraft] = useState<CartLine[]>([]);
+  const [editingOrderToken, setEditingOrderToken] = useState("");
+  const [editingOrderReference, setEditingOrderReference] = useState("");
+  const [editError, setEditError] = useState("");
+  const [savingEdit, setSavingEdit] = useState(false);
   const [staffMode, setStaffMode] = useState(false);
   const [soldOutItemIds, setSoldOutItemIds] = useState<Set<string>>(() => new Set());
   const [navScrolled, setNavScrolled] = useState(false);
@@ -159,22 +164,28 @@ function App() {
   }, []);
 
   const addToCart = (selection: OrderSelection) => {
-    updateCart((current) => {
-      const existing = current.find((line) => line.id === selection.id);
-      if (existing) {
-        return current.map((line) => line.id === selection.id
-          ? { ...line, quantity: line.quantity + 1 }
-          : line);
-      }
-      return [...current, { ...selection, quantity: 1 }];
-    });
+    const current = editingOrderToken ? editDraft : cart;
+    const existing = current.find((line) => line.id === selection.id);
+    if (existing && existing.quantity >= 10) { setEditError("The maximum is 10 portions per menu item."); return; }
+    if (!existing && current.length >= 30) { setEditError("A request can contain up to 30 different menu items."); return; }
+    const next = existing
+      ? current.map((line) => line.id === selection.id ? { ...line, quantity: line.quantity + 1 } : line)
+      : [...current, { ...selection, quantity: 1 }];
+    if (editingOrderToken) setEditDraft(next);
+    else updateCart(() => next);
+    setEditError("");
     setCartOpen(true);
   };
 
   const setQuantity = (id: string, quantity: number) => {
-    updateCart((current) => quantity < 1
+    const current = editingOrderToken ? editDraft : cart;
+    const boundedQuantity = Math.min(quantity, 10);
+    const next = boundedQuantity < 1
       ? current.filter((line) => line.id !== id)
-      : current.map((line) => line.id === id ? { ...line, quantity } : line));
+      : current.map((line) => line.id === id ? { ...line, quantity: boundedQuantity } : line);
+    if (editingOrderToken) setEditDraft(next);
+    else updateCart(() => next);
+    setEditError(quantity > 10 ? "The maximum is 10 portions per menu item." : "");
   };
 
   const reorderFromOrder = (items: CartLine[], warnings: string[]) => {
@@ -188,22 +199,80 @@ function App() {
     return true;
   };
 
-  const itemCount = cart.reduce((total, item) => total + item.quantity, 0);
-  const subtotal = cart.reduce((total, item) => total + item.price * item.quantity, 0);
+  const beginOrderEdit = (items: CartLine[], warnings: string[], token: string, reference: string) => {
+    setEditDraft(items.map((item) => ({ ...item })));
+    setEditingOrderToken(token);
+    setEditingOrderReference(reference);
+    setEditError("");
+    const warningText = warnings.length ? `Removed from this edit because they are no longer on today's menu: ${warnings.join(", ")}. ` : "";
+    setCartNotice(`${warningText}Your saved cart stays separate. Current prices and availability will be checked when you save.`);
+    window.location.hash = "#food";
+    setCartOpen(true);
+    return true;
+  };
+
+  const finishOrderEdit = (token: string) => {
+    setEditDraft([]);
+    setEditingOrderToken("");
+    setEditingOrderReference("");
+    setEditError("");
+    setSavingEdit(false);
+    setCartOpen(false);
+    setCartNotice(cart.length ? "Your saved cart was kept separate from the edited request." : "");
+    window.location.hash = `#track/${token}`;
+  };
+
+  const cancelOrderEdit = () => {
+    if (!editingOrderToken) return;
+    const token = editingOrderToken;
+    finishOrderEdit(token);
+  };
+
+  const saveOrderEdit = async () => {
+    if (!editingOrderToken) return;
+    if (!editDraft.length) { setEditError("Add at least one menu item before saving."); return; }
+    setSavingEdit(true);
+    setEditError("");
+    try {
+      const response = await fetch("/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "edit", token: editingOrderToken, items: editDraft.map(({ id, quantity }) => ({ id, quantity })) }),
+      });
+      const data = await response.json() as { code?: unknown; error?: unknown };
+      if (!response.ok) {
+        if (response.status === 409 && data.code === "order_not_editable") {
+          finishOrderEdit(editingOrderToken);
+          return;
+        }
+        setEditError(typeof data.error === "string" ? data.error : "We could not save those changes. Please try again.");
+        return;
+      }
+      finishOrderEdit(editingOrderToken);
+    } catch {
+      setEditError("We could not reach Cloud L. Your request is unchanged; please try again.");
+    } finally {
+      setSavingEdit(false);
+    }
+  };
+
+  const visibleCart = editingOrderToken ? editDraft : cart;
+  const itemCount = visibleCart.reduce((total, item) => total + item.quantity, 0);
+  const subtotal = visibleCart.reduce((total, item) => total + item.price * item.quantity, 0);
   const whatsappMessage = [
     "Hello Cloud L, I would like to request this order:",
-    ...cart.map((item) => `${item.quantity} × ${item.name}${item.size ? ` (${item.size})` : ""} — ${formatMoney(item.price * item.quantity)} ETB`),
+    ...visibleCart.map((item) => `${item.quantity} × ${item.name}${item.size ? ` (${item.size})` : ""} — ${formatMoney(item.price * item.quantity)} ETB`),
     `Menu subtotal: ${formatMoney(subtotal)} ETB`,
     "Please confirm availability and the final amount before preparing. Thank you.",
   ].join("\n");
-  const whatsappHref = cart.length
+  const whatsappHref = visibleCart.length && !editingOrderToken
     ? `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(whatsappMessage)}`
     : undefined;
 
   if (trackingToken) {
     return (
       <Suspense fallback={routeLoadingFallback}>
-        <OrderTrackingPage token={trackingToken} onReorder={reorderFromOrder} />
+        <OrderTrackingPage token={trackingToken} onReorder={reorderFromOrder} onEditOrder={beginOrderEdit} />
       </Suspense>
     );
   }
@@ -348,17 +417,23 @@ function App() {
       </main>
 
       <OrderCart
-        items={cart}
+        items={visibleCart}
         itemCount={itemCount}
         subtotal={subtotal}
         notice={cartNotice}
         isOpen={cartOpen}
         whatsappHref={whatsappHref}
+        isEditingOrder={Boolean(editingOrderToken)}
+        editingOrderReference={editingOrderReference}
+        editError={editError}
+        isSavingEdit={savingEdit}
         onOrderPlaced={() => updateCart(() => emptyCart)}
         onOpen={() => setCartOpen(true)}
         onClose={() => setCartOpen(false)}
         onDismissNotice={() => setCartNotice("")}
         onSetQuantity={setQuantity}
+        onSaveOrderEdit={saveOrderEdit}
+        onCancelOrderEdit={cancelOrderEdit}
       />
     </div>
   );
