@@ -93,9 +93,9 @@ Test orders placed on production (TEST, TEST2, TEST3 and the first CL-261021 ord
 - The customer may add, remove, or change current menu lines and sizes in the existing menu/cart UI. Preserve the original customer, fulfillment, delivery, and payment details; item editing does not submit a new order or payment.
 - Recompute current catalog names/prices server-side, serialize against staff status changes, recheck sold-out availability under the existing transaction lock, and reject a stale edit if staff confirmed first.
 - Require at least one item before saving; when all historical lines have left the menu, allow a blank draft so the customer can add current items. Cancellation remains a separate owner-policy item. Record a customer-visible, non-sensitive order event after a successful edit.
-- Add an additive migration for required `order_items` delete privilege and the edit event type, but do not apply it to the shared Neon database. Gate the API and UI behind a disabled-by-default production-only feature flag.
-- Do not create a production order, write to Neon, or deploy this branch.
-- After integrating current `origin/main`, `npm run build` passed, Playwright E2E passed 13/13 with API calls mocked, and `npm run lint` reported 0 errors and 15 warnings in the unrelated `reference/Home.tsx` prototype. `git diff --check` passed. On 8 November, migration 005 also passed a disposable PGlite SQL check against the relevant orders/events/schema-version structures: existing and new event types were accepted, unknown types rejected, the DELETE grant added without changing SELECT/INSERT or adding UPDATE, and reapplication left one constraint and one version row. This is not a full API/Neon integration test. Migration remains unapplied; there were no Neon writes, production orders, feature-flag changes, or production deployment.
+- Add an additive migration for the `customer_order_edited` event type and `order_items` delete privilege. After isolated validation and owner approval, apply it to the shared Neon database; enable the API/UI only with a Production-only feature flag. Migration 005 has now been applied and verified on Neon `main`; `CLOUDL_CUSTOMER_ORDER_EDITING=true` is set for Production and becomes effective with the next production deployment.
+- Do not create a production test order or edit a real customer's order for validation. No order rows were changed by the migration.
+- After integrating current `origin/main`, `npm run build` passed, Playwright E2E passed 13/13 with API calls mocked, and `npm run lint` reported 0 errors and 15 warnings in the unrelated `reference/Home.tsx` prototype. GitHub Actions E2E/visual checks passed, the latest Vercel Preview is READY, and `git diff --check` passed. Migration 005 passed an isolated PGlite check and a Neon temporary-branch check before application; Neon `main` now has exactly one migration-version row and the expected event constraint. No production order was placed or edited.
 
 ## Not built yet
 
@@ -115,6 +115,7 @@ Test orders placed on production (TEST, TEST2, TEST3 and the first CL-261021 ord
 - Whether to offer CBE Birr, and with which account.
 - Whether a staff WhatsApp number differs from the public number.
 - A real nearby landmark for the address (checklist item 7).
+- Neon security follow-up: verify whether Production `DATABASE_URL` authenticates as `cloudl_app`. Neon reports that `cloudl_app` inherits `neon_superuser` and has `CREATEROLE`, `CREATEDB`, and `BYPASSRLS`; its effective `DELETE` privilege predated migration 005. Do not change role memberships without a reviewed least-privilege replacement plan.
 - Sentry: integration can remain inert until a project DSN is supplied as `VITE_SENTRY_DSN`; error payloads must omit customer identifiers, order/payment data, request details, and tracking tokens. Keep tracing, replay, and user feedback off unless separately requested.
 - Keshir Ginger Tea: confirm the name with the kitchen. Guder or Gouder wine spelling.
 - Native-speaker proofreading of all Amharic text.
