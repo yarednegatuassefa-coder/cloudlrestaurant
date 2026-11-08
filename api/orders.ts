@@ -40,6 +40,14 @@ function rateLimited(req: Req) {
   slot.count += 1; return slot.count > 8;
 }
 
+function customerEditingEnabled(req: Req) {
+  if (process.env.CLOUDL_CUSTOMER_ORDER_EDITING !== "true") return false;
+  const hostHeader = req.headers.host;
+  const hostValue = Array.isArray(hostHeader) ? hostHeader[0] : hostHeader;
+  const hostname = (hostValue || "").split(",")[0].trim().toLowerCase().replace(/:\d+$/, "");
+  return hostname === "www.cloudlrestaurant.com" || hostname === "cloudlrestaurant.com";
+}
+
 export default async function handler(req: Req, res: Res) {
   res.setHeader("Cache-Control", "no-store");
   res.setHeader("X-Content-Type-Options", "nosniff");
@@ -124,6 +132,93 @@ export default async function handler(req: Req, res: Res) {
     } finally { client.release(); }
   }
 
+  if (action === "edit") {
+    if (!customerEditingEnabled(req)) return reply(res, 503, { error: "Order editing is not currently available." });
+    if (rateLimited(req)) return reply(res, 429, { error: "Please wait a moment before trying again." });
+    const token = typeof body.token === "string" ? body.token : "";
+    if (!/^[A-Za-z0-9_-]{40,50}$/.test(token)) return reply(res, 400, { error: "Tracking link is not valid." });
+    const rows = Array.isArray(body.items) ? body.items : [];
+    if (rows.length < 1 || rows.length > 30) return reply(res, 400, { error: "Your edited request must contain 1–30 menu items." });
+    const quantities = new Map<string, number>();
+    for (const row of rows) {
+      if (!row || typeof row !== "object") return reply(res, 400, { error: "One of the selected menu items is invalid." });
+      const selection = row as Record<string, unknown>;
+      const itemId = typeof selection.id === "string" ? selection.id : "";
+      const entry = catalog.get(itemId);
+      const quantity = Number(selection.quantity);
+      if (!entry || !Number.isInteger(quantity) || quantity < 1 || quantity > 10) return reply(res, 400, { error: "A menu item or quantity is no longer valid. Refresh the menu and try again." });
+      const combined = (quantities.get(itemId) || 0) + quantity;
+      if (combined > 10) return reply(res, 400, { error: "A menu item cannot have more than 10 portions in one request." });
+      quantities.set(itemId, combined);
+    }
+    const items = [...quantities].map(([id, quantity]) => ({ ...catalog.get(id)!, quantity }));
+    const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    if (!Number.isSafeInteger(subtotal) || subtotal <= 0) return reply(res, 400, { error: "The edited menu total is invalid." });
+
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+      const found = await client.query(
+        "SELECT id, status, payment_status, delivery_fee_etb FROM public.orders WHERE tracking_token_hash=$1 FOR UPDATE",
+        [tokenHash(token)],
+      );
+      if (!found.rowCount) { await client.query("ROLLBACK"); return reply(res, 404, { error: "We could not find that order." }); }
+      const order = found.rows[0];
+      if (!(["received", "needs_clarification"].includes(order.status) && order.payment_status === "unpaid" && order.delivery_fee_etb === null)) {
+        await client.query("ROLLBACK");
+        return reply(res, 409, { code: "order_not_editable", error: "This request can no longer be edited because staff may already be confirming it. Refresh the tracking page." });
+      }
+
+      const selectedItemIds = items.map((item) => item.id).sort();
+      for (const itemId of selectedItemIds) await client.query(MENU_AVAILABILITY_LOCK_SQL, [itemId]);
+      const availabilityResult = await client.query(
+        "SELECT menu_item_id FROM public.menu_availability WHERE menu_item_id = ANY($1::text[]) AND is_sold_out=true FOR SHARE",
+        [selectedItemIds],
+      );
+      if (availabilityResult.rowCount) {
+        const soldOutNames = availabilityResult.rows.map((row) => catalog.get(row.menu_item_id as string)?.name).filter((name): name is string => typeof name === "string");
+        await client.query("ROLLBACK");
+        return reply(res, 409, { code: "items_sold_out", error: `Some selected items just sold out${soldOutNames.length ? `: ${soldOutNames.join(", ")}` : ""}. Adjust your request and save again.` });
+      }
+
+      const existingResult = await client.query(
+        "SELECT menu_item_id, name, name_amharic, size, unit_price_etb, quantity FROM public.order_items WHERE order_id=$1 ORDER BY menu_item_id FOR UPDATE",
+        [order.id],
+      );
+      const existing = new Map(existingResult.rows.map((row) => [String(row.menu_item_id), row]));
+      const unchanged = existingResult.rows.length === items.length && items.every((item) => {
+        const prior = existing.get(item.id);
+        return prior
+          && Number(prior.quantity) === item.quantity
+          && Number(prior.unit_price_etb) === item.price
+          && prior.name === item.name
+          && prior.name_amharic === item.nameAmharic
+          && (prior.size || null) === (item.size || null);
+      });
+      if (unchanged) {
+        await client.query("COMMIT");
+        return reply(res, 200, { changed: false, subtotalEtb: subtotal, message: "No changes were needed. Your request is still awaiting Cloud L staff confirmation." });
+      }
+
+      await client.query("DELETE FROM public.order_items WHERE order_id=$1", [order.id]);
+      for (const item of items) await client.query(
+        "INSERT INTO public.order_items (order_id, menu_item_id, name, name_amharic, size, unit_price_etb, quantity) VALUES ($1,$2,$3,$4,$5,$6,$7)",
+        [order.id, item.id, item.name, item.nameAmharic, item.size ?? null, item.price, item.quantity],
+      );
+      await client.query("UPDATE public.orders SET subtotal_etb=$2, total_etb=$2, updated_at=now() WHERE id=$1", [order.id, subtotal]);
+      await client.query(
+        "INSERT INTO public.order_events (order_id, actor_type, event_type, status, message, customer_visible) VALUES ($1,'customer','customer_order_edited',$2,'Your requested items were updated. Cloud L will confirm availability and the final amount before preparing.',true)",
+        [order.id, order.status],
+      );
+      await client.query("COMMIT");
+      return reply(res, 200, { changed: true, subtotalEtb: subtotal, message: "Your changes were saved. Cloud L will confirm availability and the final amount." });
+    } catch (error) {
+      await client.query("ROLLBACK").catch(() => undefined);
+      console.error("order_edit_failed", error instanceof Error ? error.message : "unknown");
+      return reply(res, 503, { error: "We could not save those changes. Your request is unchanged; please try again." });
+    } finally { client.release(); }
+  }
+
   if (action === "track") {
     const token = typeof body.token === "string" ? body.token : "";
     if (!/^[A-Za-z0-9_-]{40,50}$/.test(token)) return reply(res, 400, { error: "Tracking link is not valid." });
@@ -154,12 +249,17 @@ export default async function handler(req: Req, res: Res) {
         reorderItems.set(currentItem.id, { ...currentItem, quantity: Math.min(10, requestedQuantity) });
       }
       const displayItems = historicalItems.map((item) => ({ name: item.name, nameAmharic: item.nameAmharic, size: item.size, quantity: item.quantity, unitPriceEtb: item.unitPriceEtb, lineTotalEtb: item.lineTotalEtb }));
+      const editable = customerEditingEnabled(req)
+        && ["received", "needs_clarification"].includes(String(order.status))
+        && order.payment_status === "unpaid"
+        && order.delivery_fee_etb === null;
       return reply(res, 200, {
         order: {
           ...order,
           items: displayItems,
           reorderItems: [...reorderItems.values()],
           reorderWarnings: [...new Set(reorderWarnings)],
+          editable,
         },
       });
     } catch (error) {
@@ -190,5 +290,5 @@ export default async function handler(req: Req, res: Res) {
     } finally { client.release(); }
   }
 
-  return reply(res, 400, { error: "Choose create, track, or payment-reference." });
+  return reply(res, 400, { error: "Choose create, edit, track, or payment-reference." });
 }
