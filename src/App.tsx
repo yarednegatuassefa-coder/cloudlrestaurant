@@ -1,12 +1,14 @@
-import { useEffect, useSyncExternalStore, useState } from "react";
+import { lazy, Suspense, useEffect, useSyncExternalStore, useState } from "react";
 import FoodMenu from "./components/FoodMenu";
 import DrinksMenu from "./components/DrinksMenu";
 import OrderCart from "./components/OrderCart";
-import OrderTrackingPage from "./components/OrderTrackingPage";
-import StaffOrders from "./components/StaffOrders";
 import type { CartLine, OrderSelection } from "./components/orderTypes";
 import { getFavoriteIdsSnapshot, getServerFavoriteIdsSnapshot, subscribeToFavoriteIds, toggleFavoriteId } from "./components/favoritesStore";
+import { responsiveImageProps } from "./components/responsiveImageProps";
 import "./site.css";
+
+const OrderTrackingPage = lazy(() => import("./components/OrderTrackingPage"));
+const StaffOrders = lazy(() => import("./components/StaffOrders"));
 
 const mapSearchUrl = "https://www.google.com/maps/dir/?api=1&destination=2QJF%2BXR2%2C%20Kebena%2C%20Addis%20Ababa%2C%20Ethiopia";
 const cartStorageKey = "cloudl-order-cart-v1";
@@ -15,6 +17,12 @@ const emptyCart: CartLine[] = [];
 let cartSnapshot = emptyCart;
 let cartInitialized = false;
 const cartSubscribers = new Set<() => void>();
+
+const routeLoadingFallback = (
+  <div className="route-loading" role="status" aria-live="polite">
+    Loading your Cloud L page / የCloud L ገጽዎን በመጫን ላይ…
+  </div>
+);
 
 const featured = [
   {
@@ -261,8 +269,20 @@ function App() {
     ? `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(whatsappMessage)}`
     : undefined;
 
-  if (trackingToken) return <OrderTrackingPage token={trackingToken} onReorder={reorderFromOrder} onEditOrder={beginOrderEdit} />;
-  if (staffMode) return <StaffOrders />;
+  if (trackingToken) {
+    return (
+      <Suspense fallback={routeLoadingFallback}>
+        <OrderTrackingPage token={trackingToken} onReorder={reorderFromOrder} onEditOrder={beginOrderEdit} />
+      </Suspense>
+    );
+  }
+  if (staffMode) {
+    return (
+      <Suspense fallback={routeLoadingFallback}>
+        <StaffOrders />
+      </Suspense>
+    );
+  }
 
   return (
     <div className="cloudl-app">
@@ -301,7 +321,7 @@ function App() {
               </div>
             </div>
             <div className="hero-visual">
-              <img className="hero-food" src="/assets/restaurant/hero-ethiopian.webp" alt="A generous Ethiopian platter of colorful stews and injera" />
+              <img className="hero-food" src="/assets/restaurant/hero-ethiopian.webp" {...responsiveImageProps("/assets/restaurant/hero-ethiopian.webp", [480, 960], "(max-width: 650px) calc(100vw - 80px), (max-width: 1200px) 42vw, 438px")} alt="A generous Ethiopian platter of colorful stews and injera" fetchPriority="high" decoding="async" />
               <div className="hero-note"><small>Today at Cloud L</small><strong>Come hungry.<br />Leave lighter.<span>✦</span></strong></div>
               <div className="hours-card"><small>Open daily</small><strong>◷ &nbsp;7:00 — 21:00</strong><span>⌖ &nbsp;Queen Elizabeth II St · Kebena</span></div>
             </div>
@@ -318,7 +338,7 @@ function App() {
             <p className="story-signoff">Made for Addis, with love <span>✦</span></p>
           </div>
           <figure className="story-photo-wrap">
-            <img src="/assets/restaurant/coffee-dessert.webp" alt="A traditional Ethiopian coffee moment at Cloud L" />
+            <img src="/assets/restaurant/coffee-dessert.webp" {...responsiveImageProps("/assets/restaurant/coffee-dessert.webp", [480, 960], "(max-width: 680px) 92vw, 38vw")} alt="A traditional Ethiopian coffee moment at Cloud L" loading="lazy" decoding="async" />
             <figcaption><span>Slow moments</span><i /> <span>Fast plates</span></figcaption>
           </figure>
         </section>
@@ -337,7 +357,7 @@ function App() {
               {featured.map((dish) => (
                 <article className="featured-card" key={dish.number}>
                   <div className="featured-photo">
-                    <img src={dish.image} alt={dish.alt} loading="lazy" decoding="async" />
+                    <img src={dish.image} {...responsiveImageProps(dish.image, [480, 960], "(max-width: 680px) calc(100vw - 36px), (max-width: 760px) 46vw, 32vw")} alt={dish.alt} loading="lazy" decoding="async" />
                     <span className="featured-number">{dish.number}</span>
                     <span className="featured-image-caption">Cloud L · Signature selection</span>
                   </div>

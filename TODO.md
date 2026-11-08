@@ -2,7 +2,7 @@
 
 **Public brand:** Cloud L. **Hours:** daily, 7:00 a.m.–9:00 p.m. **Address:** Queen Elizabeth II Street, Kebena, Addis Ababa. **Telebirr:** +251 901 120 012, manual transfers only; recipient name shown to customers: Lidya. **Bunna Bank QR:** Cloud L Trading PLC, merchant ID 450043. **Dashen Bank:** Cloud L Trading PLC, account 0194970006011.
 
-Last updated: 7 November 2026.
+Last updated: 8 November 2026.
 
 ## Live and tested on production (cloudlrestaurant.com)
 
@@ -52,14 +52,14 @@ Test orders placed on production (TEST, TEST2, TEST3 and the first CL-261021 ord
 - The order API takes the same per-item transaction lock as a staff toggle, then rechecks every selected menu ID before inserting an order. This serializes a first-time sold-out override against checkout; stale carts that lose the race get a helpful error and no order is created.
 - Existing production availability table was read-only checked on 26 October: 0 overrides and 0 items marked sold out. Do not change a real item's availability during validation.
 
-## Merged and production-deployed — one-tap reorder (checklist item 31; PR #2)
+## Merged and deployed — one-tap reorder (checklist item 31; PR #2)
 
 - From the existing private tracking link of a completed, delivered, declined, or cancelled order, let the customer add that order's items to the persistent cart in one action; do not offer reorder while an order is still being processed.
 - Match historical lines to current catalog entries and current prices, preserve each item/size and quantity, and identify items that are discontinued or currently sold out instead of silently adding them. If current availability cannot be verified, leave the cart unchanged and ask the customer to try again.
 - If the current cart already contains items, ask before replacing it; never silently discard the customer's cart.
 - Reorder creates only a new cart. It does not reuse the old order's customer, delivery, fulfillment, payment, or confirmation details; checkout and its server-side availability check are still required.
-- Developed on a separate feature branch and merged through PR #2 after GitHub Actions passed. Reorder only creates a new cart and still requires customer checkout; no live order was submitted and no Neon write was used to validate it.
-- Local build and focused lint passed; full lint had 0 errors and 15 existing warnings.
+- Developed on a separate feature branch and merged through PR #2 after the GitHub Actions check passed. Do not use live orders or write to Neon to validate this feature.
+- Local production build and focused lint passed; full lint had 0 errors and 15 existing warnings. No production order or Neon write was used to validate reorder.
 
 ## Merged and production-smoke-tested — favorites / heart system (checklist item 32; PR #2)
 
@@ -70,23 +70,32 @@ Test orders placed on production (TEST, TEST2, TEST3 and the first CL-261021 ord
 - Food category links follow the sections visible after search and Favorites filtering so they never point to hidden content.
 - Add automated browser E2E tests for bilingual food/drink heart toggles, keyboard activation, local persistence, favorites-only filters, empty states, and category links. Run them against local Vite with menu availability mocked; do not access Neon or create orders.
 - Add visual regression snapshots for unsaved/saved food and drink heart buttons and the bilingual customer Favorites controls. Run these alongside functional E2E tests in a GitHub Actions workflow on pull requests targeting `main`, using Playwright-managed Chromium and read-only repository permissions.
-- Developed on a separate feature branch. GitHub Actions passed on PR #2; production smoke tests confirmed food/drink heart controls and Favorites filters, then removed the temporary browser-local favorites. No Neon write or live order was used.
-- Local Playwright E2E passed 5/5 with six visual snapshots; E2E type-check and production build passed. Full lint had 0 errors and 15 existing warnings. No manual screen-reader test was performed.
+- Developed on a separate feature branch. GitHub Actions passed on PR #2 before merge; a live smoke test confirmed food and drink hearts, the Favorites filter, and localStorage cleanup. Favorites remain browser-local; no Neon write or production order was used.
+- After installing Playwright Chromium, local `npm run test:e2e` passed 5/5 (three functional checks and two visual suites with six snapshots); E2E TypeScript type-check and production build passed. Full lint had 0 errors and 15 existing warnings. No manual screen-reader test was performed.
 
-## Review branches (not merged or deployed)
+## Merged into `main` — Lighthouse performance
 
-- `feat/lighthouse-performance`: pushed for review; production baseline was mobile 0.51 and desktop 0.63; the optimized local build scored 0.92 mobile and 0.99 desktop. See its `LIGHTHOUSE_REPORT.md` for metrics and limits.
-- `feat/sentry-error-monitoring`: pushed for review; DSN-gated Sentry setup remains inactive until the owner supplies a Sentry project DSN; no telemetry was sent.
+- Lighthouse 12.8.2 production baseline on 6 November: mobile score 0.51, LCP 6.1 s, FCP 4.0 s, TBT 710 ms, CLS 0.001; desktop score 0.63, LCP 3.6 s, FCP 3.5 s, TBT 0 ms, CLS 0.
+- Optimized the local production build with responsive 240/480/960 WebP candidates, a high-priority hero preload, non-blocking Google Fonts, route/checkout code splitting, and size-reserved `content-visibility` for long offscreen sections.
+- On the same local Lighthouse setup, mobile improved from 0.61 to 0.92 after section containment (LCP 5.0 s → 2.5 s, TBT 710 ms → 220 ms, CLS 0.001); desktop remained 0.99 (LCP 1.0 s → 0.9 s, TBT 50 ms → 20 ms, CLS 0.005). This local result is not a post-deployment production audit.
+- The combined release candidate passed `npm run build`; `npm run lint` reported 0 errors and 15 warnings; `npm run test:e2e` passed 7/7. The Lighthouse results above are local measurements, not a post-deployment production audit.
+
+## Merged into `main` — Sentry error monitoring (inactive unless a DSN is configured)
+
+- Load `@sentry/react` only on Cloud L's production custom domain and only when build-time `VITE_SENTRY_DSN` is configured; defer its separate chunk until browser idle, and require a new build after DSN configuration.
+- Send sanitized client-side error type and stack frames only. Remove request URLs/headers/bodies, user identity, query strings/fragments, breadcrumbs, arbitrary contexts/extras/tags, and message text before transmission.
+- Do not enable tracing, session replay, user feedback, source-map upload, or capture of customer/order/payment data. No events are sent until the owner supplies a Sentry DSN; this release does not add one.
+- The combined release's E2E suite passed the payload-scrubbing and no-DSN checks. No Sentry DSN was set during validation, so validation sent no telemetry.
 
 ## In progress — customer order editing before staff confirmation (checklist item 44)
 
 - From a private order tracking link, allow menu item selection/quantities to be edited only while the unpaid order is still `received` or `needs_clarification` and has never reached staff confirmation. Hide the action at all other statuses.
 - The customer may add, remove, or change current menu lines and sizes in the existing menu/cart UI. Preserve the original customer, fulfillment, delivery, and payment details; item editing does not submit a new order or payment.
 - Recompute current catalog names/prices server-side, serialize against staff status changes, recheck sold-out availability under the existing transaction lock, and reject a stale edit if staff confirmed first.
-- Require at least one item; cancellation remains a separate owner-policy item. Record a customer-visible, non-sensitive order event after a successful edit.
+- Require at least one item before saving; when all historical lines have left the menu, allow a blank draft so the customer can add current items. Cancellation remains a separate owner-policy item. Record a customer-visible, non-sensitive order event after a successful edit.
 - Add an additive migration for required `order_items` delete privilege and the edit event type, but do not apply it to the shared Neon database. Gate the API and UI behind a disabled-by-default production-only feature flag.
 - Do not create a production order, write to Neon, or deploy this branch.
-- Local verification on `feat/customer-order-editing`: production build passed; Playwright E2E passed 11/11 with API calls mocked; full lint returned 0 errors and 15 existing warnings. A read-only code review found no transaction or concurrency blocker; it prompted support for starting an empty edit when every historical item has left the menu. Migration remains unapplied; no Neon writes or deployment occurred. Backend SQL still requires validation against a disposable isolated database before activation.
+- After integrating current `origin/main`, `npm run build` passed, Playwright E2E passed 13/13 with API calls mocked, and `npm run lint` reported 0 errors and 15 warnings in the unrelated `reference/Home.tsx` prototype. `git diff --check` passed. Migration remains unapplied; no Neon writes or deployment occurred. Backend SQL still requires validation against a disposable isolated database before activation.
 
 ## Not built yet
 
@@ -106,7 +115,7 @@ Test orders placed on production (TEST, TEST2, TEST3 and the first CL-261021 ord
 - Whether to offer CBE Birr, and with which account.
 - Whether a staff WhatsApp number differs from the public number.
 - A real nearby landmark for the address (checklist item 7).
-- Sentry project DSN (public client DSN only; no Sentry auth token). Add it as a Vercel Production build variable only after the Sentry branch is reviewed.
+- Sentry: integration can remain inert until a project DSN is supplied as `VITE_SENTRY_DSN`; error payloads must omit customer identifiers, order/payment data, request details, and tracking tokens. Keep tracing, replay, and user feedback off unless separately requested.
 - Keshir Ginger Tea: confirm the name with the kitchen. Guder or Gouder wine spelling.
 - Native-speaker proofreading of all Amharic text.
 

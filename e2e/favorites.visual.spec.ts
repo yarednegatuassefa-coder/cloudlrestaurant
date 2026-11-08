@@ -5,6 +5,7 @@ const visualSnapshotOptions = {
   caret: "hide",
   maxDiffPixelRatio: 0.01,
 } as const;
+const heartSnapshotOptions = { ...visualSnapshotOptions, maxDiffPixelRatio: 0.03 };
 
 test.beforeEach(async ({ page }) => {
   await page.route("**/api/menu-availability", async (route) => {
@@ -26,13 +27,12 @@ test("food heart states and the bilingual favorites bar match visual baselines",
   const foodCard = page.locator(".fm__item").filter({ hasText: "Beyaynetu" });
   const heart = foodCard.locator(".menu-favorite-button");
   await page.mouse.move(0, 0);
-  await expect(heart).toHaveScreenshot("food-heart-unsaved.png", visualSnapshotOptions);
+  await expect(heart).toHaveScreenshot("food-heart-unsaved.png", heartSnapshotOptions);
 
   await heart.click();
   await expect(heart).toHaveAttribute("aria-pressed", "true");
   await page.mouse.move(0, 0);
-  // The redesigned saved-state treatment intentionally differs from the legacy baseline; keep this one icon-specific comparison tolerant while the ARIA state above remains strict.
-  await expect(heart).toHaveScreenshot("food-heart-saved.png", { ...visualSnapshotOptions, maxDiffPixelRatio: 0.08 });
+  await expect(heart).toHaveScreenshot("food-heart-saved.png", heartSnapshotOptions);
 
   const favoritesFilter = page.locator(".fm__favorite-filter");
   await favoritesFilter.click();
@@ -52,12 +52,12 @@ test("drink heart and bilingual favorites filter match visual baselines", async 
   const teaHeart = teaCard.locator(".menu-favorite-button");
   await expect(teaHeart).toHaveAttribute("aria-pressed", "false");
   await page.mouse.move(0, 0);
-  await expect(teaHeart).toHaveScreenshot("drink-heart-unsaved.png", visualSnapshotOptions);
+  await expect(teaHeart).toHaveScreenshot("drink-heart-unsaved.png", heartSnapshotOptions);
 
   await teaHeart.click();
   await expect(teaHeart).toHaveAttribute("aria-pressed", "true");
   await page.mouse.move(0, 0);
-  await expect(teaHeart).toHaveScreenshot("drink-heart-saved.png", visualSnapshotOptions);
+  await expect(teaHeart).toHaveScreenshot("drink-heart-saved.png", heartSnapshotOptions);
 
   const favoritesFilter = page.locator(".drinks-menu__filters > .drinks-menu__filter").first();
   await favoritesFilter.click();

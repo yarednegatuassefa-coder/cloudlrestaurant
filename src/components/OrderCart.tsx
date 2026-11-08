@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import type { CartLine } from "./orderTypes";
-import CheckoutForm from "./CheckoutForm";
+const CheckoutForm = lazy(() => import("./CheckoutForm"));
 
 type OrderCartProps = {
   items: CartLine[];
@@ -87,7 +87,9 @@ export default function OrderCart({
               <button className="order-edit__cancel" type="button" disabled={isSavingEdit} onClick={onCancelOrderEdit}>Cancel editing</button>
               <p className="checkout-privacy">This edits the existing request only. No new payment or order will be submitted.</p>
             </div> : items.length > 0 && <>
-              <CheckoutForm items={items} subtotal={subtotal} onPlaced={(trackingUrl, reference) => { onOrderPlaced(); setReceipt({ trackingUrl, reference }); }} />
+              <Suspense fallback={<p className="checkout-note" role="status">Loading secure checkout / የክፍያ መረጃን በመጫን ላይ…</p>}>
+                <CheckoutForm items={items} subtotal={subtotal} onPlaced={(trackingUrl, reference) => { onOrderPlaced(); setReceipt({ trackingUrl, reference }); }} />
+              </Suspense>
               {whatsappHref && <div className="checkout-whatsapp-fallback"><p>Prefer to request your order in chat?</p><a href={whatsappHref} target="_blank" rel="noreferrer">Continue with WhatsApp <span aria-hidden="true">↗</span></a></div>}
             </>}
           </>}
