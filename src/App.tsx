@@ -272,7 +272,7 @@ function App() {
   if (trackingToken) {
     return (
       <Suspense fallback={routeLoadingFallback}>
-        <OrderTrackingPage token={trackingToken} onReorder={reorderFromOrder} onEditOrder={beginOrderEdit} />
+        <OrderTrackingPage key={trackingToken} token={trackingToken} onReorder={reorderFromOrder} onEditOrder={beginOrderEdit} />
       </Suspense>
     );
   }
