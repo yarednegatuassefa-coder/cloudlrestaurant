@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import type { CartLine } from "./orderTypes";
 
 type Event = { at: string; status: string | null; message: string };
@@ -63,10 +63,14 @@ const journey = ["received", "confirmed", "preparing", "ready_for_pickup", "comp
 const reorderableStatuses = new Set(["delivered", "completed", "declined", "cancelled"]);
 const editableStatuses = new Set(["received", "needs_clarification"]);
 
+type TrackingState =
+  | { kind: "loading"; token: string }
+  | { kind: "error"; token: string; message: string }
+  | { kind: "success"; token: string; order: Order };
+
 export default function OrderTrackingPage({ token, onReorder, onEditOrder }: Props) {
-  const [order, setOrder] = useState<Order | null>(null);
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(true);
+  const [trackingState, setTrackingState] = useState<TrackingState>(() => ({ kind: "loading", token }));
+  const requestSequence = useRef(0);
   const [paymentReference, setPaymentReference] = useState("");
   const [paymentMessage, setPaymentMessage] = useState("");
   const [sending, setSending] = useState(false);
@@ -74,7 +78,23 @@ export default function OrderTrackingPage({ token, onReorder, onEditOrder }: Pro
   const [reorderMessage, setReorderMessage] = useState("");
   const [editMessage, setEditMessage] = useState("");
 
-  const load = useCallback(async () => {
+  const currentTrackingState: TrackingState = trackingState.token === token
+    ? trackingState
+    : { kind: "loading", token };
+  const order = currentTrackingState.kind === "success" ? currentTrackingState.order : null;
+  const error = currentTrackingState.kind === "error" ? currentTrackingState.message : "";
+  const loading = currentTrackingState.kind === "loading";
+
+  const load = useCallback(async (preserveCurrentOrder = false): Promise<boolean> => {
+    const requestId = ++requestSequence.current;
+    if (preserveCurrentOrder) {
+      setTrackingState((current) => current.kind === "success" && current.token === token
+        ? current
+        : { kind: "loading", token });
+    } else {
+      setTrackingState({ kind: "loading", token });
+    }
+
     try {
       const response = await fetch("/api/orders", {
         method: "POST",
@@ -82,19 +102,29 @@ export default function OrderTrackingPage({ token, onReorder, onEditOrder }: Pro
         body: JSON.stringify({ action: "track", token }),
       });
       const data = await response.json() as { order?: Order; error?: string };
+      if (requestSequence.current !== requestId) return false;
       if (!response.ok || !data.order) throw new Error(data.error || "Tracking is unavailable.");
-      setOrder(data.order);
-      setError("");
+      setTrackingState({ kind: "success", token, order: data.order });
+      return true;
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Tracking is temporarily unavailable.");
-    } finally {
-      setLoading(false);
+      if (requestSequence.current !== requestId) return false;
+      if (!preserveCurrentOrder) {
+        setTrackingState({
+          kind: "error",
+          token,
+          message: cause instanceof Error ? cause.message : "Tracking is temporarily unavailable.",
+        });
+      }
+      return false;
     }
   }, [token]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => { void load(); }, 0);
-    return () => window.clearTimeout(timer);
+    return () => {
+      window.clearTimeout(timer);
+      requestSequence.current += 1;
+    };
   }, [load]);
 
   async function submitReference(event: FormEvent<HTMLFormElement>) {
@@ -111,7 +141,8 @@ export default function OrderTrackingPage({ token, onReorder, onEditOrder }: Pro
       if (!response.ok) throw new Error(data.error || "We could not record that reference.");
       setPaymentMessage(data.message || "Reference received. Cloud L staff will review it manually.");
       setPaymentReference("");
-      await load();
+      const refreshed = await load(true);
+      if (!refreshed) setPaymentMessage("Your reference was received, but the order status could not be refreshed. Please reload the page to confirm. · የማጣቀሻ ቁጥርዎ ተቀብሏል፣ ግን የትዕዛዝ ሁኔታውን ማዘመን አልተቻለም። ለማረጋገጥ እባክዎ ገጹን እንደገና ይጫኑ።");
     } catch (cause) {
       setPaymentMessage(cause instanceof Error ? cause.message : "Please try again.");
     } finally {
@@ -181,7 +212,7 @@ export default function OrderTrackingPage({ token, onReorder, onEditOrder }: Pro
         <p className="tracking-eyebrow">CLOUD L · ORDER STATUS</p>
         <h1>Your order, <em>in good hands.</em></h1>
         {loading && <p className="tracking-muted" role="status">Loading your private order status…</p>}
-        {!loading && error && <div className="tracking-error" role="alert"><p>{error}</p><button type="button" onClick={() => { setLoading(true); void load(); }}>Try again</button></div>}
+        {!loading && error && <div className="tracking-error" role="alert"><p>{error}</p><button type="button" onClick={() => { void load(); }}>Try again</button></div>}
         {order && <>
           <div className="tracking-reference">
             <small>ORDER REFERENCE</small>
