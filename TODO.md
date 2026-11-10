@@ -73,12 +73,21 @@ Test orders placed on production (TEST, TEST2, TEST3 and the first CL-261021 ord
 - Developed on a separate feature branch. GitHub Actions passed on PR #2 before merge; a live smoke test confirmed food and drink hearts, the Favorites filter, and localStorage cleanup. Favorites remain browser-local; no Neon write or production order was used.
 - After installing Playwright Chromium, local `npm run test:e2e` passed 5/5 (three functional checks and two visual suites with six snapshots); E2E TypeScript type-check and production build passed. Full lint had 0 errors and 15 existing warnings. No manual screen-reader test was performed.
 
-## In progress — special instructions field (checklist item 34)
+## Merged and Production-smoke-tested — special instructions field (checklist item 34; PR #8)
 
 - Add an elegant optional checkout input matching existing forms for kitchen requests such as “no onion”.
 - Preserve the note on the order and show it only in the authenticated staff order board. Do not expose it in customer tracking or public APIs, and do not send it to Sentry or other telemetry.
 - The starting `main` implementation already had the optional 500-character checkout textarea, server-side normalization/persistence to `orders.special_instructions`, the nullable database column, and staff-board display. Code review confirmed the public tracking query omits that column and the staff list API requires a valid session; note text is not logged or attached to Sentry events. No migration or production data write is needed.
-- This feature branch adds a bilingual accessible label, the “e.g., no onion” placeholder, a clear staff-only/allergy hint, and four route-mocked Playwright regressions. Production build passed; the full Playwright suite passed 20/20; the final focused item-34 rerun passed 4/4; focused lint on the changed files reported 0 warnings/errors. Full lint had 0 errors and 15 existing warnings. No real order API, Neon database, or production record was used. PR #8's GitHub E2E and Vercel Preview checks passed; the branch is not merged into `main` and has no Production deployment.
+- PR #8 merged as `b75fe546e954945acf60a7fdd33897b7cb211909`. Vercel reports the matching Production deployment READY; a read-only Production homepage and checkout-chunk smoke check confirmed the deployed bilingual field copy. No production order, real order API mutation, or Neon write was used.
+- The merge build passed; the full Playwright suite passed 20/20 and item-34 focused tests passed 4/4. Focused lint on the changed files reported 0 warnings/errors; full lint had 0 errors and 15 existing warnings.
+
+## In progress — number of guests field (checklist item 35)
+
+- Add an optional number-of-guests field in a refined form style.
+- Show and submit it only for dine-in. Accept either blank or a whole number from 1 to 40; changing fulfillment to pickup or delivery must not save or display a stale guest count.
+- Persist the value in the existing `orders.guest_count` column, whose database constraint already allows only NULL or 1–40. Show a count to staff only on dine-in orders. No schema migration is required.
+- The existing form already displays the optional field for dine-in, and the API/schema/staff board already support guest count. The discovered gap is that stale/API-supplied guest counts are not currently restricted to dine-in; this branch is hardening the end-to-end rule and adding route-mocked regression coverage. Do not create a production order or write to Neon for validation.
+- Local verification on `feat/dine-in-guest-count`: production build and standalone TypeScript check of `api/orders.ts` passed; pure API unit tests passed 4/4; the full route-mocked Playwright suite passed 25/25; focused lint passed with 0 warnings/errors; full lint had 0 errors and 15 existing warnings. No live API/SQL insert, Neon write, migration, or production order was used. Keep item open until PR review/merge and deployment status are confirmed.
 
 ## Merged into `main` — Lighthouse performance
 
