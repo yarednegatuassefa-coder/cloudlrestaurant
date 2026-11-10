@@ -2,7 +2,7 @@
 
 **Public brand:** Cloud L. **Hours:** daily, 7:00 a.m.–9:00 p.m. **Address:** Queen Elizabeth II Street, Kebena, Addis Ababa. **Telebirr:** +251 901 120 012, manual transfers only; recipient name shown to customers: Lidya. **Bunna Bank QR:** Cloud L Trading PLC, merchant ID 450043. **Dashen Bank:** Cloud L Trading PLC, account 0194970006011.
 
-Last updated: 8 November 2026.
+Last updated: 10 November 2026.
 
 ## Live and tested on production (cloudlrestaurant.com)
 
@@ -73,6 +73,13 @@ Test orders placed on production (TEST, TEST2, TEST3 and the first CL-261021 ord
 - Developed on a separate feature branch. GitHub Actions passed on PR #2 before merge; a live smoke test confirmed food and drink hearts, the Favorites filter, and localStorage cleanup. Favorites remain browser-local; no Neon write or production order was used.
 - After installing Playwright Chromium, local `npm run test:e2e` passed 5/5 (three functional checks and two visual suites with six snapshots); E2E TypeScript type-check and production build passed. Full lint had 0 errors and 15 existing warnings. No manual screen-reader test was performed.
 
+## In progress — special instructions field (checklist item 34)
+
+- Add an elegant optional checkout input matching existing forms for kitchen requests such as “no onion”.
+- Preserve the note on the order and show it only in the authenticated staff order board. Do not expose it in customer tracking or public APIs, and do not send it to Sentry or other telemetry.
+- The starting `main` implementation already had the optional 500-character checkout textarea, server-side normalization/persistence to `orders.special_instructions`, the nullable database column, and staff-board display. Code review confirmed the public tracking query omits that column and the staff list API requires a valid session; note text is not logged or attached to Sentry events. No migration or production data write is needed.
+- This feature branch adds a bilingual accessible label, the “e.g., no onion” placeholder, a clear staff-only/allergy hint, and four route-mocked Playwright regressions. Production build passed; the full Playwright suite passed 20/20; the final focused item-34 rerun passed 4/4; focused lint on the changed files reported 0 warnings/errors. Full lint had 0 errors and 15 existing warnings. No real order API, Neon database, or production record was used. PR #8's GitHub E2E and Vercel Preview checks passed; the branch is not merged into `main` and has no Production deployment.
+
 ## Merged into `main` — Lighthouse performance
 
 - Lighthouse 12.8.2 production baseline on 6 November: mobile score 0.51, LCP 6.1 s, FCP 4.0 s, TBT 710 ms, CLS 0.001; desktop score 0.63, LCP 3.6 s, FCP 3.5 s, TBT 0 ms, CLS 0.
@@ -87,15 +94,15 @@ Test orders placed on production (TEST, TEST2, TEST3 and the first CL-261021 ord
 - Do not enable tracing, session replay, user feedback, source-map upload, or capture of customer/order/payment data. No events are sent until the owner supplies a Sentry DSN; this release does not add one.
 - The combined release's E2E suite passed the payload-scrubbing and no-DSN checks. No Sentry DSN was set during validation, so validation sent no telemetry.
 
-## In progress — customer order editing before staff confirmation (checklist item 44)
+## Merged and deployed — customer order editing before staff confirmation (checklist item 44; PR #6)
 
 - From a private order tracking link, allow menu item selection/quantities to be edited only while the unpaid order is still `received` or `needs_clarification` and has never reached staff confirmation. Hide the action at all other statuses.
 - The customer may add, remove, or change current menu lines and sizes in the existing menu/cart UI. Preserve the original customer, fulfillment, delivery, and payment details; item editing does not submit a new order or payment.
 - Recompute current catalog names/prices server-side, serialize against staff status changes, recheck sold-out availability under the existing transaction lock, and reject a stale edit if staff confirmed first.
 - Require at least one item before saving; when all historical lines have left the menu, allow a blank draft so the customer can add current items. Cancellation remains a separate owner-policy item. Record a customer-visible, non-sensitive order event after a successful edit.
-- Add an additive migration for the `customer_order_edited` event type and `order_items` delete privilege. After isolated validation and owner approval, apply it to the shared Neon database; enable the API/UI only with a Production-only feature flag. Migration 005 has now been applied and verified on Neon `main`; `CLOUDL_CUSTOMER_ORDER_EDITING=true` is set for Production and becomes effective with the next production deployment.
+- Add an additive migration for the `customer_order_edited` event type and `order_items` delete privilege. Migration 005 was isolated-validated, applied, and verified on Neon `main`; `CLOUDL_CUSTOMER_ORDER_EDITING=true` is set for Production and is active in the successful PR #6 production deployment.
 - Do not create a production test order or edit a real customer's order for validation. No order rows were changed by the migration.
-- After integrating current `origin/main`, `npm run build` passed, Playwright E2E passed 13/13 with API calls mocked, and `npm run lint` reported 0 errors and 15 warnings in the unrelated `reference/Home.tsx` prototype. GitHub Actions E2E/visual checks passed, the latest Vercel Preview is READY, and `git diff --check` passed. Migration 005 passed an isolated PGlite check and a Neon temporary-branch check before application; Neon `main` now has exactly one migration-version row and the expected event constraint. No production order was placed or edited.
+- PR #6 merged and deployed; build and E2E checks passed. The live production smoke check was non-mutating. Migration 005 passed isolated PGlite and Neon temporary-branch checks before application; Neon `main` has the expected event constraint/version row. No production order was placed or edited.
 
 ## Not built yet
 
