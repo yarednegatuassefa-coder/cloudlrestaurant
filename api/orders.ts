@@ -1,6 +1,7 @@
 import { createHash, randomBytes } from "node:crypto";
 import { MENU_AVAILABILITY_LOCK_SQL, pool } from "./_server.js";
 import catalogData from "./_catalog.json" with { type: "json" };
+import { normalizeGuestCount } from "./guest-count.mjs";
 
 type Req = { method?: string; headers: Record<string, string | string[] | undefined>; body?: unknown; socket?: { remoteAddress?: string } };
 type Res = { status: (code: number) => Res; setHeader: (name: string, value: string | number) => void; json: (data: unknown) => void; end: () => void };
@@ -68,6 +69,9 @@ export default async function handler(req: Req, res: Res) {
     const address = validString(body.deliveryAddress, 400);
     if (name.length < 2 || !phone) return reply(res, 400, { error: "Enter your name and an Ethiopian mobile number, such as +251 9…" });
     if (!["pickup", "delivery", "dine_in"].includes(String(fulfillment))) return reply(res, 400, { error: "Choose pickup, delivery, or dine-in." });
+    const guestCountResult = normalizeGuestCount(fulfillment, body.guestCount);
+    if (!guestCountResult.ok) return reply(res, 400, { error: guestCountResult.error });
+    const guestCount = guestCountResult.guestCount;
     if (typeof paymentMethod !== "string" || !/^[a-zA-Z0-9_-]{1,100}$/.test(paymentMethod)) return reply(res, 400, { error: "Choose one of the available payment methods." });
     if (fulfillment === "delivery" && address.length < 5) return reply(res, 400, { error: "Add the delivery address so staff can confirm coverage and fee." });
     if (rows.length < 1 || rows.length > 30) return reply(res, 400, { error: "Your order must contain 1–30 menu lines." });
@@ -115,7 +119,7 @@ export default async function handler(req: Req, res: Res) {
       const inserted = await client.query(
         `INSERT INTO public.orders (public_reference, tracking_token_hash, payment_method, payment_destination_snapshot, payment_status, fulfillment, customer_name, customer_phone, delivery_address, delivery_landmark, delivery_notes, special_instructions, guest_count, table_number, subtotal_etb, total_etb, wants_whatsapp_updates)
          VALUES ($1,$2,$3,$4::jsonb,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$15,$16) RETURNING id`,
-        [reference, tokenHash(trackingToken), paymentMethod, JSON.stringify(paymentSnapshot), "unpaid", fulfillment, name, phone, fulfillment === "delivery" ? address : null, validString(body.deliveryLandmark, 200) || null, validString(body.deliveryNotes, 500) || null, validString(body.specialInstructions, 500) || null, Number.isInteger(body.guestCount) && Number(body.guestCount) >= 1 && Number(body.guestCount) <= 40 ? Number(body.guestCount) : null, validString(body.tableNumber, 40) || null, subtotal, body.wantsWhatsAppUpdates === true],
+        [reference, tokenHash(trackingToken), paymentMethod, JSON.stringify(paymentSnapshot), "unpaid", fulfillment, name, phone, fulfillment === "delivery" ? address : null, validString(body.deliveryLandmark, 200) || null, validString(body.deliveryNotes, 500) || null, validString(body.specialInstructions, 500) || null, guestCount, validString(body.tableNumber, 40) || null, subtotal, body.wantsWhatsAppUpdates === true],
       );
       const orderId = inserted.rows[0].id as string;
       for (const item of items) await client.query(

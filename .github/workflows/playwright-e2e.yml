@@ -27,6 +27,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Run API validation unit tests
+        run: npm run test:api
+
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
 
