@@ -205,7 +205,7 @@ export default function OrderTrackingPage({ token, onReorder, onEditOrder }: Pro
   return (
     <main className="tracking-page">
       <header className="tracking-header">
-        <a href="/" className="tracking-brand"><img src="/assets/restaurant/cloud-l-logo.svg" alt="Cloud L" /></a>
+        <a href="/" className="tracking-brand"><img src="/assets/restaurant/cloud-l-trading-logo.png" alt="Cloud L Trading P.L.C." /></a>
         <span>PRIVATE ORDER TRACKING</span>
       </header>
       <div className="tracking-card">

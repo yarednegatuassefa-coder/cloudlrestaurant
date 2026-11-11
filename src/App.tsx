@@ -126,6 +126,7 @@ function App() {
   const [staffMode, setStaffMode] = useState(false);
   const [soldOutItemIds, setSoldOutItemIds] = useState<Set<string>>(() => new Set());
   const [navScrolled, setNavScrolled] = useState(false);
+  const [visitSectionVisible, setVisitSectionVisible] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -150,6 +151,14 @@ function App() {
     updateNav();
     window.addEventListener("scroll", updateNav, { passive: true });
     return () => window.removeEventListener("scroll", updateNav);
+  }, []);
+
+  useEffect(() => {
+    const visitSection = document.getElementById("visit");
+    if (!visitSection) return;
+    const observer = new IntersectionObserver(([entry]) => setVisitSectionVisible(entry.isIntersecting), { threshold: 0 });
+    observer.observe(visitSection);
+    return () => observer.disconnect();
   }, []);
 
   useEffect(() => {
@@ -285,12 +294,12 @@ function App() {
   }
 
   return (
-    <div className="cloudl-app">
+    <div className={`cloudl-app${visitSectionVisible ? " is-visit-visible" : ""}`}>
       <main id="top" className="cloudl-site">
         <section className="hero-shell" aria-label="Cloud L introduction">
           <header className={`site-nav${navScrolled ? " is-scrolled" : ""}`}>
             <a className="site-brand" href="#top" aria-label="Cloud L home">
-              <img src="/assets/restaurant/cloud-l-logo.svg" alt="Cloud L" />
+              <img src="/assets/restaurant/cloud-l-trading-logo.png" alt="Cloud L Trading P.L.C." />
             </a>
             <nav className="desktop-nav" aria-label="Main navigation">
               <a href="#story">Our table</a>
@@ -395,24 +404,37 @@ function App() {
         <FoodMenu onAddToOrder={addToCart} soldOutItemIds={soldOutItemIds} favoriteIds={favoriteIds} onToggleFavorite={toggleFavoriteId} />
         <DrinksMenu currencySuffix="ETB" onAddToOrder={addToCart} soldOutItemIds={soldOutItemIds} favoriteIds={favoriteIds} onToggleFavorite={toggleFavoriteId} />
 
-        <section className="visit-section" id="visit">
+        <section className="visit-section" id="visit" aria-labelledby="visit-heading">
           <div className="visit-inner content-wrap">
-            <div>
-              <p className="eyebrow eyebrow--light"><span />Bring someone</p>
-              <h2>Good food is<br /><em>better together.</em></h2>
-              <p>Find our table on Queen Elizabeth II Street in Kebena, Addis Ababa. Tap for turn-by-turn directions.</p>
+            <div className="visit-copy">
+              <p className="eyebrow"><span />Plan a visit</p>
+              <h2 id="visit-heading">Your table is<br /><em>waiting.</em></h2>
+              <p>Come share Ethiopian favorites, fasting-friendly plates, and familiar comfort food at Cloud L in Kebena.</p>
+              <div className="visit-meta">
+                <p><strong>Find us</strong><span>Queen Elizabeth II Street, Kebena · Addis Ababa</span></p>
+                <p><strong>Open daily</strong><span>7:00 a.m.–9:00 p.m.</span></p>
+              </div>
             </div>
-            <div className="visit-card">
-              <img src="/assets/restaurant/cloud-l-logo.svg" alt="Cloud L" />
-              <span>Queen Elizabeth II Street<br />Kebena · Addis Ababa · Ethiopia</span>
+            <div className="visit-card" aria-label="Cloud L location and contact details">
+              <div className="visit-card__brand">
+                <img src="/assets/restaurant/cloud-l-trading-logo.png" alt="Cloud L Trading P.L.C." />
+              </div>
+              <p className="visit-card__eyebrow">Cloud L · Kebena</p>
+              <h3>Find our table.</h3>
+              <address>Queen Elizabeth II Street<br />Kebena · Addis Ababa · Ethiopia</address>
               <div className="visit-links">
-                <a href="tel:+251901120012">Call us <span>↗</span></a>
-                <a href="https://wa.me/251901120012" target="_blank" rel="noreferrer">WhatsApp <span>↗</span></a>
-                <a href={mapSearchUrl} target="_blank" rel="noreferrer" aria-label="Get directions to Cloud L in Kebena, Addis Ababa">Get directions <span>↗</span></a>
+                <a className="visit-link visit-link--directions" href={mapSearchUrl} target="_blank" rel="noreferrer" aria-label="Get directions to Cloud L in Kebena, Addis Ababa">Get directions <span aria-hidden="true">↗</span></a>
+                <a className="visit-link visit-link--call" href="tel:+251901120012">Call us <span>+251 901 120 012</span></a>
+                <a className="visit-link visit-link--whatsapp" href="https://wa.me/251901120012" target="_blank" rel="noreferrer">Message us on WhatsApp <span aria-hidden="true">↗</span></a>
               </div>
             </div>
           </div>
-          <footer className="site-footer content-wrap"><span>© Cloud L</span><a href="#top">Back to the top ↑</a><span>Made for Addis, with love</span></footer>
+          <footer className="site-footer" aria-label="Cloud L footer">
+            <span>© Cloud L Trading P.L.C.</span>
+            <a className="site-footer__location" href={mapSearchUrl} target="_blank" rel="noreferrer">Queen Elizabeth II Street, Kebena · Get directions ↗</a>
+            <a className="site-footer__call" href="tel:+251901120012">Call us · +251 901 120 012</a>
+            <a className="site-footer__top" href="#top">Back to top ↑</a>
+          </footer>
         </section>
       </main>
 
