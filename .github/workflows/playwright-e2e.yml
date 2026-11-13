@@ -35,3 +35,6 @@ jobs:
 
       - name: Run E2E tests and visual snapshots
         run: npm run test:e2e
+
+      - name: Run PWA installability and offline privacy smoke test
+        run: npm run test:pwa

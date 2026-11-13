@@ -74,3 +74,16 @@ Continue the established contemporary Ethiopian restaurant editorial style: warm
 - The latest upstream project checklist records the staff password and session secret as configured in Vercel; keep both server-only and fail closed if either is missing.
 - Delivery zones/fees, cancellation/refund wording, and the staff WhatsApp notification recipient still need operational confirmation. Until then, require staff review; do not invent fees or policies.
 - Automatic WhatsApp, Telegram, CBE Birr, remote Telebirr API, paid gateways, refunds, and split payments are not required for the free-first release.
+
+
+## Cloud L super-app rollout (free-first, restaurant-first)
+
+The first expansion is an installable Progressive Web App, not a costly native app or a wallet. Keep Cloud L's website and online ordering as the single customer entry point, and add app-like convenience only where it improves the restaurant experience.
+
+1. **Installable PWA foundation:** brand-matched home-screen icons, standalone launch metadata, and an offline fallback. Cache only public static files. Never cache API responses, payment QR files, order/tracking pages, or staff data; do not queue an order or payment while offline.
+2. **Customer convenience:** preserve guest checkout and the existing favorites, reorder, private tracking, and pre-confirmation editing. Improve install guidance and mobile ordering from real customer feedback before adding accounts.
+3. **Loyalty, only after owner approval:** define simple earn/redeem rules, expiry, exclusions, and privacy notice first. Start with a low-cost digital rewards ledger; do not represent rewards as stored money or launch a wallet.
+4. **Cashless acceptance:** compare approved merchant options for website checkout and in-person QR/POS separately. Verify contracts, transaction fees, settlement timelines, refunds, devices, and support directly with each provider before adding production keys or changing the manual-transfer safety gate.
+5. **Restaurant operations:** prioritize a kitchen-friendly order view, explicit owner/manager/kitchen permissions, and reliable stock/availability workflows before automated messaging or delivery integrations. Keep owner decisions and access boundaries explicit.
+
+Do not add marketplace listings, stored-value balances, customer accounts, paid APIs, or automatic messaging merely to imitate a generic “super app.” Each step should reduce friction for Cloud L's customers or staff and stay within the free tier unless the owner approves a verified cost.

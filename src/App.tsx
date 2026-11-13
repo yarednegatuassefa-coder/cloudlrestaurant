@@ -427,6 +427,11 @@ function App() {
                 <a className="visit-link visit-link--call" href="tel:+251901120012">Call us <span>+251 901 120 012</span></a>
                 <a className="visit-link visit-link--whatsapp" href="https://wa.me/251901120012" target="_blank" rel="noreferrer">Message us on WhatsApp <span aria-hidden="true">↗</span></a>
               </div>
+              <details className="install-app-help">
+                <summary>Add Cloud L to your home screen</summary>
+                <p>Android: open your browser menu and choose “Install app” or “Add to Home screen”. iPhone or iPad: tap Share, then “Add to Home Screen”.</p>
+                <p>Orders and private order tracking need an internet connection. Cloud L does not queue orders or payment requests while offline.</p>
+              </details>
             </div>
           </div>
           <footer className="site-footer" aria-label="Cloud L footer">
