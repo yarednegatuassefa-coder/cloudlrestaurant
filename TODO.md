@@ -113,12 +113,12 @@ Test orders placed on production (TEST, TEST2, TEST3 and the first CL-261021 ord
 - Do not create a production test order or edit a real customer's order for validation. No order rows were changed by the migration.
 - PR #6 merged and deployed; build and E2E checks passed. The live production smoke check was non-mutating. Migration 005 passed isolated PGlite and Neon temporary-branch checks before application; Neon `main` has the expected event constraint/version row. No production order was placed or edited.
 
-## Implemented and locally verified — installable Cloud L PWA foundation (production publishing pending approval)
+## Implemented and live — installable Cloud L PWA foundation
 
 - Added the Cloud L manifest, standard and maskable launcher icons derived from the existing official logo, Apple home-screen metadata, and Android/iPhone installation guidance.
 - Added a branded offline fallback. The service worker caches only public static assets; it never caches API responses, payment QR files, customer tracking/order pages, or staff information, and never queues orders or payments.
 - Local verification passed: production build, `npm run test:e2e` (25/25), `npm run test:api` (4/4), and `npm run test:pwa` (manifest/icons, service-worker control, synthetic tracking/staff offline fallbacks, network-only API/payment paths, and an offline order POST that fails without replay after reconnecting). `npm run lint` reported 0 errors and 15 warnings. No production order was created and no Neon write was used.
-- The work remains on a local feature branch and is not live yet; pushing it to `main` would trigger the public Vercel production deployment and awaits the owner's approval.
+- PWA implementation commit `51f6666` was pushed to `main` and deployed by Vercel to Production with state `READY`. Both `cloudlrestaurant.com` and `www.cloudlrestaurant.com` are aliased; the live homepage, manifest, icons, service worker, and offline page returned HTTP 200.
 - Longer-term direction: improve the restaurant journey first; only add loyalty after owner-defined rules, payment gateway/POS after direct merchant approval and fee/settlement checks, and kitchen roles after staff workflow confirmation. Do not create a wallet or paid integration by default.
 
 ## Not built yet
