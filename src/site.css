@@ -429,7 +429,7 @@ img{height:auto}
 
 
 /* Installable Cloud L PWA guidance */
-.install-app-help{margin-top:18px;padding-top:13px;border-top:1px solid rgba(255,255,255,.16);color:rgba(248,242,232,.72)}
-.install-app-help summary{width:max-content;max-width:100%;color:#f6dcc4;font-size:10px;font-weight:700;letter-spacing:.04em;cursor:pointer}
-.install-app-help summary:focus-visible{outline:3px solid #d5a17f;outline-offset:4px}
-.install-app-help p{max-width:520px;margin:10px 0 0;color:rgba(248,242,232,.66);font-size:10px;line-height:1.65}
+.install-app-help{margin-top:18px;padding:14px 16px;border:1px solid #d7c8b8;border-radius:3px;color:#514a42;background:#f4eee4}
+.install-app-help summary{width:max-content;max-width:100%;color:#6f4837;font-size:13px;font-weight:700;line-height:1.5;letter-spacing:.02em;cursor:pointer}
+.install-app-help summary:focus-visible{outline:3px solid #8f5139;outline-offset:4px}
+.install-app-help p{max-width:520px;margin:10px 0 0;color:#514a42;font-size:12px;line-height:1.7}

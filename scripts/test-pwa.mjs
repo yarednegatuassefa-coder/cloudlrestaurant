@@ -61,6 +61,33 @@ try {
   const installHelp = await page.locator(".install-app-help").innerText();
   assert.match(installHelp, /Android/i);
   assert.match(installHelp, /iPhone|iPad/i);
+  const readability = await page.locator(".install-app-help").evaluate((panel) => {
+    const relativeLuminance = (color) => {
+      const [r, g, b] = color.match(/[\d.]+/g).slice(0, 3).map((channel) => {
+        const value = Number(channel) / 255;
+        return value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
+      });
+      return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    };
+    const contrastRatio = (foreground, background) => {
+      const a = relativeLuminance(foreground);
+      const b = relativeLuminance(background);
+      return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+    };
+    const summary = panel.querySelector("summary");
+    const paragraph = panel.querySelector("p");
+    const background = getComputedStyle(panel).backgroundColor;
+    return {
+      summaryFontPx: parseFloat(getComputedStyle(summary).fontSize),
+      summaryContrast: contrastRatio(getComputedStyle(summary).color, background),
+      paragraphFontPx: parseFloat(getComputedStyle(paragraph).fontSize),
+      paragraphContrast: contrastRatio(getComputedStyle(paragraph).color, background),
+    };
+  });
+  assert.ok(readability.summaryFontPx >= 12, "install-help heading should be at least 12px");
+  assert.ok(readability.summaryContrast >= 4.5, "install-help heading should meet WCAG AA text contrast");
+  assert.ok(readability.paragraphFontPx >= 12, "install-help instructions should be at least 12px");
+  assert.ok(readability.paragraphContrast >= 4.5, "install-help instructions should meet WCAG AA text contrast");
   await page.waitForFunction(() => Boolean(navigator.serviceWorker?.controller), null, { timeout: 10_000 });
 
   // Prime the browser with online requests, then confirm neither endpoint is persisted in Cache Storage.
