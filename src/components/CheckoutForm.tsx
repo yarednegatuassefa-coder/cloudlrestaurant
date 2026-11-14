@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
+import ArifPayStatus from "./ArifPayStatus";
 import type { CartLine } from "./orderTypes";
 
 type Props = { items: CartLine[]; subtotal: number; onPlaced: (trackingUrl: string, reference: string) => void };
@@ -69,6 +70,7 @@ export default function CheckoutForm({ items, subtotal, onPlaced }: Props) {
       <small id="special-instructions-help">Up to 500 characters. Visible to Cloud L staff in the order board; for allergies, please speak directly with staff.</small>
     </div>
     <fieldset className="checkout-choice checkout-payment"><legend>Payment preference</legend>{!methodsLoaded ? <p className="checkout-note">Loading available payment options…</p> : methodsError ? <p className="checkout-error" role="alert">{methodsError} Please try again later.</p> : methods.length === 0 ? <p className="checkout-note">No payment options are currently available. Please contact Cloud L to place your request.</p> : <div>{methods.map((method) => <label key={method.id} className={paymentMethod === method.id ? "is-selected" : ""}><input type="radio" name="payment" value={method.id} checked={paymentMethod === method.id} onChange={() => setPaymentMethod(method.id)} /><span><strong>{method.label}</strong><small>{method.payment_type === "cash" ? (fulfillment === "delivery" ? "Pay on delivery" : fulfillment === "pickup" ? "Pay on pickup" : "Pay at the restaurant") : "Manual transfer details are shared after Cloud L confirms your order and total."}</small></span></label>)}</div>}</fieldset>
+    <ArifPayStatus variant="checkout" />
     {methods.find((method) => method.id === paymentMethod)?.payment_type === "manual_transfer" && <p className="checkout-note checkout-payment-note">This is a manual transfer, not an online payment. Wait for Cloud L staff to confirm your order and exact total; instructions will appear on your private tracking page after confirmation.</p>}
     <label className="checkout-optin"><input type="checkbox" checked={wantsWhatsAppUpdates} onChange={(e) => setWantsWhatsAppUpdates(e.currentTarget.checked)} /><span>I’d like order-status updates by WhatsApp. Cloud L staff will review and send updates manually.</span></label>
     {error && <p className="checkout-error" role="alert">{error}</p>}
