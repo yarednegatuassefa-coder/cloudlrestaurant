@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect, useSyncExternalStore, useState } from "react
 import FoodMenu from "./components/FoodMenu";
 import DrinksMenu from "./components/DrinksMenu";
 import OrderCart from "./components/OrderCart";
+import ArifPayStatus from "./components/ArifPayStatus";
 import type { CartLine, OrderSelection } from "./components/orderTypes";
 import { getFavoriteIdsSnapshot, getServerFavoriteIdsSnapshot, subscribeToFavoriteIds, toggleFavoriteId } from "./components/favoritesStore";
 import { responsiveImageProps } from "./components/responsiveImageProps";
@@ -328,6 +329,7 @@ function App() {
                 <span><i>◉</i>Fasting-friendly</span>
                 <span><i>✦</i>Made to share</span>
               </div>
+              <ArifPayStatus variant="hero" />
             </div>
             <div className="hero-visual">
               <img className="hero-food" src="/assets/restaurant/hero-ethiopian.webp" {...responsiveImageProps("/assets/restaurant/hero-ethiopian.webp", [480, 960], "(max-width: 650px) calc(100vw - 80px), (max-width: 1200px) 42vw, 438px")} alt="A generous Ethiopian platter of colorful stews and injera" fetchPriority="high" decoding="async" />
