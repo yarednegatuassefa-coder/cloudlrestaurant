@@ -2,19 +2,28 @@
 
 ## Status
 
-Architecture discovery complete. This document defines the first safe implementation slice; it does not enable location tracking, geocoding, mapping providers, or production database changes.
+Architecture and database discovery complete. This PR records the safe first implementation slice; it does not enable location tracking, geocoding, mapping providers, or production database changes.
 
-## Repository facts verified
+## Verified application architecture
 
-- The customer-facing app is a React 19 + TypeScript + Vite application.
-- Cloud L currently presents one named restaurant location in Kebena, Addis Ababa. The inspected code does not establish a multi-restaurant or multi-tenant SaaS model.
-- PostgreSQL is accessed through the `pg` package and a shared pool in `api/_server.ts`, using `DATABASE_URL`.
-- Customer delivery addresses are currently stored as text in `orders.delivery_address`; the inspected order creation API does not accept latitude/longitude.
-- Staff can set a delivery fee while confirming a delivery order. The current staff API returns customer contact and delivery details to authenticated staff.
-- The public site currently links to a fixed Google Maps directions URL.
-- No GeoLibre/MapLibre map dependency or geospatial query layer was found in the inspected package manifest and application entry points.
+- React 19 + TypeScript + Vite frontend.
+- PostgreSQL accessed through `pg` and the shared pool in `api/_server.ts`, using `DATABASE_URL`.
+- One named Cloud L restaurant location in Kebena, Addis Ababa. The inspected application and database do not establish a multi-restaurant or multi-tenant SaaS model.
+- Customer delivery addresses are currently stored as text in `orders.delivery_address`; order creation does not accept coordinates.
+- Staff can set a delivery fee while confirming an order. The authenticated staff API can read customer contact and delivery details.
+- No map-rendering dependency or geospatial query layer is present in the application package.
+- Database schema changes are tracked by `public.schema_migrations`; checked-in SQL migrations live under `db/migrations/`.
 
-These findings are based on the files inspected, not a complete database or deployment audit.
+## Verified database facts
+
+The connected Neon project matching the repository is `cloudlrestaurant-orders` (PostgreSQL 18.7, default branch `main`).
+
+- `postgis` is available on the server at version 3.6.4 but is **not installed** in the live database.
+- The existing schema includes `orders`, `order_items`, `order_events`, `menu_availability`, `payment_methods`, `payment_qr_assets`, `payment_method_changes`, and `schema_migrations`.
+- The live `orders` table contains customer names, phone numbers, delivery addresses and payment-related fields. Those records are sensitive.
+- The migration ledger currently reports `001_initial_orders`, `003_needs_clarification_status`, `004_payment_destination_settings`, and `005_customer_order_edits`.
+
+Only schema metadata and migration version identifiers were queried. No customer/order rows or payment records were read.
 
 ## Product decision
 
@@ -25,7 +34,7 @@ Build **Delivery Zones** first. Defer demand heatmaps, driver routing, competito
 1. Staff can create, edit, activate, deactivate, and order delivery zones.
 2. Each zone has a name, optional description, delivery fee in ETB, optional minimum order value, and a polygon boundary.
 3. A customer delivery location can be checked against active zone boundaries.
-4. The checkout flow can tell the customer whether the selected pin is serviceable and show the applicable delivery fee before order submission.
+4. Checkout can tell the customer whether the selected pin is serviceable and show the applicable delivery fee before order submission.
 5. Staff can see the assigned zone and the delivery location needed to fulfil that order.
 6. The order-creation API remains authoritative: it rechecks zone availability and calculates the fee server-side inside the order transaction. Client-submitted fees are never trusted.
 7. Pickup and dine-in orders do not require location coordinates or a delivery zone.
@@ -56,9 +65,9 @@ Delivery coordinates are sensitive location data and must be treated with the sa
 
 ## Proposed technical approach
 
-1. Confirm the production database engine/version and whether PostGIS is available. The repository uses PostgreSQL, but PostGIS availability has not been verified.
-2. If PostGIS is available and approved, store zone polygons using a documented SRID (normally WGS 84 / EPSG:4326 for exchanged GPS coordinates) and use geography-aware containment/distance operations as appropriate.
-3. If PostGIS is unavailable, compare enabling it with a narrowly scoped alternative before choosing a geometry representation. Do not silently approximate polygon containment in the browser.
+1. PostGIS is available but not installed. Enabling it requires a database change and must be tested away from the live branch first.
+2. Use a schema-only Neon branch for migration validation because the live database contains customer and payment data. The connected Neon tool surface does not expose schema-only branch creation, so do not create a normal child branch that copies production rows.
+3. Use a documented SRID (normally WGS 84 / EPSG:4326 for exchanged GPS coordinates) and PostGIS point-in-polygon operations for authoritative serviceability.
 4. Choose the web map renderer only after checking current deployment constraints, bundle impact, licensing, accessibility, mobile behaviour, and offline requirements. The GeoLibre desktop/GIS release is not assumed to be a drop-in React map component.
 5. Keep all authoritative zone validation and fee calculation on the server. The map is an input and visualization surface, not a security boundary.
 
@@ -87,10 +96,9 @@ Order creation:
 - Build, lint, API tests, and end-to-end tests must pass before merge.
 - Use synthetic coordinates and test fixtures only. No live customer/order data for development or agent testing.
 
-## Required inputs before implementation
+## Required decision before the feature implementation
 
-- Confirm whether the deployed PostgreSQL database has PostGIS enabled and identify the migration mechanism used for the live schema.
-- Confirm whether Cloud L wants customers to place a pin at checkout, or staff to assign a zone manually from the supplied address.
-- Confirm the operational delivery zones, ETB fees, and any minimum-order thresholds.
+1. **Delivery-location workflow:** should customers place a pin at checkout, or should staff assign a zone manually from the address/landmark?
+2. **Commercial rules:** provide the actual delivery zones, delivery fee (ETB) for each zone, and any minimum-order thresholds. If not yet defined, the first admin release can let staff configure these values without enabling customer checkout enforcement.
 
-Until those facts are verified, do not write or apply a database migration, add a map provider, or change the order-creation contract.
+Until the workflow and zone rules are confirmed and a schema-only test branch is available, do not write or apply a database migration, add a map provider, or change the order-creation contract.
