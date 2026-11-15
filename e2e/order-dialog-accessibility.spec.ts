@@ -13,6 +13,7 @@ async function addMenuItemAndOpenCart(page: import("@playwright/test").Page) {
 
 test("order dialog sets initial focus, traps keyboard focus, and restores focus after Escape", async ({ page }) => {
   const dialog = await addMenuItemAndOpenCart(page);
+  const addButton = page.locator(".fm__item").filter({ hasText: "Beyaynetu" }).getByRole("button", { name: "Add Beyaynetu to order" });
   const close = dialog.getByRole("button", { name: "Close order panel" });
   const whatsapp = dialog.getByRole("link", { name: /Continue with WhatsApp/ });
 
@@ -25,7 +26,7 @@ test("order dialog sets initial focus, traps keyboard focus, and restores focus 
 
   await page.keyboard.press("Escape");
   await expect(dialog).toHaveCount(0);
-  await expect(page.locator(".order-cart-trigger")).toBeFocused();
+  await expect(addButton).toBeFocused();
 });
 
 test("rapid repeated checkout submits create only one order request", async ({ page }) => {
