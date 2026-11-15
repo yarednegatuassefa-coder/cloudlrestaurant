@@ -118,3 +118,44 @@ test("rapid repeated checkout submits create only one order request", async ({ p
   await expect(dialog.getByRole("heading", { name: "Request received" })).toBeVisible();
   expect(createRequests).toBe(1);
 });
+
+test("checkout cannot be dismissed while an order request is in flight", async ({ page }) => {
+  let finishRequest!: () => void;
+  const requestFinished = new Promise<void>((resolve) => { finishRequest = resolve; });
+  await page.route("**/api/menu-availability", async (route) => {
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ soldOutItemIds: [] }) });
+  });
+  await page.route("**/api/payment-methods", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ methods: [{ id: "cash", label: "Cash", payment_type: "cash" }] }),
+    });
+  });
+  await page.route("**/api/orders", async (route) => {
+    await requestFinished;
+    await route.fulfill({
+      status: 201,
+      contentType: "application/json",
+      body: JSON.stringify({
+        reference: "CL-CHECKOUT-DISMISS-GUARD",
+        trackingUrl: "https://www.cloudlrestaurant.com/#track/" + trackingToken,
+        status: "received",
+        subtotalEtb: 450,
+        currency: "ETB",
+      }),
+    });
+  });
+
+  const dialog = await addMenuItemAndOpenCart(page);
+  await dialog.getByRole("button", { name: /Continue to checkout/ }).click();
+  await dialog.getByLabel("Your name").fill("Test Customer");
+  await dialog.getByLabel("Mobile number").fill("+251 911 234 567");
+  const close = dialog.getByRole("button", { name: "Close order panel" });
+  await dialog.getByRole("button", { name: /Place order request/ }).click();
+  await expect(close).toBeDisabled();
+  await page.keyboard.press("Escape");
+  await expect(dialog).toBeVisible();
+  finishRequest();
+  await expect(dialog.getByRole("heading", { name: "Request received" })).toBeVisible();
+});
