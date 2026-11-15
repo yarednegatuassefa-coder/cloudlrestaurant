@@ -433,3 +433,22 @@ img{height:auto}
 .install-app-help summary{width:max-content;max-width:100%;color:#6f4837;font-size:13px;font-weight:700;line-height:1.5;letter-spacing:.02em;cursor:pointer}
 .install-app-help summary:focus-visible{outline:3px solid #8f5139;outline-offset:4px}
 .install-app-help p{max-width:520px;margin:10px 0 0;color:#514a42;font-size:12px;line-height:1.7}
+
+
+/* Customer-selected delivery pin */
+.delivery-location-picker{display:grid;gap:10px;margin:4px 0 16px;padding:14px;border:1px solid #d9cbbb;background:#fffaf2}
+.delivery-location-picker__heading{display:flex;justify-content:space-between;align-items:flex-start;gap:14px}
+.delivery-location-picker__heading>div{display:grid;gap:4px}
+.delivery-location-picker__heading strong{color:#302c27;font-size:12px}
+.delivery-location-picker__heading small,.delivery-location-picker__privacy,.delivery-location-picker__hint{color:#756c62;font-size:10px;line-height:1.6}
+.delivery-location-picker__heading button,.delivery-location-picker__selected button{flex:0 0 auto;min-height:34px;padding:0 10px;border:1px solid #8f5139;background:#fff;color:#8f5139;font:700 9px "DM Sans","Noto Sans Ethiopic",sans-serif;cursor:pointer}
+.delivery-location-picker__map{width:100%;height:260px;z-index:0;background:#e7e1d8}
+.delivery-location-picker__selected{display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:10px}
+.delivery-location-picker__selected span{color:#48664b;font-weight:700}
+.delivery-location-picker__selected code{color:#514a42;font-size:10px}
+.delivery-location-picker__selected button{margin-left:auto;min-height:28px;border-color:#c9b8a7;color:#625d56}
+.delivery-location-picker__hint,.delivery-location-picker__error{margin:0;font-size:10px;line-height:1.6}
+.delivery-location-picker__error{color:#9c382f}
+.delivery-location-picker__privacy{display:block}
+.leaflet-container{font:12px "DM Sans","Noto Sans Ethiopic",sans-serif}
+@media(max-width:480px){.delivery-location-picker{padding:11px}.delivery-location-picker__heading{flex-direction:column}.delivery-location-picker__map{height:230px}}
