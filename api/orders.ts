@@ -1,9 +1,9 @@
 import { createHash, randomBytes } from "node:crypto";
 import { MENU_AVAILABILITY_LOCK_SQL, pool } from "./_server.js";
 import catalogData from "./_catalog.json" with { type: "json" };
-import { normalizeGuestCount } from "./guest-count.mjs";
-import { parseDeliveryCoordinates } from "./delivery-coordinates.mjs";
-import { findMatchingZones } from "./delivery-geometry.mjs";
+import { normalizeGuestCount } from "../lib/server/guest-count.mjs";
+import { parseDeliveryCoordinates } from "../lib/server/delivery-coordinates.mjs";
+import { findMatchingZones } from "../lib/server/delivery-geometry.mjs";
 
 type Req = { method?: string; headers: Record<string, string | string[] | undefined>; body?: unknown; socket?: { remoteAddress?: string } };
 type Res = { status: (code: number) => Res; setHeader: (name: string, value: string | number) => void; json: (data: unknown) => void; end: () => void };
