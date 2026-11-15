@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import ArifPayStatus from "./ArifPayStatus";
 import type { CartLine } from "./orderTypes";
 import DeliveryLocationPicker from "./DeliveryLocationPicker";
@@ -10,6 +10,7 @@ const money = (value: number) => value.toLocaleString("en-US");
 
 export default function CheckoutForm({ items, subtotal, onPlaced }: Props) {
   const [stage, setStage] = useState<"review" | "details" | "sending" | "error">("review");
+  const submittingRef = useRef(false);
   const [error, setError] = useState("");
   const [fulfillment, setFulfillment] = useState<Fulfillment>("pickup");
   const [methods, setMethods] = useState<PaymentOption[]>([]);
@@ -40,14 +41,16 @@ export default function CheckoutForm({ items, subtotal, onPlaced }: Props) {
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (submittingRef.current) return;
     if (!methodsLoaded || methods.length === 0 || !methods.some((method) => method.id === paymentMethod)) { setError("Payment options are not ready. Please refresh before placing your request."); return; }
+    submittingRef.current = true;
     setError(""); setStage("sending");
     try {
       const response = await fetch("/api/orders", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "create", customerName, customerPhone, fulfillment, paymentMethod, deliveryAddress, deliveryLandmark, deliveryNotes, deliveryLatitude: deliveryCoordinates?.latitude ?? null, deliveryLongitude: deliveryCoordinates?.longitude ?? null, specialInstructions, guestCount: fulfillment === "dine_in" && guestCount ? Number(guestCount) : null, tableNumber, wantsWhatsAppUpdates, items: items.map(({ id, quantity }) => ({ id, quantity })) }) });
       const data = await response.json() as { error?: string; trackingUrl?: string; reference?: string };
       if (!response.ok || !data.trackingUrl || !data.reference) throw new Error(data.error || "The order could not be submitted.");
       onPlaced(data.trackingUrl, data.reference);
-    } catch (cause) { setError(cause instanceof Error ? cause.message : "Connection problem. Your cart is still here—please try again or use WhatsApp."); setStage("error"); }
+    } catch (cause) { submittingRef.current = false; setError(cause instanceof Error ? cause.message : "Connection problem. Your cart is still here—please try again or use WhatsApp."); setStage("error"); }
   }
 
   if (stage === "review") return <div className="checkout-intro"><p className="checkout-note">Place a request online. Cloud L will confirm availability and any delivery charge before preparing your order.</p><button className="order-cart__whatsapp checkout-primary" type="button" onClick={() => setStage("details")}>Continue to checkout <span aria-hidden="true">→</span></button><p className="checkout-secondary">No account needed. Your order is not confirmed until our team reviews it.</p></div>;
