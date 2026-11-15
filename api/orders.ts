@@ -2,6 +2,7 @@ import { createHash, randomBytes } from "node:crypto";
 import { MENU_AVAILABILITY_LOCK_SQL, pool } from "./_server.js";
 import catalogData from "./_catalog.json" with { type: "json" };
 import { normalizeGuestCount } from "./guest-count.mjs";
+import { parseDeliveryCoordinates } from "./delivery-coordinates.mjs";
 
 type Req = { method?: string; headers: Record<string, string | string[] | undefined>; body?: unknown; socket?: { remoteAddress?: string } };
 type Res = { status: (code: number) => Res; setHeader: (name: string, value: string | number) => void; json: (data: unknown) => void; end: () => void };
@@ -67,12 +68,10 @@ export default async function handler(req: Req, res: Res) {
     const paymentMethod = body.paymentMethod;
     const rows = Array.isArray(body.items) ? body.items : [];
     const address = validString(body.deliveryAddress, 400);
-    const hasLatitude = body.deliveryLatitude !== null && body.deliveryLatitude !== undefined;
-    const hasLongitude = body.deliveryLongitude !== null && body.deliveryLongitude !== undefined;
-    const deliveryLatitude = hasLatitude ? Number(body.deliveryLatitude) : null;
-    const deliveryLongitude = hasLongitude ? Number(body.deliveryLongitude) : null;
-    if (hasLatitude !== hasLongitude || (hasLatitude && (!Number.isFinite(deliveryLatitude) || !Number.isFinite(deliveryLongitude) || deliveryLatitude! < -90 || deliveryLatitude! > 90 || deliveryLongitude! < -180 || deliveryLongitude! > 180))) return reply(res, 400, { error: "The selected delivery pin is invalid. Choose a new point or continue with your written address." });
-    if (fulfillment !== "delivery" && (hasLatitude || hasLongitude)) return reply(res, 400, { error: "A delivery pin can only be added to a delivery order." });
+    const coordinates = parseDeliveryCoordinates(body.deliveryLatitude, body.deliveryLongitude, fulfillment);
+    if (!coordinates.valid) return reply(res, 400, { error: "The selected delivery pin is invalid. Choose a new point or continue with your written address." });
+    const deliveryLatitude = coordinates.latitude;
+    const deliveryLongitude = coordinates.longitude;
     if (name.length < 2 || !phone) return reply(res, 400, { error: "Enter your name and an Ethiopian mobile number, such as +251 9…" });
     if (!["pickup", "delivery", "dine_in"].includes(String(fulfillment))) return reply(res, 400, { error: "Choose pickup, delivery, or dine-in." });
     const guestCountResult = normalizeGuestCount(fulfillment, body.guestCount);
