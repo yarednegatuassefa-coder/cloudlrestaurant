@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build && node scripts/prerender.mjs",
     "lint": "oxlint",
-    "test:api": "node --test api/guest-count.test.mjs",
+    "test:api": "node --test api/*.test.mjs",
     "test:e2e": "tsc -p tsconfig.e2e.json && playwright test",
     "test:pwa": "npm run build && node scripts/test-pwa.mjs",
     "preview": "vite preview"
