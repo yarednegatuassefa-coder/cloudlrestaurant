@@ -25,7 +25,7 @@ export default async function handler(req: ApiReq, res: ApiRes) {
   const active=body.isActive!==false;
   const id=typeof body.id==="string"?body.id:null;
   if(name.length<2||name.length>80) return reject(res,400,"Zone name must be 2–80 characters.");
-  if(!Number.isInteger(fee)||Number(fee)<0||Number(fee)>10000) return reject(res,400,"Delivery fee must be an integer from 0 to 10,000 ETB.");
+  if(!Number.isInteger(Number(fee))||Number(fee)<0||Number(fee)>10000) return reject(res,400,"Delivery fee must be an integer from 0 to 10,000 ETB.");
   if(!isValidPolygon(polygon)) return reject(res,400,"Draw a valid territory with 3–100 map points.");
   if(id&&!/^[0-9a-f-]{36}$/i.test(id)) return reject(res,400,"Zone ID is invalid.");
   try {
