@@ -3,7 +3,7 @@ import { MENU_AVAILABILITY_LOCK_SQL, pool } from "./_server.js";
 import catalogData from "./_catalog.json" with { type: "json" };
 import { normalizeGuestCount } from "./guest-count.mjs";
 import { parseDeliveryCoordinates } from "./delivery-coordinates.mjs";
-import { findMatchingZone } from "./delivery-geometry.mjs";
+import { findMatchingZones } from "./delivery-geometry.mjs";
 
 type Req = { method?: string; headers: Record<string, string | string[] | undefined>; body?: unknown; socket?: { remoteAddress?: string } };
 type Res = { status: (code: number) => Res; setHeader: (name: string, value: string | number) => void; json: (data: unknown) => void; end: () => void };
@@ -115,9 +115,10 @@ export default async function handler(req: Req, res: Res) {
       if (fulfillment === "delivery" && deliveryLatitude !== null && deliveryLongitude !== null) {
         const configuredZones = await client.query("SELECT id,name,polygon,is_active FROM public.delivery_zones WHERE is_active=true");
         if (configuredZones.rowCount) {
-          const matched = findMatchingZone(deliveryLatitude, deliveryLongitude, configuredZones.rows);
-          if (!matched) { await client.query("ROLLBACK"); return reply(res, 422, { error: "That pinned location is outside Cloud L's current delivery areas. Choose another location or contact the restaurant to check manually." }); }
-          deliveryZoneId = matched.id as string;
+          const matches = findMatchingZones(deliveryLatitude, deliveryLongitude, configuredZones.rows);
+          if (matches.length > 1) { await client.query("ROLLBACK"); return reply(res, 409, { error: "This location falls inside overlapping delivery territories. Please contact Cloud L so staff can confirm the correct delivery fee." }); }
+          if (!matches.length) { await client.query("ROLLBACK"); return reply(res, 422, { error: "That pinned location is outside Cloud L's current delivery areas. Choose another location or contact the restaurant to check manually." }); }
+          deliveryZoneId = matches[0].id as string;
         }
       }
       const methodResult = await client.query(`SELECT p.id,p.label,p.payment_type,p.bank_name,p.recipient_name,p.phone_number,p.account_number,p.merchant_id,p.instructions,p.qr_asset_id FROM public.payment_methods p WHERE p.id=$1 AND p.is_enabled=true FOR SHARE`, [paymentMethod]);
