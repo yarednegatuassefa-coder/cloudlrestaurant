@@ -32,7 +32,7 @@ export default async function handler(req: RouteReq, res: ApiRes) {
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
-    const found = await client.query("SELECT id, status, fulfillment, payment_method, payment_destination_snapshot, payment_status, subtotal_etb FROM public.orders WHERE id=$1 FOR UPDATE", [orderId]);
+    const found = await client.query("SELECT id, status, fulfillment, payment_method, payment_destination_snapshot, payment_status, subtotal_etb, delivery_zone_id FROM public.orders WHERE id=$1 FOR UPDATE", [orderId]);
     if (!found.rowCount) { await client.query("ROLLBACK"); return reject(res, 404, "Order not found."); }
     const order = found.rows[0];
     if (body.action === "verify-payment") {
@@ -55,8 +55,14 @@ export default async function handler(req: RouteReq, res: ApiRes) {
     let eta: string | null = null;
     if (next === "confirmed") {
       if (order.fulfillment === "delivery") {
-        deliveryFee = Number(body.deliveryFeeEtb);
-        if (!Number.isInteger(deliveryFee) || deliveryFee < 0 || deliveryFee > 10_000) { await client.query("ROLLBACK"); return reject(res, 400, "Set the delivery fee (use 0 if delivery is free) before confirming."); }
+        if (order.delivery_zone_id) {
+          const zone = await client.query("SELECT delivery_fee_etb FROM public.delivery_zones WHERE id=$1 AND is_active=true", [order.delivery_zone_id]);
+          if (!zone.rowCount) { await client.query("ROLLBACK"); return reject(res, 409, "The assigned delivery zone is no longer active. Reassign the order before confirming."); }
+          deliveryFee = Number(zone.rows[0].delivery_fee_etb);
+        } else {
+          deliveryFee = Number(body.deliveryFeeEtb);
+          if (!Number.isInteger(deliveryFee) || deliveryFee < 0 || deliveryFee > 10_000) { await client.query("ROLLBACK"); return reject(res, 400, "Set the delivery fee (use 0 if delivery is free) before confirming."); }
+        }
       }
       total = Number(order.subtotal_etb) + (deliveryFee ?? 0);
       const minutes = Number(body.estimatedMinutes);
