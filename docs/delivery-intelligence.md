@@ -23,7 +23,7 @@ Cloud L's inspected application currently has one restaurant operation and no te
 - If there are no active zones, the existing manual coverage and fee workflow remains unchanged.
 - If active zones exist but a customer does not select a pin, staff must continue manual coverage review and fee entry.
 - Existing orders retain their saved delivery fee even if a zone is later edited or deleted. New orders use the current active polygon and fee.
-- If a zone is paused/deleted after an order is assigned but before confirmation, confirmation is blocked; staff must resolve the territory/fee manually before confirming.
+- If a zone is paused after an order is assigned but before confirmation, confirmation is blocked; staff must reactivate the zone or use a deliberate manual resolution workflow. If a zone is deleted, its foreign key is cleared and the order falls back to the existing manual fee-entry workflow.
 
 ## Privacy and map providers
 
