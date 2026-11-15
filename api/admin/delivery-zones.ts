@@ -1,5 +1,5 @@
 import { pool, isAllowedOrigin, reject, validSession, type ApiReq, type ApiRes } from "../_server.js";
-import { isValidPolygon } from "../delivery-geometry.mjs";
+import { isValidPolygon } from "../../lib/server/delivery-geometry.mjs";
 export default async function handler(req: ApiReq, res: ApiRes) {
   res.setHeader("Cache-Control","no-store"); res.setHeader("X-Content-Type-Options","nosniff");
   if (!validSession(req)) return reject(res,401,"Staff login required.");
