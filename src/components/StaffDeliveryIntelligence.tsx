@@ -11,15 +11,15 @@ type MapApi = {
 };
 type Layer = {addTo:(map:MapInstance)=>Layer;bindPopup:(text:string)=>Layer;remove:()=>void};
 type MapInstance = {setView:(point:Point,zoom:number)=>MapInstance;on:(event:string,fn:(e:{latlng:{lat:number;lng:number}})=>void)=>MapInstance;remove:()=>void;invalidateSize:()=>void};
-declare global { interface Window { L?:MapApi } }
 let leaflet:Promise<MapApi>|null=null;
+const leafletApi=()=> (window as Window & {L?:MapApi}).L;
 function loadMap():Promise<MapApi>{
- if(window.L)return Promise.resolve(window.L);
+ if(leafletApi())return Promise.resolve(leafletApi()!);
  if(!leaflet)leaflet=new Promise((resolve,reject)=>{
   const css=document.createElement("link");css.rel="stylesheet";css.href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";if(!document.querySelector('link[href*="leaflet.css"]'))document.head.appendChild(css);
   const script=document.querySelector<HTMLScriptElement>('script[data-cloudl-leaflet="true"]')||document.createElement("script");
   if(!script.dataset.cloudlLeaflet){script.src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";script.async=true;script.dataset.cloudlLeaflet="true";document.head.appendChild(script);}
-  if(window.L){resolve(window.L);return;}script.addEventListener("load",()=>window.L?resolve(window.L):reject(new Error("Map unavailable")),{once:true});script.addEventListener("error",()=>reject(new Error("Map library could not load")),{once:true});
+  if(leafletApi()){resolve(leafletApi()!);return;}script.addEventListener("load",()=>leafletApi()?resolve(leafletApi()!):reject(new Error("Map unavailable")),{once:true});script.addEventListener("error",()=>reject(new Error("Map library could not load")),{once:true});
  });
  return leaflet;
 }
@@ -44,7 +44,7 @@ export default function StaffDeliveryIntelligence(){
   return()=>{active=false;map?.remove();mapRef.current=null;};
  },[]);
  useEffect(()=>{
-  const L=window.L,map=mapRef.current;if(!L||!map)return;layers.current.forEach(x=>x.remove());layers.current=[];
+  const L=leafletApi(),map=mapRef.current;if(!L||!map)return;layers.current.forEach(x=>x.remove());layers.current=[];
   zones.forEach(z=>{const l=L.polygon(z.polygon,{color:z.is_active?"#a45d3c":"#999",weight:2,fillOpacity:.12}).addTo(map).bindPopup(z.name+" · "+money(z.delivery_fee_etb)+" ETB");layers.current.push(l);});
   cells.forEach(c=>{const l=L.circleMarker([c.latitude,c.longitude],{radius:Math.min(22,6+c.orders*1.4),color:"#9b432e",fillColor:"#c66d45",fillOpacity:.42,weight:1}).addTo(map).bindPopup(c.orders+" orders · "+money(c.revenueEtb)+" ETB");layers.current.push(l);});
   if(points.length>=2){const l=L.polygon(points,{color:"#236b91",dashArray:"5 5",fillOpacity:.08}).addTo(map);layers.current.push(l);}
