@@ -67,6 +67,12 @@ export default async function handler(req: Req, res: Res) {
     const paymentMethod = body.paymentMethod;
     const rows = Array.isArray(body.items) ? body.items : [];
     const address = validString(body.deliveryAddress, 400);
+    const hasLatitude = body.deliveryLatitude !== null && body.deliveryLatitude !== undefined;
+    const hasLongitude = body.deliveryLongitude !== null && body.deliveryLongitude !== undefined;
+    const deliveryLatitude = hasLatitude ? Number(body.deliveryLatitude) : null;
+    const deliveryLongitude = hasLongitude ? Number(body.deliveryLongitude) : null;
+    if (hasLatitude !== hasLongitude || (hasLatitude && (!Number.isFinite(deliveryLatitude) || !Number.isFinite(deliveryLongitude) || deliveryLatitude! < -90 || deliveryLatitude! > 90 || deliveryLongitude! < -180 || deliveryLongitude! > 180))) return reply(res, 400, { error: "The selected delivery pin is invalid. Choose a new point or continue with your written address." });
+    if (fulfillment !== "delivery" && (hasLatitude || hasLongitude)) return reply(res, 400, { error: "A delivery pin can only be added to a delivery order." });
     if (name.length < 2 || !phone) return reply(res, 400, { error: "Enter your name and an Ethiopian mobile number, such as +251 9…" });
     if (!["pickup", "delivery", "dine_in"].includes(String(fulfillment))) return reply(res, 400, { error: "Choose pickup, delivery, or dine-in." });
     const guestCountResult = normalizeGuestCount(fulfillment, body.guestCount);
@@ -117,9 +123,9 @@ export default async function handler(req: Req, res: Res) {
       }
       if (!reference) throw new Error("Unable to allocate order reference");
       const inserted = await client.query(
-        `INSERT INTO public.orders (public_reference, tracking_token_hash, payment_method, payment_destination_snapshot, payment_status, fulfillment, customer_name, customer_phone, delivery_address, delivery_landmark, delivery_notes, special_instructions, guest_count, table_number, subtotal_etb, total_etb, wants_whatsapp_updates)
-         VALUES ($1,$2,$3,$4::jsonb,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$15,$16) RETURNING id`,
-        [reference, tokenHash(trackingToken), paymentMethod, JSON.stringify(paymentSnapshot), "unpaid", fulfillment, name, phone, fulfillment === "delivery" ? address : null, validString(body.deliveryLandmark, 200) || null, validString(body.deliveryNotes, 500) || null, validString(body.specialInstructions, 500) || null, guestCount, validString(body.tableNumber, 40) || null, subtotal, body.wantsWhatsAppUpdates === true],
+        `INSERT INTO public.orders (public_reference, tracking_token_hash, payment_method, payment_destination_snapshot, payment_status, fulfillment, customer_name, customer_phone, delivery_address, delivery_landmark, delivery_notes, delivery_latitude, delivery_longitude, special_instructions, guest_count, table_number, subtotal_etb, total_etb, wants_whatsapp_updates)
+         VALUES ($1,$2,$3,$4::jsonb,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$17,$18) RETURNING id`,
+        [reference, tokenHash(trackingToken), paymentMethod, JSON.stringify(paymentSnapshot), "unpaid", fulfillment, name, phone, fulfillment === "delivery" ? address : null, validString(body.deliveryLandmark, 200) || null, validString(body.deliveryNotes, 500) || null, fulfillment === "delivery" ? deliveryLatitude : null, fulfillment === "delivery" ? deliveryLongitude : null, validString(body.specialInstructions, 500) || null, guestCount, validString(body.tableNumber, 40) || null, subtotal, body.wantsWhatsAppUpdates === true],
       );
       const orderId = inserted.rows[0].id as string;
       for (const item of items) await client.query(
