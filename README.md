@@ -47,7 +47,7 @@ Vite prints the local development URL. Do not commit `.env`, database credential
 
 Start with [`.env.example`](.env.example). Configure the database connection and any optional monitoring/payment integration values required by the deployment environment. Keep production secrets in the hosting provider's encrypted environment-variable store, not in source control.
 
-Database setup and operational notes are maintained in the repository's `db/`, `docs/`, and setup documents. Review those instructions before applying schema changes to a live database.
+Database setup and operational notes are maintained in the repository's `db/`, `docs/`, and setup documents. Review those instructions before applying schema changes to a live database. **Release gate:** before deploying the server-side order-idempotency change, apply `db/migrations/008_order_create_idempotency.sql` to the target database and verify the `008_order_create_idempotency` row exists in `public.schema_migrations`. Do not deploy the application first; the order endpoint expects the new `idempotency_fingerprint` column.
 
 ## Quality checks
 
