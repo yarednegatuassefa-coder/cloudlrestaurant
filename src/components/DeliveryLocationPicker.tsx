@@ -15,6 +15,7 @@ type LeafletMarker = {
   setLatLng: (point: [number, number]) => LeafletMarker;
   getLatLng: () => LeafletPoint;
   on: (event: string, callback: () => void) => LeafletMarker;
+  remove: () => LeafletMarker;
 };
 type LeafletStatic = {
   map: (element: HTMLElement, options?: Record<string, unknown>) => LeafletMap;
@@ -97,12 +98,13 @@ export default function DeliveryLocationPicker({ value, onChange }: Props) {
         const point: [number, number] = [position.coords.latitude, position.coords.longitude];
         mapRef.current?.setView(point, 17);
         if (window.L && mapRef.current) {
-          if (!markerRef.current) markerRef.current = window.L.marker(point, { draggable: true }).addTo(mapRef.current);
-          else markerRef.current.setLatLng(point);
-          markerRef.current.on("dragend", () => {
-            const selected = markerRef.current?.getLatLng();
-            if (selected) onChange({ latitude: Number(selected.lat.toFixed(6)), longitude: Number(selected.lng.toFixed(6)) });
-          });
+          if (!markerRef.current) {
+            markerRef.current = window.L.marker(point, { draggable: true }).addTo(mapRef.current);
+            markerRef.current.on("dragend", () => {
+              const selected = markerRef.current?.getLatLng();
+              if (selected) onChange({ latitude: Number(selected.lat.toFixed(6)), longitude: Number(selected.lng.toFixed(6)) });
+            });
+          } else markerRef.current.setLatLng(point);
         }
         onChange({ latitude: Number(point[0].toFixed(6)), longitude: Number(point[1].toFixed(6)) });
       },
@@ -117,7 +119,7 @@ export default function DeliveryLocationPicker({ value, onChange }: Props) {
       <button type="button" onClick={useCurrentLocation}>Use my location</button>
     </div>
     <div ref={elementRef} className="delivery-location-picker__map" role="application" aria-label="OpenStreetMap. Tap to place your delivery pin." />
-    {value ? <div className="delivery-location-picker__selected"><span>Location selected</span><code>{value.latitude.toFixed(6)}, {value.longitude.toFixed(6)}</code><button type="button" onClick={() => onChange(null)}>Remove pin</button></div> : <p className="delivery-location-picker__hint">No pin selected. Your written address and landmark will still be used.</p>}
+    {value ? <div className="delivery-location-picker__selected"><span>Location selected</span><code>{value.latitude.toFixed(6)}, {value.longitude.toFixed(6)}</code><button type="button" onClick={() => { markerRef.current?.remove(); markerRef.current = null; onChange(null); }}>Remove pin</button></div> : <p className="delivery-location-picker__hint">No pin selected. Your written address and landmark will still be used.</p>}
     {mapError && <p className="delivery-location-picker__error" role="status">{mapError}</p>}
     <small className="delivery-location-picker__privacy">Map tiles are provided by OpenStreetMap. Selecting a pin saves its coordinates with your order so staff can confirm delivery coverage. Location access is only requested if you press “Use my location”.</small>
   </section>;
