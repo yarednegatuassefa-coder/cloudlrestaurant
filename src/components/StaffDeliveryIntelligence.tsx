@@ -31,7 +31,7 @@ export default function StaffDeliveryIntelligence(){
  const [busy,setBusy]=useState(false);const [error,setError]=useState("");const [notice,setNotice]=useState("");
  const [summary,setSummary]=useState({orders:0,revenue_etb:0,pinned_orders:0});
  async function refresh(){
-  const [z,a]=await Promise.all([fetch("/api/admin/delivery-zones",{credentials:"same-origin",cache:"no-store"}),fetch("/api/admin/delivery-analytics?days="+days,{credentials:"same-origin",cache:"no-store"})]);
+  const [z,a]=await Promise.all([fetch("/api/admin/delivery-zones",{credentials:"same-origin",cache:"no-store"}),fetch("/api/admin/delivery-zones?view=analytics&days="+days,{credentials:"same-origin",cache:"no-store"})]);
   const zd=await z.json();const ad=await a.json();if(!z.ok)throw new Error(zd.error||"Could not load zones.");if(!a.ok)throw new Error(ad.error||"Could not load analytics.");
   setZones(zd.zones||[]);setCells(ad.cells||[]);setSummary(ad.summary||{orders:0,revenue_etb:0,pinned_orders:0});
  }
