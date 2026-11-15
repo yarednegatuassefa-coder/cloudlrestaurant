@@ -8,7 +8,6 @@ async function addMenuItemAndOpenCart(page: import("@playwright/test").Page) {
   });
   await page.goto("/");
   await page.locator(".fm__item").filter({ hasText: "Beyaynetu" }).getByRole("button", { name: "Add Beyaynetu to order" }).click();
-  await page.locator(".order-cart-trigger").click();
   return page.getByRole("dialog");
 }
 
