@@ -16,6 +16,10 @@ export function pointInPolygon(latitude, longitude, polygon) {
   }
   return inside;
 }
+export function findMatchingZones(latitude, longitude, zones) {
+  return zones.filter((zone) => zone.is_active && pointInPolygon(latitude, longitude, zone.polygon));
+}
 export function findMatchingZone(latitude, longitude, zones) {
-  return zones.find((zone) => zone.is_active && pointInPolygon(latitude, longitude, zone.polygon)) ?? null;
+  const matches = findMatchingZones(latitude, longitude, zones);
+  return matches.length === 1 ? matches[0] : null;
 }
