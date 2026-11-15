@@ -76,7 +76,7 @@ export default async function handler(req: Req, res: Res) {
     if (name.length < 2 || !phone) return reply(res, 400, { error: "Enter your name and an Ethiopian mobile number, such as +251 9…" });
     if (!["pickup", "delivery", "dine_in"].includes(String(fulfillment))) return reply(res, 400, { error: "Choose pickup, delivery, or dine-in." });
     const guestCountResult = normalizeGuestCount(fulfillment, body.guestCount);
-    if (!guestCountResult.ok) return reply(res, 400, { error: guestCountResult.error });
+    if ("error" in guestCountResult) return reply(res, 400, { error: guestCountResult.error });
     const guestCount = guestCountResult.guestCount;
     if (typeof paymentMethod !== "string" || !/^[a-zA-Z0-9_-]{1,100}$/.test(paymentMethod)) return reply(res, 400, { error: "Choose one of the available payment methods." });
     if (fulfillment === "delivery" && address.length < 5) return reply(res, 400, { error: "Add the delivery address so staff can confirm coverage and fee." });
