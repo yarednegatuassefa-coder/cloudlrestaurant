@@ -452,3 +452,36 @@ img{height:auto}
 .delivery-location-picker__privacy{display:block}
 .leaflet-container{font:12px "DM Sans","Noto Sans Ethiopic",sans-serif}
 @media(max-width:480px){.delivery-location-picker{padding:11px}.delivery-location-picker__heading{flex-direction:column}.delivery-location-picker__map{height:230px}}
+
+
+/* Cloud L delivery territory management and geographic demand */
+.delivery-intelligence{display:grid;gap:16px;margin-top:18px;color:#302c27}
+.delivery-intelligence__intro{display:flex;justify-content:space-between;align-items:flex-start;gap:14px}
+.delivery-intelligence__intro h2,.delivery-intelligence__editor h3,.delivery-intelligence__zones h3{margin:0 0 6px;font:600 20px Georgia,serif}
+.delivery-intelligence__intro p,.delivery-intelligence__editor p,.delivery-intelligence__zones p{margin:0;color:#756c62;font-size:12px;line-height:1.6}
+.delivery-intelligence__intro select{min-height:36px;padding:0 10px;border:1px solid #d9cbbb;background:#fff;font:inherit;font-size:11px}
+.delivery-intelligence__stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+.delivery-intelligence__stats article{display:grid;gap:6px;padding:14px;border:1px solid #e5ddd2;background:#fffaf4}
+.delivery-intelligence__stats small{color:#756c62;font-size:10px}
+.delivery-intelligence__stats strong{font:600 18px Georgia,serif}
+.delivery-intelligence__map{height:390px;width:100%;z-index:0;border:1px solid #ded4c7;background:#eee8df}
+.delivery-intelligence__legend{display:flex;flex-wrap:wrap;gap:14px;color:#756c62;font-size:10px}
+.delivery-intelligence__legend span{display:flex;align-items:center;gap:6px}
+.delivery-intelligence__legend i{width:9px;height:9px;display:inline-block;border-radius:50%}
+.zone-dot{background:#a45d3c}.heat-dot{background:#c66d45}.draw-dot{background:#236b91}
+.delivery-intelligence__editor,.delivery-intelligence__zones{display:grid;gap:11px;padding:16px;border:1px solid #e5ddd2;background:#fffaf4}
+.delivery-intelligence__fields{display:grid;grid-template-columns:2fr 1fr;gap:10px}
+.delivery-intelligence__fields label{display:grid;gap:5px;color:#756c62;font-size:10px}
+.delivery-intelligence__fields input{min-height:38px;padding:8px 10px;border:1px solid #d9cbbb;background:#fff;font:inherit;color:#302c27}
+.delivery-intelligence__actions{display:flex;flex-wrap:wrap;gap:8px}
+.delivery-intelligence__actions button,.delivery-intelligence__zones button{min-height:34px;padding:0 11px;border:1px solid #d2c5b7;background:#fff;color:#5f574f;font:700 10px "DM Sans","Noto Sans Ethiopic",sans-serif;cursor:pointer}
+.delivery-intelligence__actions button.is-primary{border-color:#8f5139;background:#8f5139;color:#fff}
+.delivery-intelligence button:disabled{opacity:.45;cursor:not-allowed}
+.delivery-intelligence__editor>small,.delivery-intelligence__privacy{color:#756c62;font-size:10px;line-height:1.6}
+.delivery-intelligence__zones article{display:flex;align-items:center;gap:8px;padding:10px 0;border-top:1px solid #e8dfd5}
+.delivery-intelligence__zones article>div{display:grid;gap:4px;flex:1}
+.delivery-intelligence__zones article strong{font-size:12px}
+.delivery-intelligence__zones article small{color:#756c62;font-size:10px}
+.delivery-intelligence__notice{margin:0;color:#48664b;font-size:11px}
+.delivery-intelligence__privacy{margin:0}
+@media(max-width:600px){.delivery-intelligence__intro{flex-direction:column}.delivery-intelligence__stats{grid-template-columns:1fr}.delivery-intelligence__map{height:300px}.delivery-intelligence__fields{grid-template-columns:1fr}.delivery-intelligence__zones article{flex-wrap:wrap}}
