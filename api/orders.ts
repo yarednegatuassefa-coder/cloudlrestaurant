@@ -1,7 +1,9 @@
 import { createHash, randomBytes } from "node:crypto";
 import { MENU_AVAILABILITY_LOCK_SQL, pool } from "./_server.js";
 import catalogData from "./_catalog.json" with { type: "json" };
-import { normalizeGuestCount } from "./guest-count.mjs";
+import { normalizeGuestCount } from "../lib/server/guest-count.mjs";
+import { parseDeliveryCoordinates } from "../lib/server/delivery-coordinates.mjs";
+import { findMatchingZones } from "../lib/server/delivery-geometry.mjs";
 
 type Req = { method?: string; headers: Record<string, string | string[] | undefined>; body?: unknown; socket?: { remoteAddress?: string } };
 type Res = { status: (code: number) => Res; setHeader: (name: string, value: string | number) => void; json: (data: unknown) => void; end: () => void };
@@ -67,10 +69,14 @@ export default async function handler(req: Req, res: Res) {
     const paymentMethod = body.paymentMethod;
     const rows = Array.isArray(body.items) ? body.items : [];
     const address = validString(body.deliveryAddress, 400);
+    const coordinates = parseDeliveryCoordinates(body.deliveryLatitude, body.deliveryLongitude, fulfillment);
+    if (!coordinates.valid) return reply(res, 400, { error: "The selected delivery pin is invalid. Choose a new point or continue with your written address." });
+    const deliveryLatitude = coordinates.latitude;
+    const deliveryLongitude = coordinates.longitude;
     if (name.length < 2 || !phone) return reply(res, 400, { error: "Enter your name and an Ethiopian mobile number, such as +251 9…" });
     if (!["pickup", "delivery", "dine_in"].includes(String(fulfillment))) return reply(res, 400, { error: "Choose pickup, delivery, or dine-in." });
     const guestCountResult = normalizeGuestCount(fulfillment, body.guestCount);
-    if (!guestCountResult.ok) return reply(res, 400, { error: guestCountResult.error });
+    if ("error" in guestCountResult) return reply(res, 400, { error: guestCountResult.error });
     const guestCount = guestCountResult.guestCount;
     if (typeof paymentMethod !== "string" || !/^[a-zA-Z0-9_-]{1,100}$/.test(paymentMethod)) return reply(res, 400, { error: "Choose one of the available payment methods." });
     if (fulfillment === "delivery" && address.length < 5) return reply(res, 400, { error: "Add the delivery address so staff can confirm coverage and fee." });
@@ -105,6 +111,16 @@ export default async function handler(req: Req, res: Res) {
         await client.query("ROLLBACK");
         return reply(res, 409, { error: `Some selected items just sold out${soldOutNames.length ? `: ${soldOutNames.join(", ")}` : ""}. Remove them from your cart and try again.` });
       }
+      let deliveryZoneId: string | null = null;
+      if (fulfillment === "delivery" && deliveryLatitude !== null && deliveryLongitude !== null) {
+        const configuredZones = await client.query("SELECT id,name,polygon,is_active FROM public.delivery_zones WHERE is_active=true");
+        if (configuredZones.rowCount) {
+          const matches = findMatchingZones(deliveryLatitude, deliveryLongitude, configuredZones.rows);
+          if (matches.length > 1) { await client.query("ROLLBACK"); return reply(res, 409, { error: "This location falls inside overlapping delivery territories. Please contact Cloud L so staff can confirm the correct delivery fee." }); }
+          if (!matches.length) { await client.query("ROLLBACK"); return reply(res, 422, { error: "That pinned location is outside Cloud L's current delivery areas. Choose another location or contact the restaurant to check manually." }); }
+          deliveryZoneId = matches[0].id as string;
+        }
+      }
       const methodResult = await client.query(`SELECT p.id,p.label,p.payment_type,p.bank_name,p.recipient_name,p.phone_number,p.account_number,p.merchant_id,p.instructions,p.qr_asset_id FROM public.payment_methods p WHERE p.id=$1 AND p.is_enabled=true FOR SHARE`, [paymentMethod]);
       if (!methodResult.rowCount) { await client.query("ROLLBACK"); return reply(res, 400, { error: "That payment method is unavailable. Refresh the page and choose another method." }); }
       const method = methodResult.rows[0];
@@ -117,9 +133,9 @@ export default async function handler(req: Req, res: Res) {
       }
       if (!reference) throw new Error("Unable to allocate order reference");
       const inserted = await client.query(
-        `INSERT INTO public.orders (public_reference, tracking_token_hash, payment_method, payment_destination_snapshot, payment_status, fulfillment, customer_name, customer_phone, delivery_address, delivery_landmark, delivery_notes, special_instructions, guest_count, table_number, subtotal_etb, total_etb, wants_whatsapp_updates)
-         VALUES ($1,$2,$3,$4::jsonb,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$15,$16) RETURNING id`,
-        [reference, tokenHash(trackingToken), paymentMethod, JSON.stringify(paymentSnapshot), "unpaid", fulfillment, name, phone, fulfillment === "delivery" ? address : null, validString(body.deliveryLandmark, 200) || null, validString(body.deliveryNotes, 500) || null, validString(body.specialInstructions, 500) || null, guestCount, validString(body.tableNumber, 40) || null, subtotal, body.wantsWhatsAppUpdates === true],
+        `INSERT INTO public.orders (public_reference, tracking_token_hash, payment_method, payment_destination_snapshot, payment_status, fulfillment, customer_name, customer_phone, delivery_address, delivery_landmark, delivery_notes, delivery_latitude, delivery_longitude, delivery_zone_id, special_instructions, guest_count, table_number, subtotal_etb, total_etb, wants_whatsapp_updates)
+         VALUES ($1,$2,$3,$4::jsonb,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$18,$19) RETURNING id`,
+        [reference, tokenHash(trackingToken), paymentMethod, JSON.stringify(paymentSnapshot), "unpaid", fulfillment, name, phone, fulfillment === "delivery" ? address : null, validString(body.deliveryLandmark, 200) || null, validString(body.deliveryNotes, 500) || null, fulfillment === "delivery" ? deliveryLatitude : null, fulfillment === "delivery" ? deliveryLongitude : null, deliveryZoneId, validString(body.specialInstructions, 500) || null, guestCount, validString(body.tableNumber, 40) || null, subtotal, body.wantsWhatsAppUpdates === true],
       );
       const orderId = inserted.rows[0].id as string;
       for (const item of items) await client.query(

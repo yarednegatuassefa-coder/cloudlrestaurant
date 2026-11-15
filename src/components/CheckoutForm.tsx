@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import ArifPayStatus from "./ArifPayStatus";
 import type { CartLine } from "./orderTypes";
+import DeliveryLocationPicker from "./DeliveryLocationPicker";
 
 type Props = { items: CartLine[]; subtotal: number; onPlaced: (trackingUrl: string, reference: string) => void };
 type Fulfillment = "pickup" | "delivery" | "dine_in";
@@ -20,6 +21,7 @@ export default function CheckoutForm({ items, subtotal, onPlaced }: Props) {
   const [deliveryAddress, setDeliveryAddress] = useState("");
   const [deliveryLandmark, setDeliveryLandmark] = useState("");
   const [deliveryNotes, setDeliveryNotes] = useState("");
+  const [deliveryCoordinates, setDeliveryCoordinates] = useState<{ latitude: number; longitude: number } | null>(null);
   const [specialInstructions, setSpecialInstructions] = useState("");
   const [guestCount, setGuestCount] = useState("");
   const [tableNumber, setTableNumber] = useState("");
@@ -41,7 +43,7 @@ export default function CheckoutForm({ items, subtotal, onPlaced }: Props) {
     if (!methodsLoaded || methods.length === 0 || !methods.some((method) => method.id === paymentMethod)) { setError("Payment options are not ready. Please refresh before placing your request."); return; }
     setError(""); setStage("sending");
     try {
-      const response = await fetch("/api/orders", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "create", customerName, customerPhone, fulfillment, paymentMethod, deliveryAddress, deliveryLandmark, deliveryNotes, specialInstructions, guestCount: fulfillment === "dine_in" && guestCount ? Number(guestCount) : null, tableNumber, wantsWhatsAppUpdates, items: items.map(({ id, quantity }) => ({ id, quantity })) }) });
+      const response = await fetch("/api/orders", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "create", customerName, customerPhone, fulfillment, paymentMethod, deliveryAddress, deliveryLandmark, deliveryNotes, deliveryLatitude: deliveryCoordinates?.latitude ?? null, deliveryLongitude: deliveryCoordinates?.longitude ?? null, specialInstructions, guestCount: fulfillment === "dine_in" && guestCount ? Number(guestCount) : null, tableNumber, wantsWhatsAppUpdates, items: items.map(({ id, quantity }) => ({ id, quantity })) }) });
       const data = await response.json() as { error?: string; trackingUrl?: string; reference?: string };
       if (!response.ok || !data.trackingUrl || !data.reference) throw new Error(data.error || "The order could not be submitted.");
       onPlaced(data.trackingUrl, data.reference);
@@ -55,7 +57,7 @@ export default function CheckoutForm({ items, subtotal, onPlaced }: Props) {
     <label className="checkout-label">Your name<input autoComplete="name" required minLength={2} maxLength={120} value={customerName} onChange={(e) => setCustomerName(e.currentTarget.value)} placeholder="Name for the order" /></label>
     <label className="checkout-label">Mobile number<input autoComplete="tel" type="tel" required value={customerPhone} onChange={(e) => setCustomerPhone(e.currentTarget.value)} placeholder="+251 9… or 09…" /><small>We’ll use this only if staff needs to clarify your order.</small></label>
     <fieldset className="checkout-choice"><legend>How would you like your order?</legend><div>{([ ["pickup", "Pickup", "Collect at Cloud L"], ["delivery", "Delivery", "We’ll confirm coverage and fee"], ["dine_in", "Dine in", "For a table at the restaurant"] ] as const).map(([value, title, detail]) => <label key={value} className={fulfillment === value ? "is-selected" : ""}><input type="radio" name="fulfillment" value={value} checked={fulfillment === value} onChange={() => setFulfillment(value)} /><span><strong>{title}</strong><small>{detail}</small></span></label>)}</div></fieldset>
-    {fulfillment === "delivery" && <div className="checkout-address"><label className="checkout-label">Delivery address<input autoComplete="street-address" required minLength={5} maxLength={400} value={deliveryAddress} onChange={(e) => setDeliveryAddress(e.currentTarget.value)} placeholder="Area, street, building or house number" /></label><label className="checkout-label">Landmark (helpful)<input maxLength={200} value={deliveryLandmark} onChange={(e) => setDeliveryLandmark(e.currentTarget.value)} placeholder="Nearby place or building" /></label><label className="checkout-label">Delivery notes<textarea maxLength={500} rows={2} value={deliveryNotes} onChange={(e) => setDeliveryNotes(e.currentTarget.value)} placeholder="Gate, floor, or directions for the courier" /></label><p className="checkout-note">Staff will confirm whether delivery is available and tell you the delivery fee before asking you to pay.</p></div>}
+    {fulfillment === "delivery" && <div className="checkout-address"><label className="checkout-label">Delivery address<input autoComplete="street-address" required minLength={5} maxLength={400} value={deliveryAddress} onChange={(e) => setDeliveryAddress(e.currentTarget.value)} placeholder="Area, street, building or house number" /></label><label className="checkout-label">Landmark (helpful)<input maxLength={200} value={deliveryLandmark} onChange={(e) => setDeliveryLandmark(e.currentTarget.value)} placeholder="Nearby place or building" /></label><DeliveryLocationPicker value={deliveryCoordinates} onChange={setDeliveryCoordinates} /><label className="checkout-label">Delivery notes<textarea maxLength={500} rows={2} value={deliveryNotes} onChange={(e) => setDeliveryNotes(e.currentTarget.value)} placeholder="Gate, floor, or directions for the courier" /></label><p className="checkout-note">Staff will confirm whether delivery is available and tell you the delivery fee before asking you to pay.</p></div>}
     {fulfillment === "dine_in" && <div className="checkout-inline">
       <div className="checkout-label">
         <label htmlFor="guest-count">Number of guests (optional) / <span lang="am">የእንግዶች ብዛት (አማራጭ)</span></label>

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { normalizeGuestCount } from "./guest-count.mjs";
+import { normalizeGuestCount } from "../../lib/server/guest-count.mjs";
 
 test("allows an omitted dine-in guest count", () => {
   assert.deepEqual(normalizeGuestCount("dine_in", null), { ok: true, guestCount: null });
