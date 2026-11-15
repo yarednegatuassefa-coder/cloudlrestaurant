@@ -10,6 +10,55 @@ permissions:
   contents: read
 
 jobs:
+  migration:
+    name: Database migration smoke test
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: cloudl_test
+          POSTGRES_DB: cloudl_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d cloudl_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Install PostgreSQL client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+      - name: Prepare pre-migration schema
+        env:
+          PGPASSWORD: cloudl_test
+        run: |
+          psql -h localhost -U postgres -d cloudl_test -v ON_ERROR_STOP=1 -c "CREATE TABLE public.orders (tracking_token_hash char(64) NOT NULL UNIQUE); CREATE TABLE public.schema_migrations (version text PRIMARY KEY);"
+      - name: Apply migration twice
+        env:
+          PGPASSWORD: cloudl_test
+        run: |
+          psql -h localhost -U postgres -d cloudl_test -v ON_ERROR_STOP=1 -f db/migrations/008_order_create_idempotency.sql
+          psql -h localhost -U postgres -d cloudl_test -v ON_ERROR_STOP=1 -f db/migrations/008_order_create_idempotency.sql
+      - name: Verify column, constraint, and migration record
+        env:
+          PGPASSWORD: cloudl_test
+        run: |
+          test "$(psql -h localhost -U postgres -d cloudl_test -Atc "SELECT count(*) FROM information_schema.columns WHERE table_schema='public' AND table_name='orders' AND column_name='idempotency_fingerprint'")" = "1"
+          test "$(psql -h localhost -U postgres -d cloudl_test -Atc "SELECT count(*) FROM pg_constraint WHERE conname='orders_idempotency_fingerprint_format'")" = "1"
+          test "$(psql -h localhost -U postgres -d cloudl_test -Atc "SELECT count(*) FROM public.schema_migrations WHERE version='008_order_create_idempotency'")" = "1"
+      - name: Verify fingerprint constraint rejects malformed values
+        env:
+          PGPASSWORD: cloudl_test
+        run: |
+          if psql -h localhost -U postgres -d cloudl_test -v ON_ERROR_STOP=1 -c "INSERT INTO public.orders (tracking_token_hash, idempotency_fingerprint) VALUES (repeat('a',64), 'not-a-sha256');"; then
+            echo "Expected malformed fingerprint to be rejected"
+            exit 1
+          fi
+
   e2e:
     name: End-to-end and visual regression tests
     runs-on: ubuntu-latest
