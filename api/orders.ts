@@ -3,6 +3,7 @@ import { MENU_AVAILABILITY_LOCK_SQL, pool } from "./_server.js";
 import catalogData from "./_catalog.json" with { type: "json" };
 import { normalizeGuestCount } from "./guest-count.mjs";
 import { parseDeliveryCoordinates } from "./delivery-coordinates.mjs";
+import { findMatchingZone } from "./delivery-geometry.mjs";
 
 type Req = { method?: string; headers: Record<string, string | string[] | undefined>; body?: unknown; socket?: { remoteAddress?: string } };
 type Res = { status: (code: number) => Res; setHeader: (name: string, value: string | number) => void; json: (data: unknown) => void; end: () => void };
@@ -110,6 +111,15 @@ export default async function handler(req: Req, res: Res) {
         await client.query("ROLLBACK");
         return reply(res, 409, { error: `Some selected items just sold out${soldOutNames.length ? `: ${soldOutNames.join(", ")}` : ""}. Remove them from your cart and try again.` });
       }
+      let deliveryZoneId: string | null = null;
+      if (fulfillment === "delivery" && deliveryLatitude !== null && deliveryLongitude !== null) {
+        const configuredZones = await client.query("SELECT id,name,polygon,is_active FROM public.delivery_zones WHERE is_active=true");
+        if (configuredZones.rowCount) {
+          const matched = findMatchingZone(deliveryLatitude, deliveryLongitude, configuredZones.rows);
+          if (!matched) { await client.query("ROLLBACK"); return reply(res, 422, { error: "That pinned location is outside Cloud L's current delivery areas. Choose another location or contact the restaurant to check manually." }); }
+          deliveryZoneId = matched.id as string;
+        }
+      }
       const methodResult = await client.query(`SELECT p.id,p.label,p.payment_type,p.bank_name,p.recipient_name,p.phone_number,p.account_number,p.merchant_id,p.instructions,p.qr_asset_id FROM public.payment_methods p WHERE p.id=$1 AND p.is_enabled=true FOR SHARE`, [paymentMethod]);
       if (!methodResult.rowCount) { await client.query("ROLLBACK"); return reply(res, 400, { error: "That payment method is unavailable. Refresh the page and choose another method." }); }
       const method = methodResult.rows[0];
@@ -122,9 +132,9 @@ export default async function handler(req: Req, res: Res) {
       }
       if (!reference) throw new Error("Unable to allocate order reference");
       const inserted = await client.query(
-        `INSERT INTO public.orders (public_reference, tracking_token_hash, payment_method, payment_destination_snapshot, payment_status, fulfillment, customer_name, customer_phone, delivery_address, delivery_landmark, delivery_notes, delivery_latitude, delivery_longitude, special_instructions, guest_count, table_number, subtotal_etb, total_etb, wants_whatsapp_updates)
-         VALUES ($1,$2,$3,$4::jsonb,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$17,$18) RETURNING id`,
-        [reference, tokenHash(trackingToken), paymentMethod, JSON.stringify(paymentSnapshot), "unpaid", fulfillment, name, phone, fulfillment === "delivery" ? address : null, validString(body.deliveryLandmark, 200) || null, validString(body.deliveryNotes, 500) || null, fulfillment === "delivery" ? deliveryLatitude : null, fulfillment === "delivery" ? deliveryLongitude : null, validString(body.specialInstructions, 500) || null, guestCount, validString(body.tableNumber, 40) || null, subtotal, body.wantsWhatsAppUpdates === true],
+        `INSERT INTO public.orders (public_reference, tracking_token_hash, payment_method, payment_destination_snapshot, payment_status, fulfillment, customer_name, customer_phone, delivery_address, delivery_landmark, delivery_notes, delivery_latitude, delivery_longitude, delivery_zone_id, special_instructions, guest_count, table_number, subtotal_etb, total_etb, wants_whatsapp_updates)
+         VALUES ($1,$2,$3,$4::jsonb,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$18,$19) RETURNING id`,
+        [reference, tokenHash(trackingToken), paymentMethod, JSON.stringify(paymentSnapshot), "unpaid", fulfillment, name, phone, fulfillment === "delivery" ? address : null, validString(body.deliveryLandmark, 200) || null, validString(body.deliveryNotes, 500) || null, fulfillment === "delivery" ? deliveryLatitude : null, fulfillment === "delivery" ? deliveryLongitude : null, deliveryZoneId, validString(body.specialInstructions, 500) || null, guestCount, validString(body.tableNumber, 40) || null, subtotal, body.wantsWhatsAppUpdates === true],
       );
       const orderId = inserted.rows[0].id as string;
       for (const item of items) await client.query(
