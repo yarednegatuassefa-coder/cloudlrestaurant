@@ -44,6 +44,9 @@ export default function OrderCart({
   onCancelOrderEdit,
 }: OrderCartProps) {
   const [receipt, setReceipt] = useState<{ reference: string; trackingUrl: string } | null>(null);
+  const [checkoutSubmitting, setCheckoutSubmitting] = useState(false);
+  const checkoutSubmittingRef = useRef(false);
+  checkoutSubmittingRef.current = checkoutSubmitting;
   const triggerRef = useRef<HTMLButtonElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLElement>(null);
@@ -57,7 +60,7 @@ export default function OrderCart({
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         event.preventDefault();
-        onCloseRef.current();
+        if (!checkoutSubmittingRef.current) onCloseRef.current();
         return;
       }
       if (event.key !== "Tab") return;
@@ -89,6 +92,10 @@ export default function OrderCart({
     };
   }, [isOpen]);
 
+  const closePanel = () => {
+    if (!checkoutSubmittingRef.current) onClose();
+  };
+
   return (
     <>
       <button ref={triggerRef} className="order-cart-trigger" type="button" aria-haspopup="dialog" aria-controls="order-cart-panel" aria-expanded={isOpen} onClick={() => { setReceipt(null); onOpen(); }}>
@@ -96,11 +103,11 @@ export default function OrderCart({
         {itemCount > 0 && <strong>{formatMoney(subtotal)} ETB</strong>}
       </button>
       {isOpen && <>
-        <button className="order-cart-scrim" type="button" aria-label="Close order panel" onClick={onClose} />
+        <button className="order-cart-scrim" type="button" aria-label="Close order panel" onClick={closePanel} disabled={checkoutSubmitting} />
         <aside ref={panelRef} tabIndex={-1} className="order-cart-panel" id="order-cart-panel" role="dialog" aria-modal="true" aria-labelledby="order-cart-title">
           <header className="order-cart__header">
             <div><p className="order-cart__eyebrow">CLOUD L · ORDER REQUEST</p><h2 id="order-cart-title">{receipt ? "Request received" : isEditingOrder ? `Edit request${editingOrderReference ? ` · ${editingOrderReference}` : ""}` : "Your order"}</h2></div>
-            <button ref={closeButtonRef} className="order-cart__close" type="button" onClick={onClose} aria-label="Close order panel">×</button>
+            <button ref={closeButtonRef} className="order-cart__close" type="button" onClick={closePanel} disabled={checkoutSubmitting} aria-label="Close order panel">×</button>
           </header>
           {receipt ? <section className="order-receipt" aria-live="polite">
             <p className="order-receipt__eyebrow">SAVED SECURELY · AWAITING STAFF REVIEW</p>
@@ -132,7 +139,7 @@ export default function OrderCart({
               <p className="checkout-privacy">This edits the existing request only. No new payment or order will be submitted.</p>
             </div> : items.length > 0 && <>
               <Suspense fallback={<p className="checkout-note" role="status">Loading secure checkout / የክፍያ መረጃን በመጫን ላይ…</p>}>
-                <CheckoutForm items={items} subtotal={subtotal} onPlaced={(trackingUrl, reference) => { onOrderPlaced(); setReceipt({ trackingUrl, reference }); }} />
+                <CheckoutForm items={items} subtotal={subtotal} onSubmittingChange={setCheckoutSubmitting} onPlaced={(trackingUrl, reference) => { onOrderPlaced(); setReceipt({ trackingUrl, reference }); }} />
               </Suspense>
               {whatsappHref && <div className="checkout-whatsapp-fallback"><p>Prefer to request your order in chat?</p><a href={whatsappHref} target="_blank" rel="noreferrer">Continue with WhatsApp <span aria-hidden="true">↗</span></a></div>}
             </>}
