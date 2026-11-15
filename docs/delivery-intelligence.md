@@ -19,7 +19,7 @@ Cloud L's inspected application currently has one restaurant operation and no te
 
 ## Fee and coverage behavior
 
-- Active zones are evaluated in the order returned by PostgreSQL. Avoid overlapping territories: a point in overlapping polygons is currently matched to the first matching zone. Draw non-overlapping polygons.
+- If a pinned point falls in more than one active territory, checkout rejects it as ambiguous and asks the customer to contact staff. Draw non-overlapping polygons to avoid this condition.
 - If there are no active zones, the existing manual coverage and fee workflow remains unchanged.
 - If active zones exist but a customer does not select a pin, staff must continue manual coverage review and fee entry.
 - Existing orders retain their saved delivery fee even if a zone is later edited or deleted. New orders use the current active polygon and fee.
