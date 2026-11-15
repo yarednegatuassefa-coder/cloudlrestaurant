@@ -11,7 +11,7 @@ export default async function handler(req: ApiReq, res: ApiRes) {
       `SELECT o.id, o.public_reference, o.created_at, o.status, o.payment_method,
               COALESCE(NULLIF(o.payment_destination_snapshot,'{}'::jsonb),(SELECT jsonb_build_object('id',p.id,'label',p.label,'payment_type',p.payment_type,'bank_name',p.bank_name,'recipient_name',p.recipient_name,'phone_number',p.phone_number,'account_number',p.account_number,'merchant_id',p.merchant_id,'instructions',p.instructions,'qr_asset_id',p.qr_asset_id) FROM public.payment_methods p WHERE p.id=o.payment_method)) AS payment_destination_snapshot,
               o.payment_status, o.customer_name, o.customer_phone,
-              o.fulfillment, o.delivery_address, o.delivery_landmark, o.delivery_notes, o.delivery_latitude, o.delivery_longitude, o.special_instructions, o.guest_count, o.table_number,
+              o.fulfillment, o.delivery_address, o.delivery_landmark, o.delivery_notes, o.delivery_latitude, o.delivery_longitude, o.delivery_zone_id, (SELECT z.name FROM public.delivery_zones z WHERE z.id=o.delivery_zone_id) AS delivery_zone_name, o.special_instructions, o.guest_count, o.table_number,
               o.subtotal_etb, o.delivery_fee_etb, o.total_etb, o.estimated_ready_at, o.wants_whatsapp_updates,
               o.customer_payment_reference, o.customer_payment_submitted_at,
               (SELECT e.message FROM public.order_events e WHERE e.order_id=o.id AND e.event_type='status_changed' AND e.status='needs_clarification' ORDER BY e.created_at DESC LIMIT 1) AS clarification_message,
