@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import type { CartLine } from "./orderTypes";
 const CheckoutForm = lazy(() => import("./CheckoutForm"));
 
@@ -44,19 +44,63 @@ export default function OrderCart({
   onCancelOrderEdit,
 }: OrderCartProps) {
   const [receipt, setReceipt] = useState<{ reference: string; trackingUrl: string } | null>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLElement>(null);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const previouslyFocused = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    closeButtonRef.current?.focus();
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        onCloseRef.current();
+        return;
+      }
+      if (event.key !== "Tab") return;
+      const panel = panelRef.current;
+      if (!panel) return;
+      const focusable = Array.from(panel.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      )).filter((element) => element.getAttribute("aria-hidden") !== "true");
+      if (focusable.length === 0) {
+        event.preventDefault();
+        panel.focus();
+        return;
+      }
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && (document.activeElement === first || !panel.contains(document.activeElement))) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && (document.activeElement === last || !panel.contains(document.activeElement))) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      if (previouslyFocused?.isConnected) previouslyFocused.focus();
+      else triggerRef.current?.focus();
+    };
+  }, [isOpen]);
 
   return (
     <>
-      <button className="order-cart-trigger" type="button" aria-haspopup="dialog" aria-controls="order-cart-panel" aria-expanded={isOpen} onClick={() => { setReceipt(null); onOpen(); }}>
+      <button ref={triggerRef} className="order-cart-trigger" type="button" aria-haspopup="dialog" aria-controls="order-cart-panel" aria-expanded={isOpen} onClick={() => { setReceipt(null); onOpen(); }}>
         <span>{isEditingOrder ? `Editing · ${itemCount}` : itemCount ? `Your order · ${itemCount}` : "Start an order"}</span>
         {itemCount > 0 && <strong>{formatMoney(subtotal)} ETB</strong>}
       </button>
       {isOpen && <>
         <button className="order-cart-scrim" type="button" aria-label="Close order panel" onClick={onClose} />
-        <aside className="order-cart-panel" id="order-cart-panel" role="dialog" aria-modal="true" aria-labelledby="order-cart-title">
+        <aside ref={panelRef} tabIndex={-1} className="order-cart-panel" id="order-cart-panel" role="dialog" aria-modal="true" aria-labelledby="order-cart-title">
           <header className="order-cart__header">
             <div><p className="order-cart__eyebrow">CLOUD L · ORDER REQUEST</p><h2 id="order-cart-title">{receipt ? "Request received" : isEditingOrder ? `Edit request${editingOrderReference ? ` · ${editingOrderReference}` : ""}` : "Your order"}</h2></div>
-            <button className="order-cart__close" type="button" onClick={onClose} aria-label="Close order panel">×</button>
+            <button ref={closeButtonRef} className="order-cart__close" type="button" onClick={onClose} aria-label="Close order panel">×</button>
           </header>
           {receipt ? <section className="order-receipt" aria-live="polite">
             <p className="order-receipt__eyebrow">SAVED SECURELY · AWAITING STAFF REVIEW</p>
