@@ -29,6 +29,53 @@ test("order dialog sets initial focus, traps keyboard focus, and restores focus 
   await expect(addButton).toBeFocused();
 });
 
+test("network retry reuses the same tracking/idempotency token", async ({ page }) => {
+  const payloads: Array<{ trackingToken?: string }> = [];
+  let attempts = 0;
+  await page.route("**/api/menu-availability", async (route) => {
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ soldOutItemIds: [] }) });
+  });
+  await page.route("**/api/payment-methods", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ methods: [{ id: "cash", label: "Cash", payment_type: "cash" }] }),
+    });
+  });
+  await page.route("**/api/orders", async (route) => {
+    attempts += 1;
+    payloads.push(route.request().postDataJSON());
+    if (attempts === 1) {
+      await route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ error: "Temporary network failure." }) });
+      return;
+    }
+    await route.fulfill({
+      status: 201,
+      contentType: "application/json",
+      body: JSON.stringify({
+        reference: "CL-IDEMPOTENCY-RETRY",
+        trackingUrl: "https://www.cloudlrestaurant.com/#track/" + trackingToken,
+        status: "received",
+        subtotalEtb: 450,
+        currency: "ETB",
+      }),
+    });
+  });
+
+  const dialog = await addMenuItemAndOpenCart(page);
+  await dialog.getByRole("button", { name: /Continue to checkout/ }).click();
+  await dialog.getByLabel("Your name").fill("Test Customer");
+  await dialog.getByLabel("Mobile number").fill("+251 911 234 567");
+  await dialog.getByRole("button", { name: /Place order request/ }).click();
+  await expect(dialog.getByRole("alert")).toContainText("Temporary network failure");
+  await dialog.getByRole("button", { name: /Place order request/ }).click();
+  await expect(dialog.getByRole("heading", { name: "Request received" })).toBeVisible();
+
+  expect(attempts).toBe(2);
+  expect(payloads[0].trackingToken).toMatch(/^[A-Za-z0-9_-]{43}$/);
+  expect(payloads[1].trackingToken).toBe(payloads[0].trackingToken);
+});
+
 test("rapid repeated checkout submits create only one order request", async ({ page }) => {
   let createRequests = 0;
   await page.route("**/api/menu-availability", async (route) => {

@@ -1,4 +1,5 @@
 import { createHash, randomBytes } from "node:crypto";
+import { isValidTrackingToken, orderRequestFingerprint } from "../lib/server/order-idempotency.mjs";
 import { MENU_AVAILABILITY_LOCK_SQL, pool } from "./_server.js";
 import catalogData from "./_catalog.json" with { type: "json" };
 import { normalizeGuestCount } from "../lib/server/guest-count.mjs";
@@ -92,10 +93,24 @@ export default async function handler(req: Req, res: Res) {
     }
     const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
     if (!Number.isSafeInteger(subtotal) || subtotal <= 0) return reply(res, 400, { error: "The order total is invalid." });
-    const trackingToken = randomBytes(32).toString("base64url");
+    const trackingToken = body.trackingToken;
+    if (!isValidTrackingToken(trackingToken)) return reply(res, 400, { error: "This checkout session has expired. Refresh your order and try again." });
+    const fingerprint = orderRequestFingerprint({ customerName: name, customerPhone: phone, fulfillment, paymentMethod, deliveryAddress: fulfillment === "delivery" ? address : null, deliveryLandmark: validString(body.deliveryLandmark, 200) || null, deliveryNotes: validString(body.deliveryNotes, 500) || null, deliveryLatitude: fulfillment === "delivery" ? deliveryLatitude : null, deliveryLongitude: fulfillment === "delivery" ? deliveryLongitude : null, specialInstructions: validString(body.specialInstructions, 500) || null, guestCount, tableNumber: validString(body.tableNumber, 40) || null, wantsWhatsAppUpdates: body.wantsWhatsAppUpdates === true, items: items.map(({ id, quantity }) => ({ id, quantity })) });
+    const trackingTokenDigest = tokenHash(trackingToken);
     const client = await pool.connect();
     try {
       await client.query("BEGIN");
+      await client.query("SELECT pg_advisory_xact_lock(hashtextextended($1, 0))", [trackingTokenDigest]);
+      const previousOrder = await client.query("SELECT public_reference, status, subtotal_etb, idempotency_fingerprint FROM public.orders WHERE tracking_token_hash=$1 FOR UPDATE", [trackingTokenDigest]);
+      if (previousOrder.rowCount) {
+        const previous = previousOrder.rows[0];
+        if (previous.idempotency_fingerprint !== fingerprint) {
+          await client.query("ROLLBACK");
+          return reply(res, 409, { error: "This checkout key was already used for a different order. Refresh your order and submit again." });
+        }
+        await client.query("COMMIT");
+        return reply(res, 200, { reference: previous.public_reference, trackingUrl: "https://www.cloudlrestaurant.com/#track/" + trackingToken, status: previous.status, subtotalEtb: Number(previous.subtotal_etb), currency: "ETB" });
+      }
       const selectedItemIds = [...new Set(items.map((item) => item.id))].sort();
       for (const itemId of selectedItemIds) {
         await client.query(MENU_AVAILABILITY_LOCK_SQL, [itemId]);
@@ -133,11 +148,10 @@ export default async function handler(req: Req, res: Res) {
       }
       if (!reference) throw new Error("Unable to allocate order reference");
       const inserted = await client.query(
-        `INSERT INTO public.orders (public_reference, tracking_token_hash, payment_method, payment_destination_snapshot, payment_status, fulfillment, customer_name, customer_phone, delivery_address, delivery_landmark, delivery_notes, delivery_latitude, delivery_longitude, delivery_zone_id, special_instructions, guest_count, table_number, subtotal_etb, total_etb, wants_whatsapp_updates)
-         VALUES ($1,$2,$3,$4::jsonb,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$18,$19) RETURNING id`,
-        [reference, tokenHash(trackingToken), paymentMethod, JSON.stringify(paymentSnapshot), "unpaid", fulfillment, name, phone, fulfillment === "delivery" ? address : null, validString(body.deliveryLandmark, 200) || null, validString(body.deliveryNotes, 500) || null, fulfillment === "delivery" ? deliveryLatitude : null, fulfillment === "delivery" ? deliveryLongitude : null, deliveryZoneId, validString(body.specialInstructions, 500) || null, guestCount, validString(body.tableNumber, 40) || null, subtotal, body.wantsWhatsAppUpdates === true],
-      );
-      const orderId = inserted.rows[0].id as string;
+        `INSERT INTO public.orders (public_reference, tracking_token_hash, idempotency_fingerprint, payment_method, payment_destination_snapshot, payment_status, fulfillment, customer_name, customer_phone, delivery_address, delivery_landmark, delivery_notes, delivery_latitude, delivery_longitude, delivery_zone_id, special_instructions, guest_count, table_number, subtotal_etb, total_etb, wants_whatsapp_updates)
+         VALUES ($1,$2,$3,$4,$5::jsonb,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$19,$20) RETURNING id`,
+        [reference, trackingTokenDigest, fingerprint, paymentMethod, JSON.stringify(paymentSnapshot), "unpaid", fulfillment, name, phone, fulfillment === "delivery" ? address : null, validString(body.deliveryLandmark, 200) || null, validString(body.deliveryNotes, 500) || null, fulfillment === "delivery" ? deliveryLatitude : null, fulfillment === "delivery" ? deliveryLongitude : null, deliveryZoneId, validString(body.specialInstructions, 500) || null, guestCount, validString(body.tableNumber, 40) || null, subtotal, body.wantsWhatsAppUpdates === true],
+      );      const orderId = inserted.rows[0].id as string;
       for (const item of items) await client.query(
         "INSERT INTO public.order_items (order_id, menu_item_id, name, name_amharic, size, unit_price_etb, quantity) VALUES ($1,$2,$3,$4,$5,$6,$7)",
         [orderId, item.id, item.name, item.nameAmharic, item.size ?? null, item.price, item.quantity],

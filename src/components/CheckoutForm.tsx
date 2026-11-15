@@ -11,6 +11,7 @@ const money = (value: number) => value.toLocaleString("en-US");
 export default function CheckoutForm({ items, subtotal, onPlaced }: Props) {
   const [stage, setStage] = useState<"review" | "details" | "sending" | "error">("review");
   const submittingRef = useRef(false);
+  const idempotencyRef = useRef<{ fingerprint: string; token: string } | null>(null);
   const [error, setError] = useState("");
   const [fulfillment, setFulfillment] = useState<Fulfillment>("pickup");
   const [methods, setMethods] = useState<PaymentOption[]>([]);
@@ -46,7 +47,15 @@ export default function CheckoutForm({ items, subtotal, onPlaced }: Props) {
     submittingRef.current = true;
     setError(""); setStage("sending");
     try {
-      const response = await fetch("/api/orders", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "create", customerName, customerPhone, fulfillment, paymentMethod, deliveryAddress, deliveryLandmark, deliveryNotes, deliveryLatitude: deliveryCoordinates?.latitude ?? null, deliveryLongitude: deliveryCoordinates?.longitude ?? null, specialInstructions, guestCount: fulfillment === "dine_in" && guestCount ? Number(guestCount) : null, tableNumber, wantsWhatsAppUpdates, items: items.map(({ id, quantity }) => ({ id, quantity })) }) });
+      const payload = { action: "create", customerName, customerPhone, fulfillment, paymentMethod, deliveryAddress, deliveryLandmark, deliveryNotes, deliveryLatitude: deliveryCoordinates?.latitude ?? null, deliveryLongitude: deliveryCoordinates?.longitude ?? null, specialInstructions, guestCount: fulfillment === "dine_in" && guestCount ? Number(guestCount) : null, tableNumber, wantsWhatsAppUpdates, items: items.map(({ id, quantity }) => ({ id, quantity })) };
+      const fingerprint = JSON.stringify(payload);
+      if (!idempotencyRef.current || idempotencyRef.current.fingerprint !== fingerprint) {
+        const bytes = crypto.getRandomValues(new Uint8Array(32));
+        const binary = Array.from(bytes, (value) => String.fromCharCode(value)).join("");
+        const token = btoa(binary).replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
+        idempotencyRef.current = { fingerprint, token };
+      }
+      const response = await fetch("/api/orders", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...payload, trackingToken: idempotencyRef.current.token }) });
       const data = await response.json() as { error?: string; trackingUrl?: string; reference?: string };
       if (!response.ok || !data.trackingUrl || !data.reference) throw new Error(data.error || "The order could not be submitted.");
       onPlaced(data.trackingUrl, data.reference);
