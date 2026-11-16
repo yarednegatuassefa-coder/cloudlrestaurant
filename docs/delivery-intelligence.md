@@ -42,3 +42,19 @@ Cloud L's inspected application currently has one restaurant operation and no te
 6. Only after successful staging verification, approve production migration and deployment separately.
 
 No database migration or production deployment is performed by this PR.
+
+## RustGIS workflow
+
+The staff Delivery intelligence tab supports authenticated GeoJSON export/import for use with RustGIS or another GIS that supports standard GeoJSON.
+
+1. Sign in to the staff board and open **Delivery intelligence**.
+2. Export current territories as `cloudl-delivery-territories.geojson`.
+3. Open the file in RustGIS. The GeoJSON coordinate order is standard longitude, latitude (WGS84/EPSG:4326).
+4. Edit the polygons and attributes. Preserve each feature's `name`, integer `delivery_fee_etb` (0–10,000 ETB), and optional boolean `is_active`.
+5. Export a GeoJSON **FeatureCollection** containing Polygon features. Cloud L currently accepts one exterior ring per Polygon; holes and MultiPolygons must be simplified to separate supported polygons before import.
+6. Import the file from the staff board. The server validates the entire collection and inserts it atomically. Imports create new zones; they never overwrite existing zones. If any name conflicts, the whole import is rejected.
+7. Review imported boundaries and fees on the map. Imported zones are active unless `is_active` is explicitly false. Pause candidate zones until the restaurant owner approves their operational use.
+
+The adapter converts GeoJSON `[longitude, latitude]` coordinates to Cloud L's existing `[latitude, longitude]` polygon storage. It does not install RustGIS, call an external GIS service, synchronize automatically, or change production zones without a staff member importing and approving the file. GeoJSON import/export is authenticated with the existing staff session and is not exposed through customer APIs.
+
+The adapter is covered by `tests/api/delivery-geojson.test.mjs` for coordinate-order conversion, ring closure, unsupported holes, fee validation, duplicate names and export round-tripping.
