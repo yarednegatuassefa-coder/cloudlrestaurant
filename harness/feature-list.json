@@ -1,0 +1,78 @@
+{
+  "schema_version": 1,
+  "project": "cloudlrestaurant",
+  "updated_at": "2026-11-16",
+  "features": [
+    {
+      "id": "HARN-001",
+      "title": "Project-specific harness contract and domain safety gates",
+      "status": "implemented_unverified",
+      "priority": "critical",
+      "acceptance_criteria": [
+        "Agent reads project and Home instructions before work",
+        "Payment, order, delivery and customer-data boundaries are explicit"
+      ],
+      "verification": [
+        "Review AGENTS.md",
+        "Review harness/README.md"
+      ],
+      "risk": "medium",
+      "owner_approval_required": false,
+      "evidence": [],
+      "notes": "Documentation is present; agent adoption has not been independently observed."
+    },
+    {
+      "id": "HARN-002",
+      "title": "Deterministic harness preflight",
+      "status": "planned",
+      "priority": "high",
+      "acceptance_criteria": [
+        "npm run harness:check validates required project files and package scripts",
+        "Missing configuration is reported by variable name only",
+        "No secret values are printed"
+      ],
+      "verification": [
+        "npm run harness:check"
+      ],
+      "risk": "low",
+      "owner_approval_required": false,
+      "evidence": [],
+      "notes": "Implementation in this PR."
+    },
+    {
+      "id": "HARN-003",
+      "title": "Automated CI harness gate",
+      "status": "planned",
+      "priority": "high",
+      "acceptance_criteria": [
+        "Pull requests run preflight, lint, build and API tests",
+        "E2E/PWA test requirements and skips are explicit"
+      ],
+      "verification": [
+        "GitHub Actions pull request run"
+      ],
+      "risk": "medium",
+      "owner_approval_required": false,
+      "evidence": [],
+      "notes": "CI evidence pending."
+    },
+    {
+      "id": "HARN-004",
+      "title": "Durable task state and handoff",
+      "status": "implemented_unverified",
+      "priority": "high",
+      "acceptance_criteria": [
+        "Feature ledger and append-only progress log exist",
+        "Each substantial task records verification evidence and next action"
+      ],
+      "verification": [
+        "Review harness/feature-list.json",
+        "Review harness/progress.md"
+      ],
+      "risk": "low",
+      "owner_approval_required": false,
+      "evidence": [],
+      "notes": "Initial harness adoption backlog; maintain during future work."
+    }
+  ]
+}
