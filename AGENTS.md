@@ -11,6 +11,9 @@ Before a task that matches a specialized workflow, consult the Home skill catalo
 
 Use only the skill or skills relevant to the requested deliverable; do not chain or execute every skill just because it is available. CloudLrestaurant's own instructions and requirements take precedence over Home guidance when project-specific details differ.
 
+## Harness lifecycle
+Before substantial work, read `harness/README.md`, `harness/feature-list.json` and the latest `harness/progress.md` entry. Run `npm run harness:check` before project tests. Record acceptance evidence and handoff state before closing a task.
+
 ## CloudLrestaurant safeguards
 Preserve authentication, server-side authorization, database permissions, tenant isolation, order-state integrity, payment handling, customer privacy, and idempotency. Treat orders, payments, customer records, and operational data as sensitive. Never treat a customer order request as confirmed payment or a confirmed order without the required staff-side verification. Do not use production data or apply live migrations as part of a skill workflow without explicit authorization.
 
