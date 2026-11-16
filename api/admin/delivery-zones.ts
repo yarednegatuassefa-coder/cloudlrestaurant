@@ -1,10 +1,22 @@
 import { pool, isAllowedOrigin, reject, validSession, type ApiReq, type ApiRes } from "../_server.js";
 import { isValidPolygon } from "../../lib/server/delivery-geometry.mjs";
+import { parseDeliveryGeoJson, zonesToDeliveryGeoJson } from "../../lib/server/delivery-geojson.mjs";
 export default async function handler(req: ApiReq, res: ApiRes) {
   res.setHeader("Cache-Control","no-store"); res.setHeader("X-Content-Type-Options","nosniff");
   if (!validSession(req)) return reject(res,401,"Staff login required.");
   if (!process.env.DATABASE_URL) return reject(res,503,"Delivery zone service is not configured.");
   if (req.method === "GET") {
+    if (req.query?.format === "geojson") {
+      try {
+        const result = await pool.query("SELECT id,name,polygon,delivery_fee_etb,is_active FROM public.delivery_zones ORDER BY name");
+        res.setHeader("Content-Type", "application/geo+json; charset=utf-8");
+        res.setHeader("Content-Disposition", "attachment; filename=cloudl-delivery-territories.geojson");
+        return res.status(200).json(zonesToDeliveryGeoJson(result.rows));
+      } catch(error) {
+        console.error("delivery_geojson_export_failed", error instanceof Error ? error.message : "unknown");
+        return reject(res,503,"Delivery territories could not be exported.");
+      }
+    }
     if (req.query?.view === "analytics") {
       const raw = Array.isArray(req.query?.days) ? req.query.days[0] : req.query?.days;
       const days = raw === "7" ? 7 : raw === "90" ? 90 : 30;
@@ -24,6 +36,25 @@ export default async function handler(req: ApiReq, res: ApiRes) {
   if (!isAllowedOrigin(req)) return reject(res,403,"This request is not allowed.");
   const body=req.body&&typeof req.body==="object"?req.body as Record<string,unknown>:{};
   const action=body.action;
+  if(action==="import_geojson"){
+    let zones;
+    try { zones = parseDeliveryGeoJson(body.geojson); }
+    catch(error) { return reject(res,400,error instanceof Error ? error.message : "GeoJSON is invalid."); }
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+      for (const zone of zones) {
+        await client.query("INSERT INTO public.delivery_zones(name,polygon,delivery_fee_etb,is_active) VALUES($1,$2::jsonb,$3,$4)",[zone.name,JSON.stringify(zone.polygon),zone.deliveryFeeEtb,zone.isActive]);
+      }
+      await client.query("COMMIT");
+      return res.status(201).json({ imported: zones.length });
+    } catch(error) {
+      await client.query("ROLLBACK");
+      if ((error as {code?:string}).code === "23505") return reject(res,409,"A territory with one of these names already exists. Rename it in RustGIS and retry; no territories were imported.");
+      console.error("delivery_geojson_import_failed",error instanceof Error?error.message:"unknown");
+      return reject(res,503,"The GeoJSON import failed. No territories were imported.");
+    } finally { client.release(); }
+  }
   if(action==="delete"){
     const id=typeof body.id==="string"?body.id:"";
     if(!/^[0-9a-f-]{36}$/i.test(id)) return reject(res,400,"Zone ID is invalid.");
