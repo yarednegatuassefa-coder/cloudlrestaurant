@@ -5,7 +5,7 @@
  * it never calls Cloud L or writes to a database.
  */
 import { spawnSync } from "node:child_process";
-import { existsSync, lstatSync, readFileSync, statSync } from "node:fs";
+import { existsSync, lstatSync, readFileSync, statSync, unlinkSync } from "node:fs";
 import { dirname, extname, resolve } from "node:path";
 import { parseDeliveryGeoJson } from "../lib/server/delivery-geojson.mjs";
 
@@ -86,17 +86,12 @@ function main() {
   } catch (error) {
     // Remove partial output from a failed conversion or validation.
     if (existsSync(output)) {
-      try { (awaitImportFs()).unlinkSync(output); } catch { /* preserve the original error */ }
+      try { unlinkSync(output); } catch { /* preserve the original error */ }
     }
     throw error;
   }
 }
 
-function awaitImportFs() {
-  // Kept synchronous to avoid introducing a runtime dependency.
-  return requireFs;
-}
-import * as requireFs from "node:fs";
 
 try {
   main();
