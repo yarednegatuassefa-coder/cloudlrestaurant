@@ -10,6 +10,7 @@
     "test:api": "node --test tests/api/*.test.mjs",
     "test:e2e": "tsc -p tsconfig.e2e.json && playwright test",
     "test:pwa": "npm run build && node scripts/test-pwa.mjs",
+    "gis:normalize-delivery-zones": "node scripts/terrio-normalize-delivery-zones.mjs",
     "preview": "vite preview"
   },
   "dependencies": {
