@@ -11,6 +11,7 @@
     "test:e2e": "tsc -p tsconfig.e2e.json && playwright test",
     "test:pwa": "npm run build && node scripts/test-pwa.mjs",
     "gis:normalize-delivery-zones": "node scripts/terrio-normalize-delivery-zones.mjs",
+    "ai:nemotron:smoke": "node scripts/nemotron-smoke.mjs",
     "preview": "vite preview"
   },
   "dependencies": {

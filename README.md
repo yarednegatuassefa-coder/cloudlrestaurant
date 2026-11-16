@@ -90,3 +90,4 @@ API handlers validate requests on the server. Do not bypass server-side price, a
 - [Lighthouse report](LIGHTHOUSE_REPORT.md)
 - [End-to-end test guide](e2e/README.md)
 - [Project plan](plan.md)
+- [Optional local Nemotron inference](docs/nemotron-local-inference.md)
