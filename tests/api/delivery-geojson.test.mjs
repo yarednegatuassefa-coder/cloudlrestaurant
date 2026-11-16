@@ -12,6 +12,7 @@ test("imports GeoJSON longitude/latitude as Cloud L latitude/longitude", () => {
   const [zone] = parseDeliveryGeoJson({ type: "FeatureCollection", features: [feature] });
   assert.deepEqual(zone.polygon[0], [8.99, 38.70]);
   assert.equal(zone.deliveryFeeEtb, 80);
+  assert.equal(zone.isActive, true);
 });
 
 test("rejects unclosed rings, holes, invalid fees and duplicate names", () => {
@@ -22,6 +23,11 @@ test("rejects unclosed rings, holes, invalid fees and duplicate names", () => {
   const badFee = structuredClone(feature); badFee.properties.delivery_fee_etb = 1.5;
   assert.throws(() => parseDeliveryGeoJson({ type: "FeatureCollection", features: [badFee] }), /integer/);
   assert.throws(() => parseDeliveryGeoJson({ type: "FeatureCollection", features: [feature, structuredClone(feature)] }), /duplicate/);
+});
+
+test("defaults missing activation flag to inactive", () => {
+  const withoutFlag = structuredClone(feature); delete withoutFlag.properties.is_active;
+  assert.equal(parseDeliveryGeoJson({ type: "FeatureCollection", features: [withoutFlag] })[0].isActive, false);
 });
 
 test("exports zones as closed GeoJSON polygons with longitude first", () => {
