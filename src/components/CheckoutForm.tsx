@@ -3,12 +3,12 @@ import ArifPayStatus from "./ArifPayStatus";
 import type { CartLine } from "./orderTypes";
 import DeliveryLocationPicker from "./DeliveryLocationPicker";
 
-type Props = { items: CartLine[]; subtotal: number; onPlaced: (trackingUrl: string, reference: string) => void };
+type Props = { items: CartLine[]; subtotal: number; onPlaced: (trackingUrl: string, reference: string) => void; onSubmittingChange?: (submitting: boolean) => void };
 type Fulfillment = "pickup" | "delivery" | "dine_in";
 type PaymentOption = { id: string; label: string; payment_type: "cash" | "manual_transfer" };
 const money = (value: number) => value.toLocaleString("en-US");
 
-export default function CheckoutForm({ items, subtotal, onPlaced }: Props) {
+export default function CheckoutForm({ items, subtotal, onPlaced, onSubmittingChange }: Props) {
   const [stage, setStage] = useState<"review" | "details" | "sending" | "error">("review");
   const submittingRef = useRef(false);
   const idempotencyRef = useRef<{ fingerprint: string; token: string } | null>(null);
@@ -45,6 +45,7 @@ export default function CheckoutForm({ items, subtotal, onPlaced }: Props) {
     if (submittingRef.current) return;
     if (!methodsLoaded || methods.length === 0 || !methods.some((method) => method.id === paymentMethod)) { setError("Payment options are not ready. Please refresh before placing your request."); return; }
     submittingRef.current = true;
+    onSubmittingChange?.(true);
     setError(""); setStage("sending");
     try {
       const payload = { action: "create", customerName, customerPhone, fulfillment, paymentMethod, deliveryAddress, deliveryLandmark, deliveryNotes, deliveryLatitude: deliveryCoordinates?.latitude ?? null, deliveryLongitude: deliveryCoordinates?.longitude ?? null, specialInstructions, guestCount: fulfillment === "dine_in" && guestCount ? Number(guestCount) : null, tableNumber, wantsWhatsAppUpdates, items: items.map(({ id, quantity }) => ({ id, quantity })) };
@@ -60,6 +61,7 @@ export default function CheckoutForm({ items, subtotal, onPlaced }: Props) {
       if (!response.ok || !data.trackingUrl || !data.reference) throw new Error(data.error || "The order could not be submitted.");
       onPlaced(data.trackingUrl, data.reference);
     } catch (cause) { submittingRef.current = false; setError(cause instanceof Error ? cause.message : "Connection problem. Your cart is still here—please try again or use WhatsApp."); setStage("error"); }
+    finally { onSubmittingChange?.(false); }
   }
 
   if (stage === "review") return <div className="checkout-intro"><p className="checkout-note">Place a request online. Cloud L will confirm availability and any delivery charge before preparing your order.</p><button className="order-cart__whatsapp checkout-primary" type="button" onClick={() => setStage("details")}>Continue to checkout <span aria-hidden="true">→</span></button><p className="checkout-secondary">No account needed. Your order is not confirmed until our team reviews it.</p></div>;
