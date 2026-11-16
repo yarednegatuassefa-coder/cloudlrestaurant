@@ -58,3 +58,16 @@ The staff Delivery intelligence tab supports authenticated GeoJSON export/import
 The adapter converts GeoJSON `[longitude, latitude]` coordinates to Cloud L's existing `[latitude, longitude]` polygon storage. It does not install RustGIS, call an external GIS service, synchronize automatically, or change production zones without a staff member importing and approving the file. GeoJSON import/export is authenticated with the existing staff session and is not exposed through customer APIs.
 
 The adapter is covered by `tests/api/delivery-geojson.test.mjs` for coordinate-order conversion, ring closure, unsupported holes, fee validation, duplicate names and export round-tripping.
+
+
+## Terrio preflight
+
+For larger or non-GeoJSON source layers, use the offline Terrio normalizer before the staff import:
+
+```powershell
+npm run gis:normalize-delivery-zones -- .\exports\candidate-zones.gpkg .\exports\candidate-zones-wgs84.geojson
+```
+
+It inspects the local dataset, runs Terrio's full content check, converts/reprojects to EPSG:4326, and validates the result against the same Cloud L import parser. It accepts GeoPackage, GeoParquet, FlatGeobuf, GeoJSON and zipped Shapefile inputs. It refuses URLs, symlinks, output overwrite, inputs over 100 MB and outputs over the current 2 MB API limit.
+
+The tool is an offline preflight only. It does not send files to Cloud L, write to the database, create delivery zones, or activate them. The staff member still imports and reviews the output manually. See [Terrio processing](./terrio-processing.md).
