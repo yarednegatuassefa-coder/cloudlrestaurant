@@ -485,3 +485,9 @@ img{height:auto}
 .delivery-intelligence__notice{margin:0;color:#48664b;font-size:11px}
 .delivery-intelligence__privacy{margin:0}
 @media(max-width:600px){.delivery-intelligence__intro{flex-direction:column}.delivery-intelligence__stats{grid-template-columns:1fr}.delivery-intelligence__map{height:300px}.delivery-intelligence__fields{grid-template-columns:1fr}.delivery-intelligence__zones article{flex-wrap:wrap}}
+
+.delivery-intelligence__gis-tools{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:15px 16px;border:1px solid #d9cbbb;background:#f4eee4}
+.delivery-intelligence__gis-tools>div:first-child{display:grid;gap:5px}
+.delivery-intelligence__gis-tools strong{color:#302c27;font-size:12px}
+.delivery-intelligence__gis-tools p{max-width:620px;margin:0;color:#756c62;font-size:10px;line-height:1.6}
+@media(max-width:600px){.delivery-intelligence__gis-tools{align-items:stretch;flex-direction:column}}
