@@ -25,7 +25,7 @@ function loadMap():Promise<MapApi>{
 }
 const money=(n:number)=>Number(n||0).toLocaleString("en-US");
 export default function StaffDeliveryIntelligence(){
- const mapEl=useRef<HTMLDivElement>(null);const mapRef=useRef<MapInstance|null>(null);const layers=useRef<Layer[]>([]);
+ const mapEl=useRef<HTMLDivElement>(null);const mapRef=useRef<MapInstance|null>(null);const layers=useRef<Layer[]>([]);const geoJsonInput=useRef<HTMLInputElement>(null);
  const [zones,setZones]=useState<Zone[]>([]);const [cells,setCells]=useState<Cell[]>([]);const [days,setDays]=useState(30);
  const [name,setName]=useState("");const [fee,setFee]=useState("0");const [points,setPoints]=useState<Point[]>([]);const [editingId,setEditingId]=useState<string|null>(null);const [editingActive,setEditingActive]=useState(true);
  const [busy,setBusy]=useState(false);const [error,setError]=useState("");const [notice,setNotice]=useState("");
@@ -49,6 +49,17 @@ export default function StaffDeliveryIntelligence(){
   cells.forEach(c=>{const l=L.circleMarker([c.latitude,c.longitude],{radius:Math.min(22,6+c.orders*1.4),color:"#9b432e",fillColor:"#c66d45",fillOpacity:.42,weight:1}).addTo(map).bindPopup(c.orders+" orders · "+money(c.revenueEtb)+" ETB");layers.current.push(l);});
   if(points.length>=2){const l=L.polygon(points,{color:"#236b91",dashArray:"5 5",fillOpacity:.08}).addTo(map);layers.current.push(l);}
  },[zones,cells,points]);
+ async function exportGeoJson(){
+  setBusy(true);setError("");setNotice("");
+  try{const response=await fetch("/api/admin/delivery-zones?format=geojson",{credentials:"same-origin",cache:"no-store"});if(!response.ok){const data=await response.json();throw new Error(data.error||"Could not export territories.");}const data=await response.json();const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/geo+json"});const url=URL.createObjectURL(blob);const anchor=document.createElement("a");anchor.href=url;anchor.download="cloudl-delivery-territories.geojson";document.body.appendChild(anchor);anchor.click();anchor.remove();URL.revokeObjectURL(url);setNotice("GeoJSON export downloaded. Open it in RustGIS to inspect or edit the territory boundaries.");}
+  catch(e){setError(e instanceof Error?e.message:"Could not export GeoJSON.");}finally{setBusy(false);}
+ }
+ async function importGeoJson(file?:File){
+  if(!file)return;
+  setBusy(true);setError("");setNotice("");
+  try{if(file.size>2_000_000)throw new Error("GeoJSON file must be smaller than 2 MB.");const geojson=JSON.parse(await file.text()) as unknown;if(!geojson||typeof geojson!=="object"||(geojson as {type?:unknown}).type!=="FeatureCollection")throw new Error("Select a GeoJSON FeatureCollection exported from RustGIS.");const response=await fetch("/api/admin/delivery-zones",{method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"import_geojson",geojson})});const data=await response.json() as {imported?:number;error?:string};if(!response.ok)throw new Error(data.error||"Could not import GeoJSON.");setNotice(`${data.imported||0} territories imported. Review each boundary and fee before activating it for customer orders.`);await refresh();}
+  catch(e){setError(e instanceof Error?e.message:"Could not import GeoJSON.");}finally{setBusy(false);if(geoJsonInput.current)geoJsonInput.current.value="";}
+ }
  async function save(){
   setBusy(true);setError("");setNotice("");
   try{const response=await fetch("/api/admin/delivery-zones",{method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"save",id:editingId||undefined,name,deliveryFeeEtb:Number(fee),polygon:points,isActive:editingId?editingActive:true})});const data=await response.json();if(!response.ok)throw new Error(data.error||"Zone could not be saved.");setName("");setFee("0");setPoints([]);setEditingId(null);setEditingActive(true);setNotice("Delivery territory saved. Pinned customer orders inside this active zone will receive its fee.");await refresh();}
@@ -64,6 +75,10 @@ export default function StaffDeliveryIntelligence(){
  }
  return <section className="delivery-intelligence">
   <div className="delivery-intelligence__intro"><div><h2>Delivery territories & demand</h2><p>Draw zones around Cloud L's service areas. New customer pins inside active zones are matched automatically.</p></div><select aria-label="Analytics period" value={days} onChange={e=>setDays(Number(e.currentTarget.value))}><option value={7}>Last 7 days</option><option value={30}>Last 30 days</option><option value={90}>Last 90 days</option></select></div>
+  <div className="delivery-intelligence__gis-tools">
+   <div><strong>RustGIS data exchange</strong><p>Export your current territories to edit in RustGIS, then import a validated GeoJSON FeatureCollection. Imports create new territories; they never overwrite existing zones.</p></div>
+   <div className="delivery-intelligence__actions"><button type="button" disabled={busy} onClick={()=>void exportGeoJson()}>Export GeoJSON</button><button type="button" disabled={busy} onClick={()=>geoJsonInput.current?.click()}>Import from RustGIS</button><input ref={geoJsonInput} type="file" accept=".geojson,.json,application/geo+json,application/json" hidden onChange={event=>void importGeoJson(event.currentTarget.files?.[0])}/></div>
+  </div>
   <div className="delivery-intelligence__stats"><article><small>Delivery orders</small><strong>{money(summary.orders)}</strong></article><article><small>Delivery revenue</small><strong>{money(summary.revenue_etb)} ETB</strong></article><article><small>Orders with pins</small><strong>{money(summary.pinned_orders)}</strong></article></div>
   <div className="delivery-intelligence__map" ref={mapEl} aria-label="Map for drawing delivery territories and viewing aggregated order heatmap"/>
   <div className="delivery-intelligence__legend"><span><i className="zone-dot"/>Territories</span><span><i className="heat-dot"/>Aggregated order density</span><span><i className="draw-dot"/>New territory draft</span></div>
