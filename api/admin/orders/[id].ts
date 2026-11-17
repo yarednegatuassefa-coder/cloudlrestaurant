@@ -36,6 +36,7 @@ export default async function handler(req: RouteReq, res: ApiRes) {
     if (!found.rowCount) { await client.query("ROLLBACK"); return reject(res, 404, "Order not found."); }
     const order = found.rows[0];
     if (body.action === "verify-payment") {
+      if (order.status === "cancelled" || order.status === "declined") { await client.query("ROLLBACK"); return reject(res, 409, "A cancelled or declined order cannot be marked paid."); }
       if (order.payment_method === "cash" || order.payment_status !== "submitted" || body.confirmed !== true) { await client.query("ROLLBACK"); return reject(res, 409, "Only a submitted manual transfer can be marked paid, after checking the matching receiving account."); }
       await client.query("UPDATE public.orders SET payment_status='paid', staff_payment_verified_at=now(), updated_at=now() WHERE id=$1", [orderId]);
       await client.query("INSERT INTO public.order_events (order_id, actor_type, actor_label, event_type, message, customer_visible) VALUES ($1,'staff','Cloud L staff','payment_verified','Manual payment verified by Cloud L staff.',true)", [orderId]);

@@ -49,7 +49,7 @@ export default async function handler(req: ApiReq, res: ApiRes) {
       await client.query("COMMIT");
       return res.status(201).json({ imported: zones.length });
     } catch(error) {
-      await client.query("ROLLBACK");
+      await client.query("ROLLBACK").catch(() => undefined);
       if ((error as {code?:string}).code === "23505") return reject(res,409,"A territory with one of these names already exists. Rename it in RustGIS and retry; no territories were imported.");
       console.error("delivery_geojson_import_failed",error instanceof Error?error.message:"unknown");
       return reject(res,503,"The GeoJSON import failed. No territories were imported.");
