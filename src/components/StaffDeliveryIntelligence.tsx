@@ -3,6 +3,8 @@ import { useEffect, useRef, useState } from "react";
 type Point = [number, number];
 type Zone = { id:string; name:string; polygon:Point[]; delivery_fee_etb:number; is_active:boolean; orders?:number; revenue_etb?:number };
 type Cell = { latitude:number; longitude:number; orders:number; revenueEtb:number };
+type RouteCell = { latitude:number; longitude:number; orders:number; distanceMeters:number; estimatedMinutes:number };
+type RouteSummary = { pinnedOrders:number; ordersInsidePilot:number; sampledCells:number; routedCells:number; failedCells:number; sampledOrders:number; weightedAverageDistanceMeters:number; weightedAverageMinutes:number };
 type MapApi = {
  map:(el:HTMLElement,options?:Record<string,unknown>)=>MapInstance;
  tileLayer:(url:string,options:Record<string,unknown>)=>{addTo:(map:MapInstance)=>void};
@@ -30,12 +32,15 @@ export default function StaffDeliveryIntelligence(){
  const [name,setName]=useState("");const [fee,setFee]=useState("0");const [points,setPoints]=useState<Point[]>([]);const [editingId,setEditingId]=useState<string|null>(null);const [editingActive,setEditingActive]=useState(true);
  const [busy,setBusy]=useState(false);const [error,setError]=useState("");const [notice,setNotice]=useState("");
  const [summary,setSummary]=useState({orders:0,revenue_etb:0,pinned_orders:0});
+ const [routeCells,setRouteCells]=useState<RouteCell[]>([]);
+ const [routeSummary,setRouteSummary]=useState<RouteSummary|null>(null);
+ const [routeBusy,setRouteBusy]=useState(false);
  async function refresh(){
   const [z,a]=await Promise.all([fetch("/api/admin/delivery-zones",{credentials:"same-origin",cache:"no-store"}),fetch("/api/admin/delivery-zones?view=analytics&days="+days,{credentials:"same-origin",cache:"no-store"})]);
   const zd=await z.json();const ad=await a.json();if(!z.ok)throw new Error(zd.error||"Could not load zones.");if(!a.ok)throw new Error(ad.error||"Could not load analytics.");
   setZones(zd.zones||[]);setCells(ad.cells||[]);setSummary(ad.summary||{orders:0,revenue_etb:0,pinned_orders:0});
  }
- useEffect(()=>{let live=true;refresh().catch(e=>{if(live)setError(e instanceof Error?e.message:"Could not load delivery intelligence.");});return()=>{live=false;};},[days]);
+ useEffect(()=>{let live=true;setRouteCells([]);setRouteSummary(null);refresh().catch(e=>{if(live)setError(e instanceof Error?e.message:"Could not load delivery intelligence.");});return()=>{live=false;};},[days]);
  useEffect(()=>{
   let active=true;let map:MapInstance|null=null;
   loadMap().then(L=>{if(!active||!mapEl.current)return;map=L.map(mapEl.current).setView([9.04,38.76],13);L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:'&copy; OpenStreetMap contributors'}).addTo(map);mapRef.current=map;
@@ -49,6 +54,17 @@ export default function StaffDeliveryIntelligence(){
   cells.forEach(c=>{const l=L.circleMarker([c.latitude,c.longitude],{radius:Math.min(22,6+c.orders*1.4),color:"#9b432e",fillColor:"#c66d45",fillOpacity:.42,weight:1}).addTo(map).bindPopup(c.orders+" orders · "+money(c.revenueEtb)+" ETB");layers.current.push(l);});
   if(points.length>=2){const l=L.polygon(points,{color:"#236b91",dashArray:"5 5",fillOpacity:.08}).addTo(map);layers.current.push(l);}
  },[zones,cells,points]);
+ async function analyzeRouteCoverage(){
+  setRouteBusy(true);setError("");setNotice("");
+  try{
+   const response=await fetch("/api/admin/delivery-route-analytics?days="+days,{credentials:"same-origin",cache:"no-store"});
+   const data=await response.json() as {cells?:RouteCell[];summary?:RouteSummary;disclaimer?:string;error?:string};
+   if(!response.ok)throw new Error(data.error||"Route coverage analysis failed.");
+   setRouteCells(data.cells||[]);setRouteSummary(data.summary||null);
+   setNotice(data.summary?.routedCells ? "Route coverage sample calculated. Coloured map markers show road distance from Cloud L to each busy customer cluster." : "No routeable clusters with at least two pinned orders were found in this period and pilot area.");
+  }catch(e){setError(e instanceof Error?e.message:"Route coverage analysis failed.");}
+  finally{setRouteBusy(false);}
+ }
  async function exportGeoJson(){
   setBusy(true);setError("");setNotice("");
   try{const response=await fetch("/api/admin/delivery-zones?format=geojson",{credentials:"same-origin",cache:"no-store"});if(!response.ok){const data=await response.json();throw new Error(data.error||"Could not export territories.");}const data=await response.json();const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/geo+json"});const url=URL.createObjectURL(blob);const anchor=document.createElement("a");anchor.href=url;anchor.download="cloudl-delivery-territories.geojson";document.body.appendChild(anchor);anchor.click();anchor.remove();URL.revokeObjectURL(url);setNotice("GeoJSON export downloaded. Open it in RustGIS to inspect or edit the territory boundaries.");}
@@ -80,8 +96,22 @@ export default function StaffDeliveryIntelligence(){
    <div className="delivery-intelligence__actions"><button type="button" disabled={busy} onClick={()=>void exportGeoJson()}>Export GeoJSON</button><button type="button" disabled={busy} onClick={()=>geoJsonInput.current?.click()}>Import from RustGIS</button><input ref={geoJsonInput} type="file" accept=".geojson,.json,application/geo+json,application/json" hidden onChange={event=>void importGeoJson(event.currentTarget.files?.[0])}/></div>
   </div>
   <div className="delivery-intelligence__stats"><article><small>Delivery orders</small><strong>{money(summary.orders)}</strong></article><article><small>Delivery revenue</small><strong>{money(summary.revenue_etb)} ETB</strong></article><article><small>Orders with pins</small><strong>{money(summary.pinned_orders)}</strong></article></div>
+  <div className="delivery-intelligence__gis-tools">
+   <div><strong>Road-distance territory analysis</strong><p>Calculate road distance from Cloud L to the busiest customer clusters in the selected period. Results are aggregated and advisory; they do not change delivery fees or territories.</p></div>
+   <div className="delivery-intelligence__actions"><button type="button" disabled={routeBusy||busy} onClick={()=>void analyzeRouteCoverage()}>{routeBusy?"Calculating routes…":"Run route coverage analysis"}</button></div>
+  </div>
+  {routeSummary&&<div className="delivery-intelligence__stats">
+   <article><small>Orders represented</small><strong>{money(routeSummary.sampledOrders)}</strong></article>
+   <article><small>Weighted average road distance</small><strong>{(routeSummary.weightedAverageDistanceMeters/1000).toFixed(1)} km</strong></article>
+   <article><small>Weighted baseline drive time</small><strong>{routeSummary.weightedAverageMinutes} min</strong></article>
+  </div>}
+  {routeSummary&&<div className="delivery-intelligence__route-results">
+   <div><strong>Busy customer clusters</strong><small>{routeSummary.routedCells} of {routeSummary.sampledCells} sampled clusters routed · maximum {12} clusters</small></div>
+   {routeCells.length>0&&<ol>{routeCells.slice().sort((a,b)=>b.orders-a.orders).map((cell,index)=><li key={cell.latitude.toFixed(4)+"-"+cell.longitude.toFixed(4)}><span>Cluster {index+1} · {cell.orders} orders</span><strong>{(cell.distanceMeters/1000).toFixed(1)} km · {cell.estimatedMinutes} min</strong></li>)}</ol>}
+   <p>Clusters are approximately 1.1 km grid cells. Road distance is calculated to each cell's centre. The sample prioritizes the busiest clusters and is not a complete route for every order.</p>
+  </div>}
   <div className="delivery-intelligence__map" ref={mapEl} aria-label="Map for drawing delivery territories and viewing aggregated order heatmap"/>
-  <div className="delivery-intelligence__legend"><span><i className="zone-dot"/>Territories</span><span><i className="heat-dot"/>Aggregated order density</span><span><i className="draw-dot"/>New territory draft</span></div>
+  <div className="delivery-intelligence__legend"><span><i className="zone-dot"/>Territories</span><span><i className="heat-dot"/>Aggregated order density</span><span><i className="draw-dot"/>New territory draft</span>{routeCells.length>0&&<span>Road distance: green ≤3 km · amber 3–6 km · red &gt;6 km</span>}</div>
   <div className="delivery-intelligence__editor"><h3>{editingId?"Edit delivery territory":"Create a delivery territory"}</h3><p>Click at least three points on the map to outline the delivery boundary. The polygon closes automatically.</p>
    <div className="delivery-intelligence__fields"><label>Territory name<input value={name} maxLength={80} onChange={e=>setName(e.currentTarget.value)} placeholder="e.g. Kebena Zone"/></label><label>Delivery fee (ETB)<input type="number" min="0" max="10000" step="1" value={fee} onChange={e=>setFee(e.currentTarget.value)}/></label></div>
    <div className="delivery-intelligence__actions"><button type="button" onClick={()=>setPoints(p=>p.slice(0,-1))} disabled={!points.length}>Undo point</button><button type="button" onClick={()=>setPoints([])} disabled={!points.length}>Clear drawing</button>{editingId&&<button type="button" onClick={()=>{setEditingId(null);setEditingActive(true);setName("");setFee("0");setPoints([]);}}>Cancel edit</button>}<button type="button" className="is-primary" onClick={()=>void save()} disabled={busy||name.trim().length<2||points.length<3||!Number.isInteger(Number(fee))||Number(fee)<0||Number(fee)>10000}>{editingId?"Update territory":"Save territory"}</button></div>
@@ -89,6 +119,6 @@ export default function StaffDeliveryIntelligence(){
   </div>
   <div className="delivery-intelligence__zones"><h3>Configured territories</h3>{zones.length===0?<p>No delivery territories yet. Draw your first territory above. Until then, staff can continue manually confirming coverage and fees.</p>:zones.map(z=><article key={z.id}><div><strong>{z.name}</strong><small>{money(z.delivery_fee_etb)} ETB · {z.is_active?"Active":"Inactive"} · {z.orders||0} orders · {money(z.revenue_etb||0)} ETB</small></div><button type="button" disabled={busy} onClick={()=>edit(z)}>Edit</button><button type="button" disabled={busy} onClick={()=>void toggle(z)}>{z.is_active?"Pause":"Activate"}</button><button type="button" disabled={busy} onClick={()=>void remove(z)}>Delete</button></article>)}</div>
   {notice&&<p className="delivery-intelligence__notice" role="status">{notice}</p>}{error&&<p className="checkout-error" role="alert">{error}</p>}
-  <p className="delivery-intelligence__privacy">Heatmap cells are aggregated geographic groups and only displayed when at least two orders fall in a cell. Individual customer coordinates remain visible only to authenticated staff for order fulfilment.</p>
+  <p className="delivery-intelligence__privacy">Heatmap and route-analysis cells are aggregated geographic groups and only displayed when at least two orders fall in a cell. Route analysis samples up to 12 busiest clusters inside the Addis pilot bounds. Distances use a car profile without live traffic or motorcycle adjustment; do not treat them as courier ETAs or automatic pricing recommendations. Individual customer coordinates remain visible only to authenticated staff for order fulfilment.</p>
  </section>;
 }
