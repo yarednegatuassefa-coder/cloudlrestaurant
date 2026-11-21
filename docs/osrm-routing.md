@@ -30,9 +30,9 @@ Requirements: Docker Engine with Compose, and enough disk/RAM for the chosen Ope
 3. Preprocess the extract using the official OSRM backend image (replace the filename with the downloaded file):
 
    ```sh
-   docker run --rm -t -v "$PWD/data/osrm:/data" ghcr.io/project-osrm/osrm-backend:v26.10.0 osrm-extract -p /opt/car.lua /data/ethiopia-latest.osm.pbf
-   docker run --rm -t -v "$PWD/data/osrm:/data" ghcr.io/project-osrm/osrm-backend:v26.10.0 osrm-partition /data/ethiopia-latest.osrm
-   docker run --rm -t -v "$PWD/data/osrm:/data" ghcr.io/project-osrm/osrm-backend:v26.10.0 osrm-customize /data/ethiopia-latest.osrm
+   docker run --rm -t -v "$PWD/data/osrm:/data" ghcr.io/project-osrm/osrm-backend:26.10.0-debian osrm-extract -p /opt/car.lua /data/ethiopia-latest.osm.pbf
+   docker run --rm -t -v "$PWD/data/osrm:/data" ghcr.io/project-osrm/osrm-backend:26.10.0-debian osrm-partition /data/ethiopia-latest.osrm
+   docker run --rm -t -v "$PWD/data/osrm:/data" ghcr.io/project-osrm/osrm-backend:26.10.0-debian osrm-customize /data/ethiopia-latest.osrm
    ```
 
 4. Start the local service:
