@@ -72,6 +72,7 @@ For Linux environments with system Chromium, set `PLAYWRIGHT_CHROMIUM_EXECUTABLE
 - `GET /api/payment-methods` — currently enabled payment preferences.
 - `POST /api/orders` — create an order request or perform an allowed order edit.
 - `GET /api/menu-availability` — current sold-out/unavailable menu items.
+- `POST /api/admin/delivery-route` — staff-session-protected OSRM route estimate; requires the authenticated Railway gateway configuration.
 
 API handlers validate requests on the server. Do not bypass server-side price, availability, delivery-zone, or order-state checks in the client.
 
@@ -91,3 +92,5 @@ API handlers validate requests on the server. Do not bypass server-side price, a
 - [End-to-end test guide](e2e/README.md)
 - [Project plan](plan.md)
 - [Optional local Nemotron inference](docs/nemotron-local-inference.md)
+- [Optional self-hosted OSRM delivery routing](docs/osrm-routing.md)
+- [Private Addis Ababa OSRM Railway pilot](docs/osrm-railway-pilot.md)
