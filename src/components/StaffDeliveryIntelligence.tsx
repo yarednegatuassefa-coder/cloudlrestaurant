@@ -43,7 +43,7 @@ export default function StaffDeliveryIntelligence(){
  useEffect(()=>{let live=true;setRouteCells([]);setRouteSummary(null);refresh().catch(e=>{if(live)setError(e instanceof Error?e.message:"Could not load delivery intelligence.");});return()=>{live=false;};},[days]);
  useEffect(()=>{
   let active=true;let map:MapInstance|null=null;
-  loadMap().then(L=>{if(!active||!mapEl.current)return;map=L.map(mapEl.current).setView([9.04,38.76],13);L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:'&copy; OpenStreetMap contributors'}).addTo(map);mapRef.current=map;
+  loadMap().then(L=>{if(!active||!mapEl.current)return;map=L.map(mapEl.current).setView([9.0324,38.7745],13);L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:'&copy; OpenStreetMap contributors'}).addTo(map);mapRef.current=map;
    map.on("click",e=>setPoints(p=>p.length<100?[...p,[e.latlng.lat,e.latlng.lng]]:p));window.setTimeout(()=>map?.invalidateSize(),0);
   }).catch(e=>{if(active)setError(e instanceof Error?e.message:"Map unavailable.");});
   return()=>{active=false;map?.remove();mapRef.current=null;};
@@ -52,8 +52,14 @@ export default function StaffDeliveryIntelligence(){
   const L=leafletApi(),map=mapRef.current;if(!L||!map)return;layers.current.forEach(x=>x.remove());layers.current=[];
   zones.forEach(z=>{const l=L.polygon(z.polygon,{color:z.is_active?"#a45d3c":"#999",weight:2,fillOpacity:.12}).addTo(map).bindPopup(z.name+" · "+money(z.delivery_fee_etb)+" ETB");layers.current.push(l);});
   cells.forEach(c=>{const l=L.circleMarker([c.latitude,c.longitude],{radius:Math.min(22,6+c.orders*1.4),color:"#9b432e",fillColor:"#c66d45",fillOpacity:.42,weight:1}).addTo(map).bindPopup(c.orders+" orders · "+money(c.revenueEtb)+" ETB");layers.current.push(l);});
+  routeCells.forEach(cell=>{
+   const color=cell.distanceMeters<=3000?"#287b57":cell.distanceMeters<=6000?"#c17b32":"#b34436";
+   const l=L.circleMarker([cell.latitude,cell.longitude],{radius:Math.min(18,7+cell.orders),color,fillColor:color,fillOpacity:.68,weight:2}).addTo(map)
+    .bindPopup(cell.orders+" orders · "+(cell.distanceMeters/1000).toFixed(1)+" km road distance · "+cell.estimatedMinutes+" min baseline");
+   layers.current.push(l);
+  });
   if(points.length>=2){const l=L.polygon(points,{color:"#236b91",dashArray:"5 5",fillOpacity:.08}).addTo(map);layers.current.push(l);}
- },[zones,cells,points]);
+ },[zones,cells,routeCells,points]);
  async function analyzeRouteCoverage(){
   setRouteBusy(true);setError("");setNotice("");
   try{
