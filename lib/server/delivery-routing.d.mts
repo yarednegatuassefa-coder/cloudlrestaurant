@@ -11,6 +11,7 @@ export type OsrmClientOptions = {
   cacheTtlMs?: number;
   maxCacheEntries?: number;
   now?: () => number;
+  authToken?: string;
 };
 export function createOsrmClient(options?: OsrmClientOptions): {
   route(origin: DeliveryCoordinate, destination: DeliveryCoordinate): Promise<OsrmRouteResult>;
