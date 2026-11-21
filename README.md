@@ -92,3 +92,4 @@ API handlers validate requests on the server. Do not bypass server-side price, a
 - [Project plan](plan.md)
 - [Optional local Nemotron inference](docs/nemotron-local-inference.md)
 - [Optional self-hosted OSRM delivery routing](docs/osrm-routing.md)
+- [Private Addis Ababa OSRM Railway pilot](docs/osrm-railway-pilot.md)
