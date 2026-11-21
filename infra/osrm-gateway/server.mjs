@@ -74,7 +74,8 @@ const server = http.createServer(async (req, res) => {
       "referrer-policy": "no-referrer",
     });
     res.end(body);
-  } catch {
+  } catch (error) {
+    console.error("osrm_upstream_failed", error instanceof Error ? error.name : "unknown", error instanceof Error ? error.message : "unknown");
     send(res, 502, { error: "Routing engine unavailable." });
   } finally {
     clearTimeout(timeout);
