@@ -31,6 +31,13 @@ test("builds OSRM coordinates in longitude,latitude order", async () => {
   assert.match(fake.calls[0].url, /overview=false/);
 });
 
+test("sends the gateway bearer token when configured", async () => {
+  const fake = fakeFetch();
+  const client = createOsrmClient({ baseUrl: "https://gateway.example", authToken: "a".repeat(64), fetchImpl: fake.fetchImpl });
+  await client.route(origin, destination);
+  assert.equal(fake.calls[0].init.headers.Authorization, `Bearer ${"a".repeat(64)}`);
+});
+
 test("caches successful route results and marks cache hits", async () => {
   const fake = fakeFetch();
   let now = 1_000;
