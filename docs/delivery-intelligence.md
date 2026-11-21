@@ -71,3 +71,15 @@ npm run gis:normalize-delivery-zones -- .\exports\candidate-zones.gpkg .\exports
 It inspects the local dataset, runs Terrio's full content check, converts/reprojects to EPSG:4326, and validates the result against the same Cloud L import parser. It accepts GeoPackage, GeoParquet, FlatGeobuf, GeoJSON and zipped Shapefile inputs. It refuses URLs, symlinks, output overwrite, inputs over 100 MB and outputs over the current 2 MB API limit.
 
 The tool is an offline preflight only. It does not send files to Cloud L, write to the database, create delivery zones, or activate them. The staff member still imports and reviews the output manually. See [Terrio processing](./terrio-processing.md).
+
+## Route-based coverage analysis
+
+The staff **Delivery intelligence** tab can run an on-demand road-distance analysis for the selected 7-, 30- or 90-day period.
+
+- The server groups pinned delivery orders into approximately 1.1 km grid cells and samples up to the 12 busiest cells with at least two non-declined/non-cancelled orders.
+- It routes from the Cloud L dispatch origin to each sampled grid-cell centre through the authenticated private OSRM gateway. Customer coordinates are not returned by this analytics endpoint.
+- The map colours sampled cells by baseline car-profile road distance: green at or below 3 km, amber above 3 km through 6 km, and red above 6 km. The table shows order count, route distance and baseline driving minutes.
+- The weighted average distance/time is weighted by the number of orders represented in the successfully routed sample cells. Failed routes are counted separately; cells outside the Addis pilot bounds are excluded from route sampling.
+- This is a busiest-cluster sample, not exhaustive routing for every order or a complete travel-time surface. It is intended to help staff identify where demand clusters and where delivery coverage may need review.
+
+No delivery fee, zone polygon, order, or checkout behavior is changed by running this analysis. Do not derive or activate new fees from these estimates. OSRM uses a car profile without live traffic or motorcycle adjustment; validate against actual courier journeys before using any route data for service promises or pricing decisions.
