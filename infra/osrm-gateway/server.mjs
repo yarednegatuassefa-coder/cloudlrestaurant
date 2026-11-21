@@ -26,8 +26,8 @@ function validRoute(path) {
   const match = path.match(/^\/route\/v1\/driving\/(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?);(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)$/);
   if (!match) return false;
   const [lon1, lat1, lon2, lat2] = match.slice(1).map(Number);
-  return [lon1, lon2].every((value) => Number.isFinite(value) && value >= -180 && value <= 180) &&
-    [lat1, lat2].every((value) => Number.isFinite(value) && value >= -90 && value <= 90);
+  return [lon1, lon2].every((value) => Number.isFinite(value) && value >= 38.55 && value <= 39.05) &&
+    [lat1, lat2].every((value) => Number.isFinite(value) && value >= 8.75 && value <= 9.20);
 }
 
 const server = http.createServer(async (req, res) => {
