@@ -60,3 +60,29 @@ This verifies one synthetic route inside the pilot bounding box. It does not est
 ## Data attribution
 
 The road network is derived from OpenStreetMap. Any public-facing maps or derived data must provide appropriate OpenStreetMap attribution and comply with ODbL obligations. See the [OpenStreetMap attribution guidelines](https://www.openstreetmap.org/copyright).
+
+## Authenticated application gateway
+
+A separate `osrm-auth-gateway` service runs from `infra/osrm-gateway/` on Railway. It has a Railway-generated HTTPS domain, but the raw OSRM service has no public domain and is reachable only through Railway private DNS at `osrm-ethiopia.railway.internal:5000`.
+
+The gateway:
+- Requires a 256-bit random bearer token and compares it in constant time.
+- Allows only GET requests for the OSRM driving route endpoint; no arbitrary proxy/SSRF paths.
+- Validates coordinate ranges and restricts query options.
+- Applies a per-connection-IP rate limit (60 requests/minute), a 5.5-second upstream timeout and a 1 MiB response cap.
+- Returns no-store responses and generic errors without leaking upstream details.
+
+Cloud L's `POST /api/admin/delivery-route` additionally requires a valid staff session and an allowed Cloud L origin. The gateway token is server-side only; never expose it through `VITE_*` variables or client bundles.
+
+### Deployment variables
+
+On the Cloud L Vercel project, set:
+- `OSRM_BASE_URL=https://<the Railway gateway domain>`
+- `OSRM_GATEWAY_TOKEN=<same secret stored on the Railway gateway>`
+
+On the Railway gateway service:
+- `OSRM_GATEWAY_TOKEN=<same secret>`
+- `OSRM_UPSTREAM_URL=http://osrm-ethiopia.railway.internal:5000`
+- `PORT=3000`
+
+Keep the gateway token out of source control and logs. Rotate it in both hosting environments together if it is ever exposed.
