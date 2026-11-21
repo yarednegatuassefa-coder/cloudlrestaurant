@@ -86,3 +86,18 @@ On the Railway gateway service:
 - `PORT=3000`
 
 Keep the gateway token out of source control and logs. Rotate it in both hosting environments together if it is ever exposed.
+
+### Cloud L staff API contract
+
+The staff API accepts a JSON POST body:
+
+```json
+{
+  "origin": [9.03, 38.75],
+  "destination": [9.04, 38.76]
+}
+```
+
+Coordinates are `[latitude, longitude]` in Cloud L's API contract. The server-side client converts them to OSRM's `longitude,latitude` URL format. A successful response includes `distanceMeters`, `durationSeconds`, `estimatedMinutes`, a cache indicator and an explicit baseline-estimate disclaimer.
+
+The route endpoint is informational only. It does not mutate orders, set delivery fees or confirm a delivery estimate to a customer. Calls require the existing Cloud L staff session cookie and an allowed Cloud L origin.
