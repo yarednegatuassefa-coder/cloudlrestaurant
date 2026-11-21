@@ -80,3 +80,9 @@ Before connecting routing to checkout or staff fee calculation:
 
 - OSRM backend and recommended MLD Docker workflow: https://github.com/Project-OSRM/osrm-backend
 - OSRM route and table API: https://project-osrm.org/docs/v26.4.0/api/
+
+## Cloud L Addis dispatch origin
+
+The Cloud L dispatch pin is the former Lidiya Cafe & Fast Food map listing at **2QJF+XR2, Queen Elizabeth II Street, Kebena, Addis Ababa**. The short Plus Code resolves in the Addis locality to the full code **6GXW2QJF+XR2**. Its recovered cell centre is approximately **9.0323875, 38.7745156** (latitude, longitude), used as the pilot's fixed route origin. This is a map-cell centre, not a surveyed loading-bay coordinate; confirm the exact dispatch entrance before using route distances for commercial decisions.
+
+The staff order board calls the authenticated `POST /api/admin/delivery-route` endpoint only when staff explicitly request a route for an order with customer coordinates. It displays road distance and a baseline car-profile duration. It does not modify fees, order status, checkout, or customer-facing promises.
