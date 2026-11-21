@@ -35,8 +35,8 @@ export default async function handler(req: RouteAnalyticsReq, res: ApiRes) {
       pool.query(
         `SELECT floor(delivery_latitude * 100)::int AS lat_cell,
                 floor(delivery_longitude * 100)::int AS lng_cell,
-                avg(delivery_latitude)::float AS latitude,
-                avg(delivery_longitude)::float AS longitude,
+                (floor(delivery_latitude * 100)::int / 100.0 + 0.005)::float AS latitude,
+                (floor(delivery_longitude * 100)::int / 100.0 + 0.005)::float AS longitude,
                 count(*)::int AS orders
          FROM public.orders
          WHERE fulfillment = 'delivery'
