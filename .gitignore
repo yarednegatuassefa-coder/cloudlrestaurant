@@ -24,3 +24,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# OpenStreetMap extracts and generated OSRM routing graph files
+/data/osrm/
