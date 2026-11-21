@@ -15,7 +15,11 @@ export default async function handler(req: RouteRequest, res: ApiRes) {
   if (!isAllowedOrigin(req)) return reject(res, 403, "This request is not allowed.");
   if (!validSession(req)) return reject(res, 401, "Staff login required.");
 
-  const client = getOsrmClientFromEnv({ authToken: process.env.OSRM_GATEWAY_TOKEN });
+  const gatewayToken = process.env.OSRM_GATEWAY_TOKEN;
+  if (!process.env.OSRM_BASE_URL || !gatewayToken || gatewayToken.length < 32) {
+    return reject(res, 503, "Delivery routing is not configured.");
+  }
+  const client = getOsrmClientFromEnv({ authToken: gatewayToken });
   if (!client) return reject(res, 503, "Delivery routing is not configured.");
 
   const body = req.body && typeof req.body === "object" ? req.body as Record<string, unknown> : {};
