@@ -17,7 +17,7 @@ Cloud L uses a provider-independent server-side routing interface with OSRM as t
 
 ## Local OSRM with Docker
 
-Requirements: Docker Engine with Compose, and enough disk/RAM for the chosen OpenStreetMap extract and OSRM preprocessing. A city extract is preferred for the first pilot.
+Requirements: Docker Engine with Compose, and enough disk/RAM for the chosen OpenStreetMap extract and OSRM preprocessing. For the first working pilot, use the Ethiopia extract; a clipped Addis Ababa extract can reduce preprocessing and storage once a suitable boundary polygon is available.
 
 1. Create the local data directory:
 
@@ -25,14 +25,14 @@ Requirements: Docker Engine with Compose, and enough disk/RAM for the chosen Ope
    mkdir -p data/osrm
    ```
 
-2. Download an appropriate Addis Ababa / Ethiopia OpenStreetMap PBF extract from a reputable extract provider. Keep its source URL, download date, and checksum in your local operations notes. Do not commit the PBF or generated OSRM graph files.
+2. Download the Ethiopia PBF extract from [Geofabrik](https://download.geofabrik.de/africa/ethiopia-latest.osm.pbf). Save it as `data/osrm/ethiopia-latest.osm.pbf`. Record the download date and SHA-256 checksum in your operations notes. Do not commit the PBF or generated OSRM graph files. The whole-country extract is a reliable starting point; later, clip to Addis Ababa using a maintained city boundary polygon and `osmium extract` to reduce local preprocessing requirements.
 
 3. Preprocess the extract using the official OSRM backend image (replace the filename with the downloaded file):
 
    ```sh
-   docker run --rm -t -v "$PWD/data/osrm:/data" ghcr.io/project-osrm/osrm-backend:latest osrm-extract -p /opt/car.lua /data/addis-latest.osm.pbf
-   docker run --rm -t -v "$PWD/data/osrm:/data" ghcr.io/project-osrm/osrm-backend:latest osrm-partition /data/addis-latest.osrm
-   docker run --rm -t -v "$PWD/data/osrm:/data" ghcr.io/project-osrm/osrm-backend:latest osrm-customize /data/addis-latest.osrm
+   docker run --rm -t -v "$PWD/data/osrm:/data" ghcr.io/project-osrm/osrm-backend:v26.10.0 osrm-extract -p /opt/car.lua /data/ethiopia-latest.osm.pbf
+   docker run --rm -t -v "$PWD/data/osrm:/data" ghcr.io/project-osrm/osrm-backend:v26.10.0 osrm-partition /data/ethiopia-latest.osrm
+   docker run --rm -t -v "$PWD/data/osrm:/data" ghcr.io/project-osrm/osrm-backend:v26.10.0 osrm-customize /data/ethiopia-latest.osrm
    ```
 
 4. Start the local service:
@@ -50,6 +50,10 @@ Requirements: Docker Engine with Compose, and enough disk/RAM for the chosen Ope
 6. Configure the Cloud L server process with `OSRM_BASE_URL=http://127.0.0.1:5000`. Do not expose port 5000 publicly. In production, place the router on a private network and allow access only from the application server.
 
 The Compose service binds only to loopback. It is a local development/staging helper, not a Vercel deployment recipe. The router and its dataset must be hosted on infrastructure that can run the OSRM container and retain the preprocessed graph files.
+
+## OpenStreetMap attribution and data handling
+
+OpenStreetMap data is licensed under the Open Database License (ODbL). If Cloud L publicly displays maps or other produced works based on OSM data, provide visible attribution such as `© OpenStreetMap contributors` and link to https://www.openstreetmap.org/copyright. Review the ODbL terms before redistributing an extracted or derived database. Keep source and extract timestamps so route results can be traced to the road-network snapshot.
 
 ## Operational and modelling limits
 
@@ -75,4 +79,4 @@ Before connecting routing to checkout or staff fee calculation:
 ## Upstream references
 
 - OSRM backend and recommended MLD Docker workflow: https://github.com/Project-OSRM/osrm-backend
-- OSRM route and table API: https://project-osrm.org/docs/v5.5.2/api/
+- OSRM route and table API: https://project-osrm.org/docs/v26.4.0/api/
