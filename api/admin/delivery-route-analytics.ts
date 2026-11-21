@@ -1,4 +1,4 @@
-import { pool, isAllowedOrigin, reject, validSession, type ApiReq, type ApiRes } from "../_server.js";
+import { pool, reject, validSession, type ApiReq, type ApiRes } from "../_server.js";
 import { getOsrmClientFromEnv } from "../../lib/server/delivery-routing.mjs";
 
 const DISPATCH_ORIGIN: [number, number] = [9.0323875, 38.774515625];
@@ -18,7 +18,6 @@ export default async function handler(req: RouteAnalyticsReq, res: ApiRes) {
     res.setHeader("Allow", "GET");
     return reject(res, 405, "Use GET.");
   }
-  if (!isAllowedOrigin(req)) return reject(res, 403, "This request is not allowed.");
   if (!validSession(req)) return reject(res, 401, "Staff login required.");
   if (!process.env.DATABASE_URL) return reject(res, 503, "Delivery analytics are not configured.");
 
