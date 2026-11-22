@@ -18,3 +18,7 @@ Before substantial work, read `harness/README.md`, `harness/feature-list.json` a
 Preserve authentication, server-side authorization, database permissions, tenant isolation, order-state integrity, payment handling, customer privacy, and idempotency. Treat orders, payments, customer records, and operational data as sensitive. Never treat a customer order request as confirmed payment or a confirmed order without the required staff-side verification. Do not use production data or apply live migrations as part of a skill workflow without explicit authorization.
 
 Skill availability does not authorize tool/dependency installation, paid API or model use, external account connections, production access, migrations, deployment, or publication. Obtain separate explicit authorization before any such cost-incurring or externally consequential action. Do not copy the Home skill collection into this repository; follow its catalog and load only relevant workflows when needed.
+
+
+## Code-mode agent architecture
+For any AI/tool orchestration task, consult the portfolio [Code-Mode Agent Engineering Standard](https://github.com/yarednegatuassefa-coder/home/blob/main/standards/code-mode-agent-engineering.md), [Portfolio Code-Mode skill](https://github.com/yarednegatuassefa-coder/home/blob/main/skills/portfolio-code-mode/SKILL.md), and this repository's `docs/agent-code-mode.md`. This guidance does not grant production access, external model use, patient/customer data transfer, writes, deployment or other approvals. Project-specific safeguards above remain authoritative.
