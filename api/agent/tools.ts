@@ -12,7 +12,7 @@ export default async function handler(req: ApiReq, res: ApiRes) {
   if (body?.tool !== "menu.unavailable_items") return reject(res, 404, "Unknown tool.");
   if (!process.env.DATABASE_URL) return reject(res, 503, "Database unavailable.");
   try {
-    const tool = await import("../harness/servers/menu/unavailable-items.js");
+    const tool = await import("../../harness/servers/menu/unavailable-items.js");
     const result = await tool.run();
     return res.status(200).json({ ok: true, tool: tool.name, result, bounded: true });
   } catch (error) {
