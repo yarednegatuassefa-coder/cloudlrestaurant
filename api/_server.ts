@@ -1,8 +1,20 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { Pool } from "pg";
 
+function connectionStringWithoutSslMode(raw?: string) {
+  if (!raw) return raw;
+  try {
+    const url = new URL(raw);
+    url.searchParams.delete("sslmode");
+    url.searchParams.delete("uselibpqcompat");
+    return url.toString();
+  } catch {
+    return raw;
+  }
+}
+
 const globalForPool = globalThis as typeof globalThis & { cloudlPool?: Pool };
-export const pool = globalForPool.cloudlPool ?? new Pool({ connectionString: process.env.DATABASE_URL, max: 3, idleTimeoutMillis: 10_000, connectionTimeoutMillis: 7_000, ssl: { rejectUnauthorized: true } });
+export const pool = globalForPool.cloudlPool ?? new Pool({ connectionString: connectionStringWithoutSslMode(process.env.DATABASE_URL), max: 3, idleTimeoutMillis: 10_000, connectionTimeoutMillis: 7_000, ssl: { rejectUnauthorized: true } });
 globalForPool.cloudlPool = pool;
 
 export const MENU_AVAILABILITY_LOCK_SQL =
