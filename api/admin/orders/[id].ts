@@ -1,5 +1,5 @@
 import { pool, isAllowedOrigin, reject, validSession, type ApiReq, type ApiRes } from "../../_server.js";
-import { enqueueSms } from "../../../lib/server/notifications.mjs";
+import { enqueueNotification, enqueueSms } from "../../../lib/server/notifications.mjs";
 import { dispatchSmsOutbox } from "../../../lib/server/dispatch-sms.mjs";
 import { shouldSendTransactionalStatusSms } from "../../../lib/server/notification-policy.mjs";
 
@@ -35,6 +35,59 @@ export default async function handler(req: RouteReq, res: ApiRes) {
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
+    if (body.entityType === "reservation") {
+      const reservationResult = await client.query(
+        "SELECT id, public_reference, customer_phone, wants_sms_updates, status FROM public.reservations WHERE id=$1 FOR UPDATE",
+        [orderId],
+      );
+      if (!reservationResult.rowCount) { await client.query("ROLLBACK"); return reject(res, 404, "Reservation request not found."); }
+      const reservation = reservationResult.rows[0];
+      const next = typeof body.status === "string" ? body.status : "";
+      const allowed: Record<string, string[]> = {
+        requested: ["confirmed", "declined", "cancelled"],
+        confirmed: ["cancelled", "completed"],
+        declined: [], cancelled: [], completed: [],
+      };
+      if (!allowed[reservation.status]?.includes(next)) {
+        await client.query("ROLLBACK");
+        return reject(res, 409, "That reservation status change is not allowed.");
+      }
+      const staffNotes = typeof body.staffNotes === "string" ? body.staffNotes.trim().slice(0, 1000) : "";
+      const tableLabel = typeof body.tableLabel === "string" ? body.tableLabel.trim().slice(0, 80) : "";
+      await client.query(
+        "UPDATE public.reservations SET status=$2, staff_notes=$3, table_label=COALESCE(NULLIF($4,''),table_label), confirmed_at=CASE WHEN $2='confirmed' THEN now() ELSE confirmed_at END, updated_at=now() WHERE id=$1",
+        [orderId, next, staffNotes, tableLabel],
+      );
+      const messages: Record<string, string> = {
+        confirmed: "Your Cloud L table reservation has been confirmed.",
+        declined: "Cloud L is unable to confirm this table request. Please contact us to discuss alternatives.",
+        cancelled: "Your Cloud L table reservation has been cancelled.",
+        completed: "Thank you for visiting Cloud L. We hope to see you again.",
+      };
+      const message = messages[next] || "Your Cloud L reservation has been updated.";
+      await client.query(
+        "INSERT INTO public.reservation_events (reservation_id, actor_type, event_type, status, message) VALUES ($1,'staff','status_changed',$2,$3)",
+        [orderId, next, message],
+      );
+      if (reservation.wants_sms_updates && ["confirmed", "declined", "cancelled"].includes(next)) {
+        await enqueueNotification(client, {
+          entityType: "reservation",
+          entityId: orderId,
+          reservationId: orderId,
+          channel: "sms",
+          purpose: "reservation",
+          eventKey: "reservation-status:" + orderId + ":" + next,
+          recipient: reservation.customer_phone,
+          message: "Cloud L reservation " + reservation.public_reference + ": " + message,
+        });
+      }
+      await client.query("COMMIT");
+      if (reservation.wants_sms_updates && ["confirmed", "declined", "cancelled"].includes(next) && process.env.SMS_PROVIDER === "uplink" && process.env.UPLINK_SMS_ENABLED === "true") {
+        await dispatchSmsOutbox(pool, 1, "reservation-status:" + orderId + ":" + next).catch((error) => console.error("sms_immediate_dispatch_failed", error instanceof Error ? error.message : "unknown"));
+      }
+      return res.status(200).json({ status: next });
+    }
+
     const found = await client.query("SELECT id, public_reference, customer_phone, wants_sms_updates, status, fulfillment, payment_method, payment_destination_snapshot, payment_status, subtotal_etb, delivery_zone_id FROM public.orders WHERE id=$1 FOR UPDATE", [orderId]);
     if (!found.rowCount) { await client.query("ROLLBACK"); return reject(res, 404, "Order not found."); }
     const order = found.rows[0];
