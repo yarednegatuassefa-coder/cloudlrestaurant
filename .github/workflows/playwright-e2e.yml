@@ -7,6 +7,7 @@ on:
   pull_request:
     branches:
       - main
+      - feat/sms-notification-outbox
   workflow_dispatch:
 
 permissions:
@@ -39,7 +40,7 @@ jobs:
         env:
           PGPASSWORD: cloudl_test
         run: |
-          psql -h localhost -U postgres -d cloudl_test -v ON_ERROR_STOP=1 -c "CREATE TABLE public.orders (tracking_token_hash char(64) NOT NULL UNIQUE); CREATE TABLE public.schema_migrations (version text PRIMARY KEY);"
+          psql -h localhost -U postgres -d cloudl_test -v ON_ERROR_STOP=1 -c "CREATE ROLE cloudl_app NOLOGIN; CREATE TABLE public.orders (id uuid PRIMARY KEY, tracking_token_hash char(64) NOT NULL UNIQUE); CREATE TABLE public.schema_migrations (version text PRIMARY KEY);"
       - name: Apply migration twice
         env:
           PGPASSWORD: cloudl_test
@@ -61,6 +62,19 @@ jobs:
             echo "Expected malformed fingerprint to be rejected"
             exit 1
           fi
+      - name: Apply notification and consent migration twice
+        env:
+          PGPASSWORD: cloudl_test
+        run: |
+          psql -h localhost -U postgres -d cloudl_test -v ON_ERROR_STOP=1 -f db/migrations/009_sms_notification_outbox.sql
+          psql -h localhost -U postgres -d cloudl_test -v ON_ERROR_STOP=1 -f db/migrations/009_sms_notification_outbox.sql
+      - name: Verify notification schema, consent ledger, and feedback storage
+        env:
+          PGPASSWORD: cloudl_test
+        run: |
+          test "$(psql -h localhost -U postgres -d cloudl_test -Atc "SELECT count(*) FROM information_schema.columns WHERE table_schema='public' AND table_name='orders' AND column_name IN ('wants_sms_updates','wants_sms_marketing')")" = "2"
+          test "$(psql -h localhost -U postgres -d cloudl_test -Atc "SELECT count(*) FROM information_schema.tables WHERE table_schema='public' AND table_name IN ('notification_outbox','customer_notification_consents','notification_templates','order_feedback')")" = "4"
+          test "$(psql -h localhost -U postgres -d cloudl_test -Atc "SELECT count(*) FROM public.schema_migrations WHERE version='009_sms_notification_outbox'")" = "1"
 
   e2e:
     name: End-to-end and visual regression tests

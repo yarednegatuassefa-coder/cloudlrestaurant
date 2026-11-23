@@ -2,7 +2,7 @@ name: CloudL Harness CI
 
 on:
   pull_request:
-    branches: [main]
+    branches: [main, feat/sms-notification-outbox]
   push:
     branches: [main]
   workflow_dispatch:

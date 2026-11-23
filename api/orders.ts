@@ -5,6 +5,8 @@ import catalogData from "./_catalog.json" with { type: "json" };
 import { normalizeGuestCount } from "../lib/server/guest-count.mjs";
 import { parseDeliveryCoordinates } from "../lib/server/delivery-coordinates.mjs";
 import { findMatchingZones } from "../lib/server/delivery-geometry.mjs";
+import { enqueueSms } from "../lib/server/notifications.mjs";
+import { dispatchSmsOutbox } from "../lib/server/dispatch-sms.mjs";
 
 type Req = { method?: string; headers: Record<string, string | string[] | undefined>; body?: unknown; socket?: { remoteAddress?: string } };
 type Res = { status: (code: number) => Res; setHeader: (name: string, value: string | number) => void; json: (data: unknown) => void; end: () => void };
@@ -95,7 +97,7 @@ export default async function handler(req: Req, res: Res) {
     if (!Number.isSafeInteger(subtotal) || subtotal <= 0) return reply(res, 400, { error: "The order total is invalid." });
     const trackingToken = body.trackingToken;
     if (!isValidTrackingToken(trackingToken)) return reply(res, 400, { error: "This checkout session has expired. Refresh your order and try again." });
-    const fingerprint = orderRequestFingerprint({ customerName: name, customerPhone: phone, fulfillment, paymentMethod, deliveryAddress: fulfillment === "delivery" ? address : null, deliveryLandmark: validString(body.deliveryLandmark, 200) || null, deliveryNotes: validString(body.deliveryNotes, 500) || null, deliveryLatitude: fulfillment === "delivery" ? deliveryLatitude : null, deliveryLongitude: fulfillment === "delivery" ? deliveryLongitude : null, specialInstructions: validString(body.specialInstructions, 500) || null, guestCount, tableNumber: validString(body.tableNumber, 40) || null, wantsWhatsAppUpdates: body.wantsWhatsAppUpdates === true, items: items.map(({ id, quantity }) => ({ id, quantity })) });
+    const fingerprint = orderRequestFingerprint({ customerName: name, customerPhone: phone, fulfillment, paymentMethod, deliveryAddress: fulfillment === "delivery" ? address : null, deliveryLandmark: validString(body.deliveryLandmark, 200) || null, deliveryNotes: validString(body.deliveryNotes, 500) || null, deliveryLatitude: fulfillment === "delivery" ? deliveryLatitude : null, deliveryLongitude: fulfillment === "delivery" ? deliveryLongitude : null, specialInstructions: validString(body.specialInstructions, 500) || null, guestCount, tableNumber: validString(body.tableNumber, 40) || null, wantsWhatsAppUpdates: body.wantsWhatsAppUpdates === true, wantsSmsUpdates: body.wantsSmsUpdates === true, wantsSmsMarketing: body.wantsSmsMarketing === true, items: items.map(({ id, quantity }) => ({ id, quantity })) });
     const trackingTokenDigest = tokenHash(trackingToken);
     const client = await pool.connect();
     try {
@@ -148,16 +150,32 @@ export default async function handler(req: Req, res: Res) {
       }
       if (!reference) throw new Error("Unable to allocate order reference");
       const inserted = await client.query(
-        `INSERT INTO public.orders (public_reference, tracking_token_hash, idempotency_fingerprint, payment_method, payment_destination_snapshot, payment_status, fulfillment, customer_name, customer_phone, delivery_address, delivery_landmark, delivery_notes, delivery_latitude, delivery_longitude, delivery_zone_id, special_instructions, guest_count, table_number, subtotal_etb, total_etb, wants_whatsapp_updates)
-         VALUES ($1,$2,$3,$4,$5::jsonb,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$19,$20) RETURNING id`,
-        [reference, trackingTokenDigest, fingerprint, paymentMethod, JSON.stringify(paymentSnapshot), "unpaid", fulfillment, name, phone, fulfillment === "delivery" ? address : null, validString(body.deliveryLandmark, 200) || null, validString(body.deliveryNotes, 500) || null, fulfillment === "delivery" ? deliveryLatitude : null, fulfillment === "delivery" ? deliveryLongitude : null, deliveryZoneId, validString(body.specialInstructions, 500) || null, guestCount, validString(body.tableNumber, 40) || null, subtotal, body.wantsWhatsAppUpdates === true],
+        `INSERT INTO public.orders (public_reference, tracking_token_hash, idempotency_fingerprint, payment_method, payment_destination_snapshot, payment_status, fulfillment, customer_name, customer_phone, delivery_address, delivery_landmark, delivery_notes, delivery_latitude, delivery_longitude, delivery_zone_id, special_instructions, guest_count, table_number, subtotal_etb, total_etb, wants_whatsapp_updates, wants_sms_updates, wants_sms_marketing)
+         VALUES ($1,$2,$3,$4,$5::jsonb,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$19,$20,$21,$22) RETURNING id`,
+        [reference, trackingTokenDigest, fingerprint, paymentMethod, JSON.stringify(paymentSnapshot), "unpaid", fulfillment, name, phone, fulfillment === "delivery" ? address : null, validString(body.deliveryLandmark, 200) || null, validString(body.deliveryNotes, 500) || null, fulfillment === "delivery" ? deliveryLatitude : null, fulfillment === "delivery" ? deliveryLongitude : null, deliveryZoneId, validString(body.specialInstructions, 500) || null, guestCount, validString(body.tableNumber, 40) || null, subtotal, body.wantsWhatsAppUpdates === true, body.wantsSmsUpdates === true, body.wantsSmsMarketing === true],
       );      const orderId = inserted.rows[0].id as string;
       for (const item of items) await client.query(
         "INSERT INTO public.order_items (order_id, menu_item_id, name, name_amharic, size, unit_price_etb, quantity) VALUES ($1,$2,$3,$4,$5,$6,$7)",
         [orderId, item.id, item.name, item.nameAmharic, item.size ?? null, item.price, item.quantity],
       );
       await client.query("INSERT INTO public.order_events (order_id, actor_type, event_type, status, message, customer_visible) VALUES ($1,'customer','order_received','received','Order request received — awaiting staff confirmation.',true)", [orderId]);
+      if (body.wantsSmsUpdates === true) {
+        await client.query(
+          "INSERT INTO public.customer_notification_consents (customer_phone, channel, purpose, status, source, consent_text_version, order_id) VALUES ($1,'sms','transactional','granted','checkout','checkout-sms-transactional-v1',$2)",
+          [phone, orderId],
+        );
+        await enqueueSms(client, { orderId, eventKey: "order-received:" + orderId, recipient: phone, message: "Cloud L received order " + reference + ". Track: https://www.cloudlrestaurant.com/#track/" + trackingToken });
+      }
+      if (body.wantsSmsMarketing === true) {
+        await client.query(
+          "INSERT INTO public.customer_notification_consents (customer_phone, channel, purpose, status, source, consent_text_version, order_id) VALUES ($1,'sms','marketing','granted','checkout','checkout-sms-marketing-v1',$2)",
+          [phone, orderId],
+        );
+      }
       await client.query("COMMIT");
+      if (body.wantsSmsUpdates === true && process.env.SMS_PROVIDER === "uplink" && process.env.UPLINK_SMS_ENABLED === "true") {
+        await dispatchSmsOutbox(pool, 1, "order-received:" + orderId).catch((error) => console.error("sms_immediate_dispatch_failed", error instanceof Error ? error.message : "unknown"));
+      }
       return reply(res, 201, { reference, trackingUrl: `https://www.cloudlrestaurant.com/#track/${trackingToken}`, status: "received", subtotalEtb: subtotal, currency: "ETB" });
     } catch (error) {
       await client.query("ROLLBACK").catch(() => undefined);
@@ -258,8 +276,9 @@ export default async function handler(req: Req, res: Res) {
     if (!/^[A-Za-z0-9_-]{40,50}$/.test(token)) return reply(res, 400, { error: "Tracking link is not valid." });
     try {
       const result = await pool.query(
-        `SELECT o.public_reference, o.created_at, o.status, o.fulfillment, o.payment_method, o.payment_status, o.subtotal_etb, o.delivery_fee_etb, o.total_etb, o.estimated_ready_at,
+        `SELECT o.public_reference, o.created_at, o.status, o.fulfillment, o.payment_method, o.payment_status, o.wants_sms_updates, o.wants_sms_marketing, o.subtotal_etb, o.delivery_fee_etb, o.total_etb, o.estimated_ready_at,
                 CASE WHEN o.status IN ('confirmed','preparing','ready_for_pickup','out_for_delivery','delivered','completed') THEN COALESCE(NULLIF(o.payment_destination_snapshot,'{}'::jsonb),jsonb_build_object('id',p.id,'label',p.label,'payment_type',p.payment_type,'bank_name',p.bank_name,'recipient_name',p.recipient_name,'phone_number',p.phone_number,'account_number',p.account_number,'merchant_id',p.merchant_id,'instructions',p.instructions,'qr_asset_id',p.qr_asset_id)) || jsonb_build_object('qr_code_data_url', q.data_url) ELSE jsonb_build_object('id',COALESCE(o.payment_destination_snapshot->>'id',p.id),'label',COALESCE(o.payment_destination_snapshot->>'label',p.label),'payment_type',COALESCE(o.payment_destination_snapshot->>'payment_type',p.payment_type)) END AS payment_destination_snapshot,
+                (SELECT json_build_object('rating', f.rating, 'comment', f.comment) FROM public.order_feedback f WHERE f.order_id=o.id) AS feedback,
                 COALESCE(json_agg(json_build_object('menuItemId', i.menu_item_id, 'name', i.name, 'nameAmharic', i.name_amharic, 'size', i.size, 'quantity', i.quantity, 'unitPriceEtb', i.unit_price_etb, 'lineTotalEtb', i.line_total_etb) ORDER BY i.id) FILTER (WHERE i.id IS NOT NULL), '[]') AS items,
                 COALESCE((SELECT json_agg(json_build_object('at', e.created_at, 'status', e.status, 'message', e.message) ORDER BY e.created_at) FROM public.order_events e WHERE e.order_id=o.id AND e.customer_visible=true), '[]') AS events
          FROM public.orders o LEFT JOIN public.order_items i ON i.order_id=o.id LEFT JOIN public.payment_methods p ON p.id=o.payment_method LEFT JOIN public.payment_qr_assets q ON q.id=COALESCE(NULLIF(o.payment_destination_snapshot->>'qr_asset_id',''),p.qr_asset_id) WHERE o.tracking_token_hash=$1 GROUP BY o.id,p.id,q.data_url`,
@@ -321,6 +340,72 @@ export default async function handler(req: Req, res: Res) {
       await client.query("ROLLBACK").catch(() => undefined);
       console.error("payment_reference_failed", error instanceof Error ? error.message : "unknown");
       return reply(res, 503, { error: "We could not record that reference just now. Please try again." });
+    } finally { client.release(); }
+  }
+
+  if (action === "sms-preferences") {
+    const token = typeof body.token === "string" ? body.token : "";
+    if (!/^[A-Za-z0-9_-]{40,50}$/.test(token)) return reply(res, 400, { error: "Tracking link is not valid." });
+    if (typeof body.wantsSmsUpdates !== "boolean" || typeof body.wantsSmsMarketing !== "boolean") {
+      return reply(res, 400, { error: "Choose both order-update and offers preferences." });
+    }
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+      const found = await client.query("SELECT id, customer_phone FROM public.orders WHERE tracking_token_hash=$1 FOR UPDATE", [tokenHash(token)]);
+      if (!found.rowCount) { await client.query("ROLLBACK"); return reply(res, 404, { error: "We could not find that order." }); }
+      const order = found.rows[0];
+      await client.query(
+        "INSERT INTO public.customer_notification_consents (customer_phone, channel, purpose, status, source, consent_text_version, order_id) VALUES ($1,'sms','transactional',$2,'customer_request','tracking-preferences-v1',$3),($1,'sms','marketing',$4,'customer_request','tracking-preferences-v1',$3)",
+        [order.customer_phone, body.wantsSmsUpdates ? "granted" : "revoked", order.id, body.wantsSmsMarketing ? "granted" : "revoked"],
+      );
+      await client.query(
+        "UPDATE public.orders SET wants_sms_updates=$2, wants_sms_marketing=$3, updated_at=now() WHERE id=$1",
+        [order.id, body.wantsSmsUpdates, body.wantsSmsMarketing],
+      );
+      if (!body.wantsSmsUpdates) {
+        await client.query(
+          "UPDATE public.orders SET wants_sms_updates=false, updated_at=now() WHERE customer_phone=$1 AND id<>$2 AND status NOT IN ('completed','delivered','declined','cancelled')",
+          [order.customer_phone, order.id],
+        );
+      }
+      await client.query("COMMIT");
+      return reply(res, 200, { saved: true, message: "Your SMS preferences have been updated." });
+    } catch (error) {
+      await client.query("ROLLBACK").catch(() => undefined);
+      console.error("sms_preferences_update_failed", error instanceof Error ? error.message : "unknown");
+      return reply(res, 503, { error: "We could not update your preferences. Please try again." });
+    } finally { client.release(); }
+  }
+
+  if (action === "feedback") {
+    const token = typeof body.token === "string" ? body.token : "";
+    const rating = Number(body.rating);
+    const comment = validString(body.comment, 1000);
+    if (!/^[A-Za-z0-9_-]{40,50}$/.test(token)) return reply(res, 400, { error: "Tracking link is not valid." });
+    if (!Number.isInteger(rating) || rating < 1 || rating > 5) return reply(res, 400, { error: "Choose a rating from 1 to 5." });
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+      const found = await client.query("SELECT id, status FROM public.orders WHERE tracking_token_hash=$1 FOR UPDATE", [tokenHash(token)]);
+      if (!found.rowCount) { await client.query("ROLLBACK"); return reply(res, 404, { error: "We could not find that order." }); }
+      const order = found.rows[0];
+      if (!["delivered", "completed"].includes(order.status)) {
+        await client.query("ROLLBACK");
+        return reply(res, 409, { error: "Feedback is available after your order has been delivered or completed." });
+      }
+      await client.query(
+        `INSERT INTO public.order_feedback (order_id, rating, comment)
+         VALUES ($1,$2,$3)
+         ON CONFLICT (order_id) DO UPDATE SET rating=EXCLUDED.rating, comment=EXCLUDED.comment, updated_at=now()`,
+        [order.id, rating, comment],
+      );
+      await client.query("COMMIT");
+      return reply(res, 200, { saved: true, message: "Thank you. Your feedback helps Cloud L improve." });
+    } catch (error) {
+      await client.query("ROLLBACK").catch(() => undefined);
+      console.error("order_feedback_failed", error instanceof Error ? error.message : "unknown");
+      return reply(res, 503, { error: "We could not save your feedback. Please try again." });
     } finally { client.release(); }
   }
 
