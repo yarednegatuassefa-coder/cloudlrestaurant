@@ -6,6 +6,7 @@ import { normalizeGuestCount } from "../lib/server/guest-count.mjs";
 import { parseDeliveryCoordinates } from "../lib/server/delivery-coordinates.mjs";
 import { findMatchingZones } from "../lib/server/delivery-geometry.mjs";
 import { enqueueSms } from "../lib/server/notifications.mjs";
+import { dispatchSmsOutbox } from "../lib/server/dispatch-sms.mjs";
 
 type Req = { method?: string; headers: Record<string, string | string[] | undefined>; body?: unknown; socket?: { remoteAddress?: string } };
 type Res = { status: (code: number) => Res; setHeader: (name: string, value: string | number) => void; json: (data: unknown) => void; end: () => void };
@@ -162,6 +163,9 @@ export default async function handler(req: Req, res: Res) {
         await enqueueSms(client, { orderId, eventKey: "order-received:" + orderId, recipient: phone, message: "Cloud L received order " + reference + ". Track: https://www.cloudlrestaurant.com/#track/" + trackingToken });
       }
       await client.query("COMMIT");
+      if (body.wantsSmsUpdates === true && process.env.SMS_PROVIDER === "uplink" && process.env.UPLINK_SMS_ENABLED === "true") {
+        await dispatchSmsOutbox(pool, 1, "order-received:" + orderId).catch((error) => console.error("sms_immediate_dispatch_failed", error instanceof Error ? error.message : "unknown"));
+      }
       return reply(res, 201, { reference, trackingUrl: `https://www.cloudlrestaurant.com/#track/${trackingToken}`, status: "received", subtotalEtb: subtotal, currency: "ETB" });
     } catch (error) {
       await client.query("ROLLBACK").catch(() => undefined);
