@@ -1,7 +1,7 @@
 {
   "crons": [
     {
-      "path": "/api/cron/dispatch-sms",
+      "path": "/api/admin/orders",
       "schedule": "0 0 * * *"
     }
   ]
