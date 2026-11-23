@@ -97,7 +97,7 @@ export default async function handler(req: Req, res: Res) {
     if (!Number.isSafeInteger(subtotal) || subtotal <= 0) return reply(res, 400, { error: "The order total is invalid." });
     const trackingToken = body.trackingToken;
     if (!isValidTrackingToken(trackingToken)) return reply(res, 400, { error: "This checkout session has expired. Refresh your order and try again." });
-    const fingerprint = orderRequestFingerprint({ customerName: name, customerPhone: phone, fulfillment, paymentMethod, deliveryAddress: fulfillment === "delivery" ? address : null, deliveryLandmark: validString(body.deliveryLandmark, 200) || null, deliveryNotes: validString(body.deliveryNotes, 500) || null, deliveryLatitude: fulfillment === "delivery" ? deliveryLatitude : null, deliveryLongitude: fulfillment === "delivery" ? deliveryLongitude : null, specialInstructions: validString(body.specialInstructions, 500) || null, guestCount, tableNumber: validString(body.tableNumber, 40) || null, wantsWhatsAppUpdates: body.wantsWhatsAppUpdates === true, wantsSmsUpdates: body.wantsSmsUpdates === true, items: items.map(({ id, quantity }) => ({ id, quantity })) });
+    const fingerprint = orderRequestFingerprint({ customerName: name, customerPhone: phone, fulfillment, paymentMethod, deliveryAddress: fulfillment === "delivery" ? address : null, deliveryLandmark: validString(body.deliveryLandmark, 200) || null, deliveryNotes: validString(body.deliveryNotes, 500) || null, deliveryLatitude: fulfillment === "delivery" ? deliveryLatitude : null, deliveryLongitude: fulfillment === "delivery" ? deliveryLongitude : null, specialInstructions: validString(body.specialInstructions, 500) || null, guestCount, tableNumber: validString(body.tableNumber, 40) || null, wantsWhatsAppUpdates: body.wantsWhatsAppUpdates === true, wantsSmsUpdates: body.wantsSmsUpdates === true, wantsSmsMarketing: body.wantsSmsMarketing === true, items: items.map(({ id, quantity }) => ({ id, quantity })) });
     const trackingTokenDigest = tokenHash(trackingToken);
     const client = await pool.connect();
     try {
@@ -150,9 +150,9 @@ export default async function handler(req: Req, res: Res) {
       }
       if (!reference) throw new Error("Unable to allocate order reference");
       const inserted = await client.query(
-        `INSERT INTO public.orders (public_reference, tracking_token_hash, idempotency_fingerprint, payment_method, payment_destination_snapshot, payment_status, fulfillment, customer_name, customer_phone, delivery_address, delivery_landmark, delivery_notes, delivery_latitude, delivery_longitude, delivery_zone_id, special_instructions, guest_count, table_number, subtotal_etb, total_etb, wants_whatsapp_updates, wants_sms_updates)
-         VALUES ($1,$2,$3,$4,$5::jsonb,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$19,$20,$21) RETURNING id`,
-        [reference, trackingTokenDigest, fingerprint, paymentMethod, JSON.stringify(paymentSnapshot), "unpaid", fulfillment, name, phone, fulfillment === "delivery" ? address : null, validString(body.deliveryLandmark, 200) || null, validString(body.deliveryNotes, 500) || null, fulfillment === "delivery" ? deliveryLatitude : null, fulfillment === "delivery" ? deliveryLongitude : null, deliveryZoneId, validString(body.specialInstructions, 500) || null, guestCount, validString(body.tableNumber, 40) || null, subtotal, body.wantsWhatsAppUpdates === true, body.wantsSmsUpdates === true],
+        `INSERT INTO public.orders (public_reference, tracking_token_hash, idempotency_fingerprint, payment_method, payment_destination_snapshot, payment_status, fulfillment, customer_name, customer_phone, delivery_address, delivery_landmark, delivery_notes, delivery_latitude, delivery_longitude, delivery_zone_id, special_instructions, guest_count, table_number, subtotal_etb, total_etb, wants_whatsapp_updates, wants_sms_updates, wants_sms_marketing)
+         VALUES ($1,$2,$3,$4,$5::jsonb,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$19,$20,$21,$22) RETURNING id`,
+        [reference, trackingTokenDigest, fingerprint, paymentMethod, JSON.stringify(paymentSnapshot), "unpaid", fulfillment, name, phone, fulfillment === "delivery" ? address : null, validString(body.deliveryLandmark, 200) || null, validString(body.deliveryNotes, 500) || null, fulfillment === "delivery" ? deliveryLatitude : null, fulfillment === "delivery" ? deliveryLongitude : null, deliveryZoneId, validString(body.specialInstructions, 500) || null, guestCount, validString(body.tableNumber, 40) || null, subtotal, body.wantsWhatsAppUpdates === true, body.wantsSmsUpdates === true, body.wantsSmsMarketing === true],
       );      const orderId = inserted.rows[0].id as string;
       for (const item of items) await client.query(
         "INSERT INTO public.order_items (order_id, menu_item_id, name, name_amharic, size, unit_price_etb, quantity) VALUES ($1,$2,$3,$4,$5,$6,$7)",
@@ -160,7 +160,17 @@ export default async function handler(req: Req, res: Res) {
       );
       await client.query("INSERT INTO public.order_events (order_id, actor_type, event_type, status, message, customer_visible) VALUES ($1,'customer','order_received','received','Order request received — awaiting staff confirmation.',true)", [orderId]);
       if (body.wantsSmsUpdates === true) {
+        await client.query(
+          "INSERT INTO public.customer_notification_consents (customer_phone, channel, purpose, status, source, consent_text_version, order_id) VALUES ($1,'sms','transactional','granted','checkout','checkout-sms-transactional-v1',$2)",
+          [phone, orderId],
+        );
         await enqueueSms(client, { orderId, eventKey: "order-received:" + orderId, recipient: phone, message: "Cloud L received order " + reference + ". Track: https://www.cloudlrestaurant.com/#track/" + trackingToken });
+      }
+      if (body.wantsSmsMarketing === true) {
+        await client.query(
+          "INSERT INTO public.customer_notification_consents (customer_phone, channel, purpose, status, source, consent_text_version, order_id) VALUES ($1,'sms','marketing','granted','checkout','checkout-sms-marketing-v1',$2)",
+          [phone, orderId],
+        );
       }
       await client.query("COMMIT");
       if (body.wantsSmsUpdates === true && process.env.SMS_PROVIDER === "uplink" && process.env.UPLINK_SMS_ENABLED === "true") {
