@@ -491,3 +491,16 @@ img{height:auto}
 .delivery-intelligence__gis-tools strong{color:#302c27;font-size:12px}
 .delivery-intelligence__gis-tools p{max-width:620px;margin:0;color:#756c62;font-size:10px;line-height:1.6}
 @media(max-width:600px){.delivery-intelligence__gis-tools{align-items:stretch;flex-direction:column}}
+
+.reservation-request{margin-top:22px;padding-top:16px;border-top:1px solid rgba(255,255,255,.18);color:#fffaf2}
+.reservation-request>summary{display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:pointer;list-style:none;color:#fffaf2;font-size:12px;font-weight:700}
+.reservation-request>summary::-webkit-details-marker{display:none}
+.reservation-request>summary span{color:#d99777;font-size:18px}
+.reservation-request form{display:grid;gap:12px;margin-top:16px}
+.reservation-request .checkout-label{color:#fffaf2}
+.reservation-request .checkout-label input,.reservation-request .checkout-label textarea{width:100%;box-sizing:border-box;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.2);color:#fffaf2}
+.reservation-request .checkout-label small,.reservation-request__note{color:rgba(248,242,232,.66);font-size:10px;line-height:1.6}
+.reservation-request .checkout-optin{color:rgba(248,242,232,.82);font-size:10px}
+.reservation-request__success{margin-top:14px;color:#fffaf2;font-size:12px;line-height:1.7}
+.reservation-request__success strong{color:#e7b08e}
+.reservation-request__success button{margin-top:8px;padding:8px 12px;border:1px solid rgba(255,255,255,.3);background:transparent;color:#fffaf2;cursor:pointer}

@@ -27,8 +27,8 @@ test("enqueueSms checks explicit consent and writes a deduplicated transactional
   assert.deepEqual(calls[0].values, ["+251911123456", "sms", "transactional"]);
   assert.match(calls[1].sql, /INSERT INTO public\.notification_outbox/);
   assert.match(calls[1].sql, /ON CONFLICT \(event_key\) DO NOTHING/);
-  assert.deepEqual(calls[1].values.slice(0, 9), [
-    "order", orderId, orderId, "sms", "transactional", null,
+  assert.deepEqual(calls[1].values.slice(0, 10), [
+    "order", orderId, orderId, null, "sms", "transactional", null,
     "order-received:" + orderId, "+251911123456", "Cloud L received your order.",
   ]);
 });
@@ -60,7 +60,32 @@ test("notification enqueue supports future channels only with matching channel c
     message: "Cloud L has a new offer.",
   });
   assert.deepEqual(calls[0].values, ["+251911123456", "whatsapp", "marketing"]);
-  assert.deepEqual(calls[1].values.slice(0, 5), ["customer", orderId, null, "whatsapp", "marketing"]);
+  assert.deepEqual(calls[1].values.slice(0, 6), ["customer", orderId, null, null, "whatsapp", "marketing"]);
+});
+
+test("reservation notifications are linked to reservation records", async () => {
+  const calls = [];
+  const reservationId = "00000000-0000-4000-8000-000000000002";
+  const client = {
+    async query(sql, values) {
+      calls.push({ sql, values });
+      if (/SELECT status/.test(sql)) return { rows: [{ status: "granted" }] };
+      return { rowCount: 1 };
+    },
+  };
+  await enqueueNotification(client, {
+    entityType: "reservation",
+    entityId: reservationId,
+    reservationId,
+    channel: "sms",
+    purpose: "reservation",
+    eventKey: "reservation-request:" + reservationId,
+    recipient: "+251911123456",
+    message: "Cloud L received your table request.",
+  });
+  assert.deepEqual(calls[1].values.slice(0, 6), [
+    "reservation", reservationId, null, reservationId, "sms", "reservation",
+  ]);
 });
 
 test("transactional SMS policy suppresses low-value status changes", () => {

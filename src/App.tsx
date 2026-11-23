@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect, useSyncExternalStore, useState } from "react
 import FoodMenu from "./components/FoodMenu";
 import DrinksMenu from "./components/DrinksMenu";
 import OrderCart from "./components/OrderCart";
+import ReservationRequestForm from "./components/ReservationRequestForm";
 import ArifPayStatus from "./components/ArifPayStatus";
 import type { CartLine, OrderSelection } from "./components/orderTypes";
 import { getFavoriteIdsSnapshot, getServerFavoriteIdsSnapshot, subscribeToFavoriteIds, toggleFavoriteId } from "./components/favoritesStore";
@@ -429,6 +430,7 @@ function App() {
                 <a className="visit-link visit-link--call" href="tel:+251901120012">Call us <span>+251 901 120 012</span></a>
                 <a className="visit-link visit-link--whatsapp" href="https://wa.me/251901120012" target="_blank" rel="noreferrer">Message us on WhatsApp <span aria-hidden="true">↗</span></a>
               </div>
+              <ReservationRequestForm />
               <details className="install-app-help">
                 <summary>Add Cloud L to your home screen</summary>
                 <p>Android: open your browser menu and choose “Install app” or “Add to Home screen”. iPhone or iPad: tap Share, then “Add to Home Screen”.</p>
