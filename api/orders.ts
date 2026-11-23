@@ -5,8 +5,9 @@ import catalogData from "./_catalog.json" with { type: "json" };
 import { normalizeGuestCount } from "../lib/server/guest-count.mjs";
 import { parseDeliveryCoordinates } from "../lib/server/delivery-coordinates.mjs";
 import { findMatchingZones } from "../lib/server/delivery-geometry.mjs";
-import { enqueueSms } from "../lib/server/notifications.mjs";
+import { enqueueNotification, enqueueSms } from "../lib/server/notifications.mjs";
 import { dispatchSmsOutbox } from "../lib/server/dispatch-sms.mjs";
+import { validateReservationRequest } from "../lib/server/reservation-validation.mjs";
 
 type Req = { method?: string; headers: Record<string, string | string[] | undefined>; body?: unknown; socket?: { remoteAddress?: string } };
 type Res = { status: (code: number) => Res; setHeader: (name: string, value: string | number) => void; json: (data: unknown) => void; end: () => void };
@@ -181,6 +182,70 @@ export default async function handler(req: Req, res: Res) {
       await client.query("ROLLBACK").catch(() => undefined);
       console.error("order_create_failed", error instanceof Error ? error.message : "unknown");
       return reply(res, 500, { error: "We could not save the order. Your cart is unchanged; please try again or use WhatsApp." });
+    } finally { client.release(); }
+  }
+
+  if (action === "reservation-create") {
+    if (rateLimited(req)) return reply(res, 429, { error: "Please wait a moment before trying again." });
+    const name = validString(body.customerName, 120);
+    const phone = normalizePhone(body.customerPhone);
+    const partySize = Number(body.partySize);
+    const requestedForValue = typeof body.requestedFor === "string" ? body.requestedFor : "";
+    const requestedFor = new Date(requestedForValue);
+    const notes = validString(body.notes, 500);
+    const wantsSmsUpdates = body.wantsSmsUpdates === true;
+
+    if (name.length < 2 || !phone) return reply(res, 400, { error: "Enter your name and an Ethiopian mobile number, such as +251 9… ." });
+    if (!requestedForValue || !/(Z|[+-]\d{2}:\d{2})$/.test(requestedForValue)) {
+      return reply(res, 400, { error: "Choose a valid reservation date and time." });
+    }
+    const validation = validateReservationRequest({ partySize, requestedFor });
+    if (!validation.valid) return reply(res, 400, { error: validation.error });
+
+    const reference = makeReference().replace(/^CL-/, "RS-");
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+      const inserted = await client.query(
+        `INSERT INTO public.reservations
+           (public_reference, customer_name, customer_phone, party_size, requested_for, notes, wants_sms_updates)
+         VALUES ($1,$2,$3,$4,$5,$6,$7)
+         RETURNING id`,
+        [reference, name, phone, partySize, requestedFor.toISOString(), notes, wantsSmsUpdates],
+      );
+      const reservationId = inserted.rows[0].id as string;
+      await client.query(
+        "INSERT INTO public.reservation_events (reservation_id, actor_type, event_type, status, message) VALUES ($1,'customer','request_created','requested','Table request received — awaiting Cloud L confirmation.')",
+        [reservationId],
+      );
+      if (wantsSmsUpdates) {
+        await client.query(
+          "INSERT INTO public.customer_notification_consents (customer_phone, channel, purpose, status, source, consent_text_version, reservation_id) VALUES ($1,'sms','reservation','granted','checkout','reservation-sms-v1',$2)",
+          [phone, reservationId],
+        );
+        const displayTime = new Intl.DateTimeFormat("en-GB", {
+          timeZone: "Africa/Addis_Ababa", dateStyle: "medium", timeStyle: "short",
+        }).format(requestedFor);
+        await enqueueNotification(client, {
+          entityType: "reservation",
+          entityId: reservationId,
+          reservationId,
+          channel: "sms",
+          purpose: "reservation",
+          eventKey: "reservation-request:" + reservationId,
+          recipient: phone,
+          message: "Cloud L received table request " + reference + " for " + displayTime + " (" + partySize + " guests). This is not confirmed yet; we will contact you.",
+        });
+      }
+      await client.query("COMMIT");
+      if (wantsSmsUpdates && process.env.SMS_PROVIDER === "uplink" && process.env.UPLINK_SMS_ENABLED === "true") {
+        await dispatchSmsOutbox(pool, 1, "reservation-request:" + reservationId).catch((error) => console.error("sms_immediate_dispatch_failed", error instanceof Error ? error.message : "unknown"));
+      }
+      return reply(res, 201, { reference, status: "requested", message: "Your table request has been received. Cloud L staff will contact you to confirm availability." });
+    } catch (error) {
+      await client.query("ROLLBACK").catch(() => undefined);
+      console.error("reservation_create_failed", error instanceof Error ? error.message : "unknown");
+      return reply(res, 503, { error: "We could not save your table request. Please try again or call Cloud L." });
     } finally { client.release(); }
   }
 
