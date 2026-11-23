@@ -1,6 +1,7 @@
 import { pool, isAllowedOrigin, reject, validSession, type ApiReq, type ApiRes } from "../../_server.js";
 import { enqueueSms } from "../../../lib/server/notifications.mjs";
 import { dispatchSmsOutbox } from "../../../lib/server/dispatch-sms.mjs";
+import { shouldSendTransactionalStatusSms } from "../../../lib/server/notification-policy.mjs";
 
 const transitions: Record<string, string[]> = {
   received: ["confirmed", "needs_clarification", "declined", "cancelled"],
@@ -85,11 +86,11 @@ export default async function handler(req: RouteReq, res: ApiRes) {
     }
     const message = next === "needs_clarification" ? clarificationMessage : customerMessages[next] || "Your Cloud L order has been updated.";
     await client.query("INSERT INTO public.order_events (order_id, actor_type, actor_label, event_type, status, message, customer_visible) VALUES ($1,'staff','Cloud L staff','status_changed',$2,$3,true)", [orderId, next, message]);
-    if (order.wants_sms_updates) {
+    if (order.wants_sms_updates && shouldSendTransactionalStatusSms(next)) {
       await enqueueSms(client, { orderId, eventKey: "status:" + orderId + ":" + next, recipient: order.customer_phone, message: "Cloud L order " + order.public_reference + ": " + message });
     }
     await client.query("COMMIT");
-    if (order.wants_sms_updates && process.env.SMS_PROVIDER === "uplink" && process.env.UPLINK_SMS_ENABLED === "true") {
+    if (order.wants_sms_updates && shouldSendTransactionalStatusSms(next) && process.env.SMS_PROVIDER === "uplink" && process.env.UPLINK_SMS_ENABLED === "true") {
       await dispatchSmsOutbox(pool, 1, "status:" + orderId + ":" + next).catch((error) => console.error("sms_immediate_dispatch_failed", error instanceof Error ? error.message : "unknown"));
     }
     return res.status(200).json({ status: next, totalEtb: total, deliveryFeeEtb: deliveryFee, estimatedReadyAt: eta });
