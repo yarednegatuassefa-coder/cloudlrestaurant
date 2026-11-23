@@ -69,6 +69,18 @@ GRANT SELECT, INSERT ON public.customer_notification_consents TO cloudl_app;
 GRANT USAGE, SELECT ON SEQUENCE public.customer_notification_consents_id_seq TO cloudl_app;
 GRANT SELECT ON public.notification_templates TO cloudl_app;
 
+CREATE TABLE IF NOT EXISTS public.order_feedback (
+  id bigserial PRIMARY KEY,
+  order_id uuid NOT NULL UNIQUE REFERENCES public.orders(id) ON DELETE CASCADE,
+  rating smallint NOT NULL CHECK (rating BETWEEN 1 AND 5),
+  comment text NOT NULL DEFAULT '' CHECK (length(comment) <= 1000),
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+
+GRANT SELECT, INSERT, UPDATE ON public.order_feedback TO cloudl_app;
+GRANT USAGE, SELECT ON SEQUENCE public.order_feedback_id_seq TO cloudl_app;
+
 INSERT INTO public.schema_migrations (version)
 VALUES ('009_sms_notification_outbox')
 ON CONFLICT (version) DO NOTHING;
