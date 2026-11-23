@@ -40,6 +40,8 @@ type Order = {
   reorderWarnings?: string[];
   editable?: boolean;
   feedback?: { rating: number; comment: string } | null;
+  wants_sms_updates: boolean;
+  wants_sms_marketing: boolean;
 };
 type Props = {
   token: string;
@@ -82,6 +84,10 @@ export default function OrderTrackingPage({ token, onReorder, onEditOrder }: Pro
   const [feedbackComment, setFeedbackComment] = useState("");
   const [feedbackMessage, setFeedbackMessage] = useState("");
   const [feedbackSending, setFeedbackSending] = useState(false);
+  const [smsUpdatesEnabled, setSmsUpdatesEnabled] = useState(false);
+  const [smsMarketingEnabled, setSmsMarketingEnabled] = useState(false);
+  const [preferencesSending, setPreferencesSending] = useState(false);
+  const [preferencesMessage, setPreferencesMessage] = useState("");
 
   const currentTrackingState: TrackingState = trackingState.token === token
     ? trackingState
@@ -131,6 +137,33 @@ export default function OrderTrackingPage({ token, onReorder, onEditOrder }: Pro
       requestSequence.current += 1;
     };
   }, [load]);
+
+  useEffect(() => {
+    if (!order) return;
+    setSmsUpdatesEnabled(order.wants_sms_updates === true);
+    setSmsMarketingEnabled(order.wants_sms_marketing === true);
+  }, [order?.public_reference, order?.wants_sms_updates, order?.wants_sms_marketing]);
+
+  async function saveSmsPreferences(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setPreferencesSending(true);
+    setPreferencesMessage("");
+    try {
+      const response = await fetch("/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "sms-preferences", token, wantsSmsUpdates: smsUpdatesEnabled, wantsSmsMarketing: smsMarketingEnabled }),
+      });
+      const data = await response.json() as { error?: string; message?: string };
+      if (!response.ok) throw new Error(data.error || "Preferences could not be saved.");
+      setPreferencesMessage(data.message || "Preferences saved.");
+      await load(true);
+    } catch (cause) {
+      setPreferencesMessage(cause instanceof Error ? cause.message : "Please try again.");
+    } finally {
+      setPreferencesSending(false);
+    }
+  }
 
   async function submitReference(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -296,6 +329,16 @@ export default function OrderTrackingPage({ token, onReorder, onEditOrder }: Pro
           {manualTransferPending && <p className="tracking-payment-hold">Please wait for Cloud L to confirm your order and exact total before transferring. No payment instructions are available yet.</p>}
           {order.payment_status === "submitted" && isManual && <p className="tracking-payment-hold">Your transfer reference has been submitted. Cloud L staff will verify it manually.</p>}
           {order.payment_status === "paid" && <p className="tracking-payment-hold">Your payment has been verified by Cloud L staff. Payment status is separate from your order’s preparation status.</p>}
+          <section className="tracking-feedback" aria-labelledby="tracking-sms-preferences-title">
+            <h2 id="tracking-sms-preferences-title">SMS preferences</h2>
+            <p>Manage order updates separately from optional offers and loyalty messages. You can change these settings at any time.</p>
+            <form onSubmit={saveSmsPreferences}>
+              <label className="checkout-optin"><input type="checkbox" checked={smsUpdatesEnabled} onChange={(event) => setSmsUpdatesEnabled(event.currentTarget.checked)} /><span>Send me important updates about this order by SMS.</span></label>
+              <label className="checkout-optin"><input type="checkbox" checked={smsMarketingEnabled} onChange={(event) => setSmsMarketingEnabled(event.currentTarget.checked)} /><span>Send me occasional Cloud L offers and loyalty messages by SMS.</span></label>
+              <button className="tracking-submit" type="submit" disabled={preferencesSending}>{preferencesSending ? "Saving…" : "Save SMS preferences"}</button>
+              {preferencesMessage && <p className="tracking-muted" role="status">{preferencesMessage}</p>}
+            </form>
+          </section>
           {["delivered", "completed"].includes(order.status) && <section className="tracking-feedback" aria-labelledby="tracking-feedback-title">
             <h2 id="tracking-feedback-title">How was your Cloud L order?</h2>
             {order.feedback ? <p className="tracking-muted">Thank you for rating this order {order.feedback.rating}/5. Your feedback has been received.</p> : <form onSubmit={submitFeedback}>
