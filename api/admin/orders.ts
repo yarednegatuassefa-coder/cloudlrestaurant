@@ -42,7 +42,16 @@ export default async function handler(req: ApiReq, res: ApiRes) {
        WHERE o.created_at > now() - interval '14 days'
        GROUP BY o.id ORDER BY o.created_at DESC LIMIT 100`,
     );
-    return res.status(200).json({ orders: result.rows });
+    const reservations = await pool.query(
+      `SELECT id, public_reference, customer_name, customer_phone, party_size,
+              requested_for, notes, status, table_label, staff_notes,
+              wants_sms_updates, created_at, confirmed_at
+         FROM public.reservations
+        WHERE requested_for > now() - interval '30 days'
+        ORDER BY requested_for ASC
+        LIMIT 100`,
+    );
+    return res.status(200).json({ orders: result.rows, reservations: reservations.rows });
   } catch (error) {
     console.error("staff_order_list_failed", error instanceof Error ? error.message : "unknown");
     return reject(res, 503, "The staff order board is temporarily unavailable.");
