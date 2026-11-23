@@ -1,4 +1,5 @@
 import { pool, isAllowedOrigin, reject, validSession, type ApiReq, type ApiRes } from "../../_server.js";
+import { enqueueSms } from "../../../lib/server/notifications.mjs";
 
 const transitions: Record<string, string[]> = {
   received: ["confirmed", "needs_clarification", "declined", "cancelled"],
@@ -32,7 +33,7 @@ export default async function handler(req: RouteReq, res: ApiRes) {
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
-    const found = await client.query("SELECT id, status, fulfillment, payment_method, payment_destination_snapshot, payment_status, subtotal_etb, delivery_zone_id FROM public.orders WHERE id=$1 FOR UPDATE", [orderId]);
+    const found = await client.query("SELECT id, public_reference, customer_phone, wants_sms_updates, status, fulfillment, payment_method, payment_destination_snapshot, payment_status, subtotal_etb, delivery_zone_id FROM public.orders WHERE id=$1 FOR UPDATE", [orderId]);
     if (!found.rowCount) { await client.query("ROLLBACK"); return reject(res, 404, "Order not found."); }
     const order = found.rows[0];
     if (body.action === "verify-payment") {
@@ -40,6 +41,9 @@ export default async function handler(req: RouteReq, res: ApiRes) {
       if (order.payment_method === "cash" || order.payment_status !== "submitted" || body.confirmed !== true) { await client.query("ROLLBACK"); return reject(res, 409, "Only a submitted manual transfer can be marked paid, after checking the matching receiving account."); }
       await client.query("UPDATE public.orders SET payment_status='paid', staff_payment_verified_at=now(), updated_at=now() WHERE id=$1", [orderId]);
       await client.query("INSERT INTO public.order_events (order_id, actor_type, actor_label, event_type, message, customer_visible) VALUES ($1,'staff','Cloud L staff','payment_verified','Manual payment verified by Cloud L staff.',true)", [orderId]);
+      if (order.wants_sms_updates) {
+        await enqueueSms(client, { orderId, eventKey: "payment-verified:" + orderId, recipient: order.customer_phone, message: "Cloud L: payment for order " + order.public_reference + " has been verified. Thank you." });
+      }
       await client.query("COMMIT");
       return res.status(200).json({ paymentStatus: "paid" });
     }
@@ -77,6 +81,9 @@ export default async function handler(req: RouteReq, res: ApiRes) {
     }
     const message = next === "needs_clarification" ? clarificationMessage : customerMessages[next] || "Your Cloud L order has been updated.";
     await client.query("INSERT INTO public.order_events (order_id, actor_type, actor_label, event_type, status, message, customer_visible) VALUES ($1,'staff','Cloud L staff','status_changed',$2,$3,true)", [orderId, next, message]);
+    if (order.wants_sms_updates) {
+      await enqueueSms(client, { orderId, eventKey: "status:" + orderId + ":" + next, recipient: order.customer_phone, message: "Cloud L order " + order.public_reference + ": " + message });
+    }
     await client.query("COMMIT");
     return res.status(200).json({ status: next, totalEtb: total, deliveryFeeEtb: deliveryFee, estimatedReadyAt: eta });
   } catch (error) {
