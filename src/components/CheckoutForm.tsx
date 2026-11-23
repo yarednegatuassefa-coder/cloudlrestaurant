@@ -93,7 +93,7 @@ export default function CheckoutForm({ items, subtotal, onPlaced, onSubmittingCh
     <label className="checkout-optin"><input type="checkbox" checked={wantsWhatsAppUpdates} onChange={(e) => setWantsWhatsAppUpdates(e.currentTarget.checked)} /><span>I’d like order-status updates by WhatsApp. Cloud L staff will review and send updates manually.</span></label>
     <label className="checkout-optin"><input type="checkbox" checked={wantsSmsUpdates} onChange={(e) => setWantsSmsUpdates(e.currentTarget.checked)} /><span>I agree to receive SMS messages from Cloud L about this order, including confirmation and status updates. Standard SMS charges may apply.</span></label>
     <label className="checkout-optin"><input type="checkbox" checked={wantsSmsMarketing} onChange={(e) => setWantsSmsMarketing(e.currentTarget.checked)} /><span>Separately, I agree to receive occasional Cloud L offers, discounts and loyalty messages by SMS. I can opt out at any time. Standard SMS charges may apply.</span></label>
-    {error && <p className="checkout-error" role="alert">{error}</p>
+    {error && <p className="checkout-error" role="alert">{error}</p>}
     <div className="checkout-submit-row"><span>Menu subtotal<br /><strong>{money(subtotal)} ETB</strong></span><button className="order-cart__whatsapp checkout-primary" type="submit" disabled={stage === "sending" || !methodsLoaded || methods.length === 0 || !paymentMethod}>{stage === "sending" ? "Sending securely…" : "Place order request"} <span aria-hidden="true">→</span></button></div>
     <p className="checkout-privacy">Your request is saved securely so Cloud L can confirm it. Never transfer money before staff confirms the final amount.</p>
   </form>;
