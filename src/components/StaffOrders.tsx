@@ -10,7 +10,7 @@ type StaffOrder = {
   id: string; public_reference: string; created_at: string; status: string; payment_method: string; payment_status: string;
   customer_name: string; customer_phone: string; fulfillment: string; delivery_address: string | null; delivery_landmark: string | null;
   delivery_notes: string | null; delivery_latitude: number | string | null; delivery_longitude: number | string | null; delivery_zone_id: string | null; delivery_zone_name: string | null; special_instructions: string | null; guest_count: number | null; table_number: string | null; subtotal_etb: number; delivery_fee_etb: number | null;
-  total_etb: number | null; estimated_ready_at: string | null; wants_whatsapp_updates: boolean;
+  total_etb: number | null; estimated_ready_at: string | null; wants_whatsapp_updates: boolean; wants_sms_updates: boolean;
   customer_payment_reference: string | null; clarification_message: string | null; payment_destination_snapshot?: PaymentSnapshot | null; items: StaffItem[];
 };
 const money = (value: number) => Number(value).toLocaleString("en-US");
@@ -155,6 +155,6 @@ export default function StaffOrders() {
       {availableActions(order).filter(([status]) => !(status === "preparing" && order.payment_destination_snapshot?.payment_type === "manual_transfer" && order.payment_status !== "paid")).map(([status, label]) => <button key={status} type="button" disabled={busy} onClick={() => void changeStatus(order, status)}>{label}</button>)}
       {order.status === "confirmed" && order.payment_destination_snapshot?.payment_type === "manual_transfer" && order.payment_status !== "paid" && <small className="staff-payment-hold">Start preparing is unavailable until staff verifies the transfer and the order shows paid.</small>}
       {order.payment_destination_snapshot?.payment_type === "manual_transfer" && order.payment_status === "submitted" && <button type="button" disabled={busy} onClick={() => void verifyPayment(order)}>Verify transfer & mark paid</button>}
-      {order.wants_whatsapp_updates && !["declined", "cancelled"].includes(order.status) && <a className="staff-whatsapp" href={`https://wa.me/${order.customer_phone.replace(/\D/g, "")}?text=${encodeURIComponent(whatsappText(order))}`} target="_blank" rel="noreferrer">Review WhatsApp update ↗</a>}{order.wants_whatsapp_updates && <small className="staff-optin">Customer opted in to manual WhatsApp status updates</small>}</footer>
+      {order.wants_whatsapp_updates && !["declined", "cancelled"].includes(order.status) && <a className="staff-whatsapp" href={`https://wa.me/${order.customer_phone.replace(/\D/g, "")}?text=${encodeURIComponent(whatsappText(order))}`} target="_blank" rel="noreferrer">Review WhatsApp update ↗</a>}{order.wants_whatsapp_updates && <small className="staff-optin">Customer opted in to manual WhatsApp status updates</small>}{order.wants_sms_updates && <small className="staff-optin">Customer opted in to transactional SMS updates</small>}</footer>
   </article>)}</div>}</>}</section></main>;
 }
