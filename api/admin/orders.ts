@@ -1,9 +1,30 @@
+import { timingSafeEqual } from "node:crypto";
 import { pool, reject, validSession, type ApiReq, type ApiRes } from "../_server.js";
+import { dispatchSmsOutbox } from "../../lib/server/dispatch-sms.mjs";
+
+function cronAuthorized(req: ApiReq) {
+  const secret = process.env.CRON_SECRET;
+  const header = req.headers.authorization;
+  const supplied = Array.isArray(header) ? header[0] : header;
+  if (!secret || !supplied?.startsWith("Bearer ")) return false;
+  const token = Buffer.from(supplied.slice(7));
+  const expected = Buffer.from(secret);
+  return token.length === expected.length && timingSafeEqual(token, expected);
+}
 
 export default async function handler(req: ApiReq, res: ApiRes) {
   res.setHeader("Cache-Control", "no-store");
   res.setHeader("X-Content-Type-Options", "nosniff");
   if (req.method !== "GET") { res.setHeader("Allow", "GET"); return reject(res, 405, "Use GET."); }
+  if (cronAuthorized(req)) {
+    if (!process.env.DATABASE_URL) return reject(res, 503, "Order service is not configured.");
+    if (process.env.SMS_PROVIDER !== "uplink" || process.env.UPLINK_SMS_ENABLED !== "true") return res.status(503).json({ paused: true, reason: "SMS provider is not enabled or its API contract is not verified." });
+    try { return res.status(200).json(await dispatchSmsOutbox(pool)); }
+    catch (error) {
+      console.error("sms_outbox_dispatch_failed", error instanceof Error ? error.message : "unknown");
+      return reject(res, 503, "SMS notifications could not be dispatched.");
+    }
+  }
   if (!validSession(req)) return reject(res, 401, "Staff login required.");
   if (!process.env.DATABASE_URL) return reject(res, 503, "Order service is not configured.");
   try {
