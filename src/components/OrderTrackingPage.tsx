@@ -39,6 +39,7 @@ type Order = {
   reorderItems?: CartLine[];
   reorderWarnings?: string[];
   editable?: boolean;
+  feedback?: { rating: number; comment: string } | null;
 };
 type Props = {
   token: string;
@@ -77,6 +78,10 @@ export default function OrderTrackingPage({ token, onReorder, onEditOrder }: Pro
   const [reordering, setReordering] = useState(false);
   const [reorderMessage, setReorderMessage] = useState("");
   const [editMessage, setEditMessage] = useState("");
+  const [feedbackRating, setFeedbackRating] = useState("5");
+  const [feedbackComment, setFeedbackComment] = useState("");
+  const [feedbackMessage, setFeedbackMessage] = useState("");
+  const [feedbackSending, setFeedbackSending] = useState(false);
 
   const currentTrackingState: TrackingState = trackingState.token === token
     ? trackingState
@@ -147,6 +152,27 @@ export default function OrderTrackingPage({ token, onReorder, onEditOrder }: Pro
       setPaymentMessage(cause instanceof Error ? cause.message : "Please try again.");
     } finally {
       setSending(false);
+    }
+  }
+
+  async function submitFeedback(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setFeedbackSending(true);
+    setFeedbackMessage("");
+    try {
+      const response = await fetch("/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "feedback", token, rating: Number(feedbackRating), comment: feedbackComment }),
+      });
+      const data = await response.json() as { error?: string; message?: string };
+      if (!response.ok) throw new Error(data.error || "Feedback could not be saved.");
+      setFeedbackMessage(data.message || "Thank you for your feedback.");
+      await load(true);
+    } catch (cause) {
+      setFeedbackMessage(cause instanceof Error ? cause.message : "Please try again.");
+    } finally {
+      setFeedbackSending(false);
     }
   }
 
@@ -270,6 +296,25 @@ export default function OrderTrackingPage({ token, onReorder, onEditOrder }: Pro
           {manualTransferPending && <p className="tracking-payment-hold">Please wait for Cloud L to confirm your order and exact total before transferring. No payment instructions are available yet.</p>}
           {order.payment_status === "submitted" && isManual && <p className="tracking-payment-hold">Your transfer reference has been submitted. Cloud L staff will verify it manually.</p>}
           {order.payment_status === "paid" && <p className="tracking-payment-hold">Your payment has been verified by Cloud L staff. Payment status is separate from your order’s preparation status.</p>}
+          {["delivered", "completed"].includes(order.status) && <section className="tracking-feedback" aria-labelledby="tracking-feedback-title">
+            <h2 id="tracking-feedback-title">How was your Cloud L order?</h2>
+            {order.feedback ? <p className="tracking-muted">Thank you for rating this order {order.feedback.rating}/5. Your feedback has been received.</p> : <form onSubmit={submitFeedback}>
+              <label className="tracking-label">Your rating
+                <select required value={feedbackRating} onChange={(event) => setFeedbackRating(event.currentTarget.value)}>
+                  <option value="5">5 · Excellent</option>
+                  <option value="4">4 · Good</option>
+                  <option value="3">3 · Average</option>
+                  <option value="2">2 · Poor</option>
+                  <option value="1">1 · Very poor</option>
+                </select>
+              </label>
+              <label className="tracking-label">Anything you would like us to know? (optional)
+                <textarea maxLength={1000} rows={3} value={feedbackComment} onChange={(event) => setFeedbackComment(event.currentTarget.value)} placeholder="Tell us what went well or what we can improve." />
+              </label>
+              <button className="tracking-submit" type="submit" disabled={feedbackSending}>{feedbackSending ? "Sending…" : "Submit feedback"}</button>
+              {feedbackMessage && <p className="tracking-muted" role="status">{feedbackMessage}</p>}
+            </form>}
+          </section>}
           <section className="tracking-history">
             <h2>Updates</h2>
             {order.events.map((event, index) => <article key={`${event.at}-${index}`}><time>{new Date(event.at).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" })}</time><p>{event.message}</p></article>)}
