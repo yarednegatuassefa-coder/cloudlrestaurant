@@ -276,7 +276,7 @@ export default async function handler(req: Req, res: Res) {
     if (!/^[A-Za-z0-9_-]{40,50}$/.test(token)) return reply(res, 400, { error: "Tracking link is not valid." });
     try {
       const result = await pool.query(
-        `SELECT o.public_reference, o.created_at, o.status, o.fulfillment, o.payment_method, o.payment_status, o.subtotal_etb, o.delivery_fee_etb, o.total_etb, o.estimated_ready_at,
+        `SELECT o.public_reference, o.created_at, o.status, o.fulfillment, o.payment_method, o.payment_status, o.wants_sms_updates, o.wants_sms_marketing, o.subtotal_etb, o.delivery_fee_etb, o.total_etb, o.estimated_ready_at,
                 CASE WHEN o.status IN ('confirmed','preparing','ready_for_pickup','out_for_delivery','delivered','completed') THEN COALESCE(NULLIF(o.payment_destination_snapshot,'{}'::jsonb),jsonb_build_object('id',p.id,'label',p.label,'payment_type',p.payment_type,'bank_name',p.bank_name,'recipient_name',p.recipient_name,'phone_number',p.phone_number,'account_number',p.account_number,'merchant_id',p.merchant_id,'instructions',p.instructions,'qr_asset_id',p.qr_asset_id)) || jsonb_build_object('qr_code_data_url', q.data_url) ELSE jsonb_build_object('id',COALESCE(o.payment_destination_snapshot->>'id',p.id),'label',COALESCE(o.payment_destination_snapshot->>'label',p.label),'payment_type',COALESCE(o.payment_destination_snapshot->>'payment_type',p.payment_type)) END AS payment_destination_snapshot,
                 (SELECT json_build_object('rating', f.rating, 'comment', f.comment) FROM public.order_feedback f WHERE f.order_id=o.id) AS feedback,
                 COALESCE(json_agg(json_build_object('menuItemId', i.menu_item_id, 'name', i.name, 'nameAmharic', i.name_amharic, 'size', i.size, 'quantity', i.quantity, 'unitPriceEtb', i.unit_price_etb, 'lineTotalEtb', i.line_total_etb) ORDER BY i.id) FILTER (WHERE i.id IS NOT NULL), '[]') AS items,
@@ -340,6 +340,41 @@ export default async function handler(req: Req, res: Res) {
       await client.query("ROLLBACK").catch(() => undefined);
       console.error("payment_reference_failed", error instanceof Error ? error.message : "unknown");
       return reply(res, 503, { error: "We could not record that reference just now. Please try again." });
+    } finally { client.release(); }
+  }
+
+  if (action === "sms-preferences") {
+    const token = typeof body.token === "string" ? body.token : "";
+    if (!/^[A-Za-z0-9_-]{40,50}$/.test(token)) return reply(res, 400, { error: "Tracking link is not valid." });
+    if (typeof body.wantsSmsUpdates !== "boolean" || typeof body.wantsSmsMarketing !== "boolean") {
+      return reply(res, 400, { error: "Choose both order-update and offers preferences." });
+    }
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+      const found = await client.query("SELECT id, customer_phone FROM public.orders WHERE tracking_token_hash=$1 FOR UPDATE", [tokenHash(token)]);
+      if (!found.rowCount) { await client.query("ROLLBACK"); return reply(res, 404, { error: "We could not find that order." }); }
+      const order = found.rows[0];
+      await client.query(
+        "INSERT INTO public.customer_notification_consents (customer_phone, channel, purpose, status, source, consent_text_version, order_id) VALUES ($1,'sms','transactional',$2,'customer_request','tracking-preferences-v1',$3),($1,'sms','marketing',$4,'customer_request','tracking-preferences-v1',$3)",
+        [order.customer_phone, body.wantsSmsUpdates ? "granted" : "revoked", order.id, body.wantsSmsMarketing ? "granted" : "revoked"],
+      );
+      await client.query(
+        "UPDATE public.orders SET wants_sms_updates=$2, wants_sms_marketing=$3, updated_at=now() WHERE id=$1",
+        [order.id, body.wantsSmsUpdates, body.wantsSmsMarketing],
+      );
+      if (!body.wantsSmsUpdates) {
+        await client.query(
+          "UPDATE public.orders SET wants_sms_updates=false, updated_at=now() WHERE customer_phone=$1 AND id<>$2 AND status NOT IN ('completed','delivered','declined','cancelled')",
+          [order.customer_phone, order.id],
+        );
+      }
+      await client.query("COMMIT");
+      return reply(res, 200, { saved: true, message: "Your SMS preferences have been updated." });
+    } catch (error) {
+      await client.query("ROLLBACK").catch(() => undefined);
+      console.error("sms_preferences_update_failed", error instanceof Error ? error.message : "unknown");
+      return reply(res, 503, { error: "We could not update your preferences. Please try again." });
     } finally { client.release(); }
   }
 
