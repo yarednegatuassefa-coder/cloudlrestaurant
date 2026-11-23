@@ -29,6 +29,7 @@ export default function CheckoutForm({ items, subtotal, onPlaced, onSubmittingCh
   const [tableNumber, setTableNumber] = useState("");
   const [wantsWhatsAppUpdates, setWantsWhatsAppUpdates] = useState(false);
   const [wantsSmsUpdates, setWantsSmsUpdates] = useState(false);
+  const [wantsSmsMarketing, setWantsSmsMarketing] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -49,7 +50,7 @@ export default function CheckoutForm({ items, subtotal, onPlaced, onSubmittingCh
     onSubmittingChange?.(true);
     setError(""); setStage("sending");
     try {
-      const payload = { action: "create", customerName, customerPhone, fulfillment, paymentMethod, deliveryAddress, deliveryLandmark, deliveryNotes, deliveryLatitude: deliveryCoordinates?.latitude ?? null, deliveryLongitude: deliveryCoordinates?.longitude ?? null, specialInstructions, guestCount: fulfillment === "dine_in" && guestCount ? Number(guestCount) : null, tableNumber, wantsWhatsAppUpdates, wantsSmsUpdates, items: items.map(({ id, quantity }) => ({ id, quantity })) };
+      const payload = { action: "create", customerName, customerPhone, fulfillment, paymentMethod, deliveryAddress, deliveryLandmark, deliveryNotes, deliveryLatitude: deliveryCoordinates?.latitude ?? null, deliveryLongitude: deliveryCoordinates?.longitude ?? null, specialInstructions, guestCount: fulfillment === "dine_in" && guestCount ? Number(guestCount) : null, tableNumber, wantsWhatsAppUpdates, wantsSmsUpdates, wantsSmsMarketing, items: items.map(({ id, quantity }) => ({ id, quantity })) };
       const fingerprint = JSON.stringify(payload);
       if (!idempotencyRef.current || idempotencyRef.current.fingerprint !== fingerprint) {
         const bytes = crypto.getRandomValues(new Uint8Array(32));
@@ -91,7 +92,8 @@ export default function CheckoutForm({ items, subtotal, onPlaced, onSubmittingCh
     {methods.find((method) => method.id === paymentMethod)?.payment_type === "manual_transfer" && <p className="checkout-note checkout-payment-note">This is a manual transfer, not an online payment. Wait for Cloud L staff to confirm your order and exact total; instructions will appear on your private tracking page after confirmation.</p>}
     <label className="checkout-optin"><input type="checkbox" checked={wantsWhatsAppUpdates} onChange={(e) => setWantsWhatsAppUpdates(e.currentTarget.checked)} /><span>I’d like order-status updates by WhatsApp. Cloud L staff will review and send updates manually.</span></label>
     <label className="checkout-optin"><input type="checkbox" checked={wantsSmsUpdates} onChange={(e) => setWantsSmsUpdates(e.currentTarget.checked)} /><span>I agree to receive SMS messages from Cloud L about this order, including confirmation and status updates. Standard SMS charges may apply.</span></label>
-    {error && <p className="checkout-error" role="alert">{error}</p>}
+    <label className="checkout-optin"><input type="checkbox" checked={wantsSmsMarketing} onChange={(e) => setWantsSmsMarketing(e.currentTarget.checked)} /><span>Separately, I agree to receive occasional Cloud L offers, discounts and loyalty messages by SMS. I can opt out at any time. Standard SMS charges may apply.</span></label>
+    {error && <p className="checkout-error" role="alert">{error}</p>
     <div className="checkout-submit-row"><span>Menu subtotal<br /><strong>{money(subtotal)} ETB</strong></span><button className="order-cart__whatsapp checkout-primary" type="submit" disabled={stage === "sending" || !methodsLoaded || methods.length === 0 || !paymentMethod}>{stage === "sending" ? "Sending securely…" : "Place order request"} <span aria-hidden="true">→</span></button></div>
     <p className="checkout-privacy">Your request is saved securely so Cloud L can confirm it. Never transfer money before staff confirms the final amount.</p>
   </form>;
