@@ -1,5 +1,6 @@
 import { pool, isAllowedOrigin, reject, validSession, type ApiReq, type ApiRes } from "../../_server.js";
 import { enqueueSms } from "../../../lib/server/notifications.mjs";
+import { dispatchSmsOutbox } from "../../../lib/server/dispatch-sms.mjs";
 
 const transitions: Record<string, string[]> = {
   received: ["confirmed", "needs_clarification", "declined", "cancelled"],
@@ -45,6 +46,9 @@ export default async function handler(req: RouteReq, res: ApiRes) {
         await enqueueSms(client, { orderId, eventKey: "payment-verified:" + orderId, recipient: order.customer_phone, message: "Cloud L: payment for order " + order.public_reference + " has been verified. Thank you." });
       }
       await client.query("COMMIT");
+      if (order.wants_sms_updates && process.env.SMS_PROVIDER === "uplink" && process.env.UPLINK_SMS_ENABLED === "true") {
+        await dispatchSmsOutbox(pool, 1, "payment-verified:" + orderId).catch((error) => console.error("sms_immediate_dispatch_failed", error instanceof Error ? error.message : "unknown"));
+      }
       return res.status(200).json({ paymentStatus: "paid" });
     }
     const next = typeof body.status === "string" ? body.status : "";
@@ -85,6 +89,9 @@ export default async function handler(req: RouteReq, res: ApiRes) {
       await enqueueSms(client, { orderId, eventKey: "status:" + orderId + ":" + next, recipient: order.customer_phone, message: "Cloud L order " + order.public_reference + ": " + message });
     }
     await client.query("COMMIT");
+    if (order.wants_sms_updates && process.env.SMS_PROVIDER === "uplink" && process.env.UPLINK_SMS_ENABLED === "true") {
+      await dispatchSmsOutbox(pool, 1, "status:" + orderId + ":" + next).catch((error) => console.error("sms_immediate_dispatch_failed", error instanceof Error ? error.message : "unknown"));
+    }
     return res.status(200).json({ status: next, totalEtb: total, deliveryFeeEtb: deliveryFee, estimatedReadyAt: eta });
   } catch (error) {
     await client.query("ROLLBACK").catch(() => undefined);
