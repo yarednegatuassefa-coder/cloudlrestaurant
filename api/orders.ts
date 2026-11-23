@@ -278,6 +278,7 @@ export default async function handler(req: Req, res: Res) {
       const result = await pool.query(
         `SELECT o.public_reference, o.created_at, o.status, o.fulfillment, o.payment_method, o.payment_status, o.subtotal_etb, o.delivery_fee_etb, o.total_etb, o.estimated_ready_at,
                 CASE WHEN o.status IN ('confirmed','preparing','ready_for_pickup','out_for_delivery','delivered','completed') THEN COALESCE(NULLIF(o.payment_destination_snapshot,'{}'::jsonb),jsonb_build_object('id',p.id,'label',p.label,'payment_type',p.payment_type,'bank_name',p.bank_name,'recipient_name',p.recipient_name,'phone_number',p.phone_number,'account_number',p.account_number,'merchant_id',p.merchant_id,'instructions',p.instructions,'qr_asset_id',p.qr_asset_id)) || jsonb_build_object('qr_code_data_url', q.data_url) ELSE jsonb_build_object('id',COALESCE(o.payment_destination_snapshot->>'id',p.id),'label',COALESCE(o.payment_destination_snapshot->>'label',p.label),'payment_type',COALESCE(o.payment_destination_snapshot->>'payment_type',p.payment_type)) END AS payment_destination_snapshot,
+                (SELECT json_build_object('rating', f.rating, 'comment', f.comment) FROM public.order_feedback f WHERE f.order_id=o.id) AS feedback,
                 COALESCE(json_agg(json_build_object('menuItemId', i.menu_item_id, 'name', i.name, 'nameAmharic', i.name_amharic, 'size', i.size, 'quantity', i.quantity, 'unitPriceEtb', i.unit_price_etb, 'lineTotalEtb', i.line_total_etb) ORDER BY i.id) FILTER (WHERE i.id IS NOT NULL), '[]') AS items,
                 COALESCE((SELECT json_agg(json_build_object('at', e.created_at, 'status', e.status, 'message', e.message) ORDER BY e.created_at) FROM public.order_events e WHERE e.order_id=o.id AND e.customer_visible=true), '[]') AS events
          FROM public.orders o LEFT JOIN public.order_items i ON i.order_id=o.id LEFT JOIN public.payment_methods p ON p.id=o.payment_method LEFT JOIN public.payment_qr_assets q ON q.id=COALESCE(NULLIF(o.payment_destination_snapshot->>'qr_asset_id',''),p.qr_asset_id) WHERE o.tracking_token_hash=$1 GROUP BY o.id,p.id,q.data_url`,
@@ -339,6 +340,37 @@ export default async function handler(req: Req, res: Res) {
       await client.query("ROLLBACK").catch(() => undefined);
       console.error("payment_reference_failed", error instanceof Error ? error.message : "unknown");
       return reply(res, 503, { error: "We could not record that reference just now. Please try again." });
+    } finally { client.release(); }
+  }
+
+  if (action === "feedback") {
+    const token = typeof body.token === "string" ? body.token : "";
+    const rating = Number(body.rating);
+    const comment = validString(body.comment, 1000);
+    if (!/^[A-Za-z0-9_-]{40,50}$/.test(token)) return reply(res, 400, { error: "Tracking link is not valid." });
+    if (!Number.isInteger(rating) || rating < 1 || rating > 5) return reply(res, 400, { error: "Choose a rating from 1 to 5." });
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+      const found = await client.query("SELECT id, status FROM public.orders WHERE tracking_token_hash=$1 FOR UPDATE", [tokenHash(token)]);
+      if (!found.rowCount) { await client.query("ROLLBACK"); return reply(res, 404, { error: "We could not find that order." }); }
+      const order = found.rows[0];
+      if (!["delivered", "completed"].includes(order.status)) {
+        await client.query("ROLLBACK");
+        return reply(res, 409, { error: "Feedback is available after your order has been delivered or completed." });
+      }
+      await client.query(
+        `INSERT INTO public.order_feedback (order_id, rating, comment)
+         VALUES ($1,$2,$3)
+         ON CONFLICT (order_id) DO UPDATE SET rating=EXCLUDED.rating, comment=EXCLUDED.comment, updated_at=now()`,
+        [order.id, rating, comment],
+      );
+      await client.query("COMMIT");
+      return reply(res, 200, { saved: true, message: "Thank you. Your feedback helps Cloud L improve." });
+    } catch (error) {
+      await client.query("ROLLBACK").catch(() => undefined);
+      console.error("order_feedback_failed", error instanceof Error ? error.message : "unknown");
+      return reply(res, 503, { error: "We could not save your feedback. Please try again." });
     } finally { client.release(); }
   }
 
