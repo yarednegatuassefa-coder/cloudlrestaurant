@@ -5,6 +5,7 @@ import StaffMenuAvailability from "./StaffMenuAvailability";
 import StaffDeliveryIntelligence from "./StaffDeliveryIntelligence";
 
 type StaffItem = { name: string; size: string | null; quantity: number; lineTotalEtb: number };
+type StaffReservation = { id: string; public_reference: string; customer_name: string; customer_phone: string; party_size: number; requested_for: string; notes: string; status: string; table_label: string | null; staff_notes: string; wants_sms_updates: boolean; created_at: string; confirmed_at: string | null };
 type PaymentSnapshot = { id: string; label: string; payment_type: "cash" | "manual_transfer"; bank_name?: string | null; recipient_name?: string | null; phone_number?: string | null; account_number?: string | null; merchant_id?: string | null; instructions?: string | null; qr_code_data_url?: string | null };
 type StaffOrder = {
   id: string; public_reference: string; created_at: string; status: string; payment_method: string; payment_status: string;
@@ -28,6 +29,7 @@ export default function StaffOrders() {
   const [password, setPassword] = useState("");
   const [authenticated, setAuthenticated] = useState(false);
   const [orders, setOrders] = useState<StaffOrder[]>([]);
+  const [reservations, setReservations] = useState<StaffReservation[]>([]);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(false);
@@ -38,7 +40,7 @@ export default function StaffOrders() {
   const [etaById, setEtaById] = useState<Record<string, string>>({});
   const [clarificationById, setClarificationById] = useState<Record<string, string>>({});
   const [passwordVisible, setPasswordVisible] = useState(false);
-  const [tab, setTab] = useState<"orders" | "payments" | "availability" | "delivery">("orders");
+  const [tab, setTab] = useState<"orders" | "reservations" | "payments" | "availability" | "delivery">("orders");
   const audioRef = useRef<AudioContext | null>(null);
 
   const playAlert = useCallback(() => {
@@ -54,9 +56,10 @@ export default function StaffOrders() {
     try {
       const response = await fetch("/api/admin/orders", { credentials: "same-origin", cache: "no-store" });
       if (response.status === 401) { setAuthenticated(false); return; }
-      const data = await response.json() as { orders?: StaffOrder[]; error?: string };
+      const data = await response.json() as { orders?: StaffOrder[]; reservations?: StaffReservation[]; error?: string };
       if (!response.ok) throw new Error(data.error || "Order queue unavailable.");
       const next = data.orders || [];
+      setReservations(data.reservations || []);
       const newIds = next.filter((order) => order.status === "received").map((order) => order.id);
       if (!initial && newIds.some((id) => !lastSeen.current.includes(id))) {
         if (soundEnabled) playAlert();
@@ -103,6 +106,23 @@ export default function StaffOrders() {
     finally { setBusy(false); }
   }
 
+  async function changeReservationStatus(reservation: StaffReservation, status: string) {
+    if (["declined", "cancelled"].includes(status) && !window.confirm(`${status === "declined" ? "Decline" : "Cancel"} ${reservation.public_reference}?`)) return;
+    setBusy(true); setError("");
+    try {
+      const response = await fetch(`/api/admin/orders/${encodeURIComponent(reservation.id)}`, {
+        method: "PATCH", credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ entityType: "reservation", status }),
+      });
+      const data = await response.json() as { error?: string };
+      if (!response.ok) throw new Error(data.error || "Reservation could not be updated.");
+      await loadOrders(true);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Reservation could not be updated.");
+    } finally { setBusy(false); }
+  }
+
   async function calculateDeliveryRoute(order: StaffOrder) {
     if (order.fulfillment !== "delivery" || order.delivery_latitude === null || order.delivery_longitude === null) return;
     setRoutingOrderId(order.id);
@@ -144,7 +164,12 @@ export default function StaffOrders() {
 
   if (!authenticated) return <main className="staff-page"><a className="staff-brand" href="/">← Cloud L</a><section className="staff-login"><p className="checkout-form__top">PRIVATE OPERATIONS</p><h1>Staff <em>orders.</em></h1><p>Sign in to review customer requests and update order status.</p><form onSubmit={login}><label className="checkout-label">Staff password<span className="staff-password"><input type={passwordVisible ? "text" : "password"} autoComplete="current-password" required value={password} onChange={(event) => setPassword(event.currentTarget.value)} /><button type="button" onClick={() => setPasswordVisible(!passwordVisible)}>{passwordVisible ? "Hide" : "Show"}</button></span></label><button className="staff-button" type="submit" disabled={busy}>{busy ? "Signing in…" : "Sign in"}</button>{error && <p className="checkout-error" role="alert">{error}</p>}</form></section></main>;
 
-  return <main className="staff-page"><header className="staff-topbar"><a className="staff-brand" href="/">← Cloud L</a><div><span>PRIVATE STAFF BOARD</span><button type="button" onClick={() => void logout()}>Sign out</button></div></header><section className="staff-board"><div className="staff-heading"><div><p className="tracking-eyebrow">KEBENA · ADDIS ABABA</p><h1>Order <em>board.</em></h1><p>Refreshes every 15 seconds while open. New requests stay at the top.</p></div><div className="staff-controls"><button type="button" className={tab === "orders" ? "is-active" : ""} onClick={() => setTab("orders")}>Orders</button><button type="button" className={tab === "payments" ? "is-active" : ""} onClick={() => setTab("payments")}>Payment settings</button><button type="button" className={tab === "availability" ? "is-active" : ""} onClick={() => setTab("availability")}>Availability</button><button type="button" className={tab === "delivery" ? "is-active" : ""} onClick={() => setTab("delivery")}>Delivery intelligence</button><button type="button" onClick={() => void loadOrders(true)}>Refresh</button><button type="button" onClick={() => { setSoundEnabled(true); playAlert(); }}>Enable sound</button><button type="button" onClick={() => { if ("Notification" in window) void Notification.requestPermission(); }}>Allow alerts</button></div></div>{error && <p className="checkout-error" role="alert">{error}</p>}{tab === "payments" ? <StaffPaymentSettings /> : tab === "availability" ? <StaffMenuAvailability /> : tab === "delivery" ? <StaffDeliveryIntelligence /> : <>{orders.length === 0 ? <div className="staff-empty">No orders to show yet. New customer requests will appear here.</div> : <div className="staff-order-list">{orders.map((order) => <article className={`staff-order ${order.status === "received" ? "is-new" : ""}`} key={order.id}>
+  return <main className="staff-page"><header className="staff-topbar"><a className="staff-brand" href="/">← Cloud L</a><div><span>PRIVATE STAFF BOARD</span><button type="button" onClick={() => void logout()}>Sign out</button></div></header><section className="staff-board"><div className="staff-heading"><div><p className="tracking-eyebrow">KEBENA · ADDIS ABABA</p><h1>Order <em>board.</em></h1><p>Refreshes every 15 seconds while open. New requests stay at the top.</p></div><div className="staff-controls"><button type="button" className={tab === "orders" ? "is-active" : ""} onClick={() => setTab("orders")}>Orders</button><button type="button" className={tab === "reservations" ? "is-active" : ""} onClick={() => setTab("reservations")}>Reservations {reservations.length ? `(${reservations.length})` : ""}</button><button type="button" className={tab === "payments" ? "is-active" : ""} onClick={() => setTab("payments")}>Payment settings</button><button type="button" className={tab === "availability" ? "is-active" : ""} onClick={() => setTab("availability")}>Availability</button><button type="button" className={tab === "delivery" ? "is-active" : ""} onClick={() => setTab("delivery")}>Delivery intelligence</button><button type="button" onClick={() => void loadOrders(true)}>Refresh</button><button type="button" onClick={() => { setSoundEnabled(true); playAlert(); }}>Enable sound</button><button type="button" onClick={() => { if ("Notification" in window) void Notification.requestPermission(); }}>Allow alerts</button></div></div>{error && <p className="checkout-error" role="alert">{error}</p>}{tab === "payments" ? <StaffPaymentSettings /> : tab === "availability" ? <StaffMenuAvailability /> : tab === "delivery" ? <StaffDeliveryIntelligence /> : tab === "reservations" ? <div className="staff-order-list">{reservations.length === 0 ? <div className="staff-empty">No table requests to show.</div> : reservations.map((reservation) => <article className="staff-order" key={reservation.id}>
+    <header><div><small>{reservation.public_reference} · Requested {new Date(reservation.created_at).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" })}</small><h2>{reservation.customer_name}</h2></div><span className={`staff-status status-${reservation.status}`}>{reservation.status}</span></header>
+    <div className="staff-order__body"><section><h3>Requested table</h3><p><strong>{reservation.party_size} guests</strong></p><p>{new Date(reservation.requested_for).toLocaleString("en-GB", { dateStyle: "full", timeStyle: "short" })}</p>{reservation.table_label && <p>Table: {reservation.table_label}</p>}{reservation.notes && <p>Customer notes: {reservation.notes}</p>}</section>
+      <section><h3>Customer</h3><a href={`tel:${reservation.customer_phone}`}>{reservation.customer_phone}</a>{reservation.wants_sms_updates && <small className="staff-optin">Opted in to reservation SMS updates</small>}{reservation.staff_notes && <p>Staff notes: {reservation.staff_notes}</p>}</section></div>
+    <footer className="staff-order__actions">{reservation.status === "requested" && <><button type="button" disabled={busy} onClick={() => void changeReservationStatus(reservation, "confirmed")}>Confirm table</button><button type="button" disabled={busy} onClick={() => void changeReservationStatus(reservation, "declined")}>Decline request</button></>}{reservation.status === "confirmed" && <><button type="button" disabled={busy} onClick={() => void changeReservationStatus(reservation, "completed")}>Mark completed</button><button type="button" disabled={busy} onClick={() => void changeReservationStatus(reservation, "cancelled")}>Cancel reservation</button></>}{["declined", "cancelled", "completed"].includes(reservation.status) && <small>Closed request</small>}</footer>
+  </article>)}</div> : <>{orders.length === 0 ? <div className="staff-empty">No orders to show yet. New customer requests will appear here.</div> : <div className="staff-order-list">{orders.map((order) => <article className={`staff-order ${order.status === "received" ? "is-new" : ""}`} key={order.id}>
     <header><div><small>{order.public_reference} · {new Date(order.created_at).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" })}</small><h2>{order.customer_name}</h2></div><span className={`staff-status status-${order.status}`}>{statusName[order.status] || order.status}</span></header>
     <div className="staff-order__body"><section><h3>Order details</h3><ul>{order.items.map((item, index) => <li key={`${item.name}-${index}`}>{item.quantity} × {item.name}{item.size ? ` · ${item.size}` : ""}<strong>{money(item.lineTotalEtb)} ETB</strong></li>)}</ul><p>Menu subtotal <strong>{money(order.subtotal_etb)} ETB</strong></p>{order.delivery_fee_etb !== null && <p>Delivery <strong>{money(order.delivery_fee_etb)} ETB</strong></p>}{order.total_etb !== null && <p>Confirmed total <strong>{money(order.total_etb)} ETB</strong></p>}</section>
       <section><h3>Customer & fulfillment</h3><a href={`tel:${order.customer_phone}`}>{order.customer_phone}</a><p>{order.fulfillment === "delivery" ? "Delivery" : order.fulfillment === "pickup" ? "Pickup" : "Dine in"}</p>{order.delivery_address && <p>{order.delivery_address}{order.delivery_landmark ? ` · ${order.delivery_landmark}` : ""}</p>}{order.delivery_notes && <p>Delivery notes: {order.delivery_notes}</p>}{order.delivery_zone_name && <p>Delivery territory: <strong>{order.delivery_zone_name}</strong></p>}{order.delivery_latitude !== null && order.delivery_longitude !== null && <><p><a href={`https://www.google.com/maps?q=${Number(order.delivery_latitude)},${Number(order.delivery_longitude)}`} target="_blank" rel="noreferrer">Open customer delivery pin in Maps ↗</a></p><div className="staff-route-estimate"><button type="button" disabled={routingOrderId !== null} onClick={() => void calculateDeliveryRoute(order)}>{routingOrderId === order.id ? "Calculating route…" : routeById[order.id] && !routeById[order.id].error ? "Recalculate route" : "Calculate road route from Cloud L"}</button>{routeById[order.id] && routingOrderId !== order.id && (routeById[order.id].error ? <small role="alert">{routeById[order.id].error}</small> : <p><strong>{(routeById[order.id].distanceMeters / 1000).toFixed(1)} km</strong> · <strong>{routeById[order.id].estimatedMinutes} min</strong> baseline driving estimate<br/><small>Car-profile estimate; no live traffic or motorcycle adjustment. Not a delivery promise.</small></p>)}</div></>}{order.special_instructions && <p>Kitchen: {order.special_instructions}</p>}{order.fulfillment === "dine_in" && typeof order.guest_count === "number" && <p>Guests: {order.guest_count}</p>}{order.table_number && <p>Table: {order.table_number}</p>}</section></div>
