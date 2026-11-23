@@ -75,6 +75,19 @@ jobs:
           test "$(psql -h localhost -U postgres -d cloudl_test -Atc "SELECT count(*) FROM information_schema.columns WHERE table_schema='public' AND table_name='orders' AND column_name IN ('wants_sms_updates','wants_sms_marketing')")" = "2"
           test "$(psql -h localhost -U postgres -d cloudl_test -Atc "SELECT count(*) FROM information_schema.tables WHERE table_schema='public' AND table_name IN ('notification_outbox','customer_notification_consents','notification_templates','order_feedback')")" = "4"
           test "$(psql -h localhost -U postgres -d cloudl_test -Atc "SELECT count(*) FROM public.schema_migrations WHERE version='009_sms_notification_outbox'")" = "1"
+      - name: Apply reservation request migration twice
+        env:
+          PGPASSWORD: cloudl_test
+        run: |
+          psql -h localhost -U postgres -d cloudl_test -v ON_ERROR_STOP=1 -f db/migrations/010_reservation_requests.sql
+          psql -h localhost -U postgres -d cloudl_test -v ON_ERROR_STOP=1 -f db/migrations/010_reservation_requests.sql
+      - name: Verify reservation and notification linkage schema
+        env:
+          PGPASSWORD: cloudl_test
+        run: |
+          test "$(psql -h localhost -U postgres -d cloudl_test -Atc "SELECT count(*) FROM information_schema.tables WHERE table_schema='public' AND table_name IN ('reservations','reservation_events')")" = "2"
+          test "$(psql -h localhost -U postgres -d cloudl_test -Atc "SELECT count(*) FROM information_schema.columns WHERE table_schema='public' AND table_name='notification_outbox' AND column_name='reservation_id'")" = "1"
+          test "$(psql -h localhost -U postgres -d cloudl_test -Atc "SELECT count(*) FROM public.schema_migrations WHERE version='010_reservation_requests'")" = "1"
 
   e2e:
     name: End-to-end and visual regression tests
