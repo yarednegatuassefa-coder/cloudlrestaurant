@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "project": "cloudlrestaurant",
-  "updated_at": "2026-11-16",
+  "updated_at": "2026-11-25",
   "features": [
     {
       "id": "HARN-001",
@@ -24,7 +24,7 @@
     {
       "id": "HARN-002",
       "title": "Deterministic harness preflight",
-      "status": "planned",
+      "status": "implemented_unverified",
       "priority": "high",
       "acceptance_criteria": [
         "npm run harness:check validates required project files and package scripts",
@@ -37,12 +37,12 @@
       "risk": "low",
       "owner_approval_required": false,
       "evidence": [],
-      "notes": "Implementation in this PR."
+      "notes": "Deterministic preflight implementation exists; current branch CI verification pending."
     },
     {
       "id": "HARN-003",
       "title": "Automated CI harness gate",
-      "status": "planned",
+      "status": "implemented_unverified",
       "priority": "high",
       "acceptance_criteria": [
         "Pull requests run preflight, lint, build and API tests",
@@ -54,7 +54,7 @@
       "risk": "medium",
       "owner_approval_required": false,
       "evidence": [],
-      "notes": "CI evidence pending."
+      "notes": "Harness and Playwright workflows cover preflight, lint, build, API, E2E and PWA checks; current branch CI verification pending."
     },
     {
       "id": "HARN-004",
@@ -73,6 +73,26 @@
       "owner_approval_required": false,
       "evidence": [],
       "notes": "Initial harness adoption backlog; maintain during future work."
+    },
+    {
+      "id": "HARN-005",
+      "title": "Notification outbox dispatch recovery and deterministic evaluation",
+      "status": "implemented_unverified",
+      "priority": "high",
+      "acceptance_criteria": [
+        "Claimed notifications are processed in a bounded batch using row locks and SKIP LOCKED",
+        "Successful sends persist provider message IDs and clear prior errors",
+        "Retryable failures use bounded exponential backoff",
+        "Permanent failures and exhausted attempts move to failed",
+        "One failed notification does not prevent later batch items from being processed"
+      ],
+      "verification": [
+        "npm run test:api"
+      ],
+      "risk": "medium",
+      "owner_approval_required": false,
+      "evidence": [],
+      "notes": "Injectable sender seam and regression tests added; GitHub Actions verification pending."
     }
   ]
 }
