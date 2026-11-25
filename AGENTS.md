@@ -20,5 +20,8 @@ Preserve authentication, server-side authorization, database permissions, tenant
 Skill availability does not authorize tool/dependency installation, paid API or model use, external account connections, production access, migrations, deployment, or publication. Obtain separate explicit authorization before any such cost-incurring or externally consequential action. Do not copy the Home skill collection into this repository; follow its catalog and load only relevant workflows when needed.
 
 
+## Workflow quality and evaluation
+Follow the portfolio [Workflow Quality and Evaluation Standard](https://github.com/yarednegatuassefa-coder/home/blob/main/standards/workflow-quality.md) and this repository's [workflow governance plan](docs/workflow-governance.md) when creating or changing repeated/agent-assisted workflows. Require order/payment invariants, trajectory and outcome tests, idempotency, safe recovery, and human approval at consequential boundaries. Do not enable telemetry or expose customer/order/payment data without separate approval.
+
 ## Code-mode agent architecture
 For any AI/tool orchestration task, consult the portfolio [Code-Mode Agent Engineering Standard](https://github.com/yarednegatuassefa-coder/home/blob/main/standards/code-mode-agent-engineering.md), [Portfolio Code-Mode skill](https://github.com/yarednegatuassefa-coder/home/blob/main/skills/portfolio-code-mode/SKILL.md), and this repository's `docs/agent-code-mode.md`. This guidance does not grant production access, external model use, patient/customer data transfer, writes, deployment or other approvals. Project-specific safeguards above remain authoritative.

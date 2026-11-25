@@ -85,6 +85,7 @@ API handlers validate requests on the server. Do not bypass server-side price, a
 - Do not use real customer data in automated tests or screenshots.
 
 ## Repository guides
+- [Workflow governance and evaluation](docs/workflow-governance.md)
 
 - [Order editing setup](ORDER_EDITING_SETUP.md)
 - [Sentry setup](SENTRY_SETUP.md)
