@@ -24,7 +24,7 @@
     {
       "id": "HARN-002",
       "title": "Deterministic harness preflight",
-      "status": "implemented_unverified",
+      "status": "verified",
       "priority": "high",
       "acceptance_criteria": [
         "npm run harness:check validates required project files and package scripts",
@@ -36,13 +36,15 @@
       ],
       "risk": "low",
       "owner_approval_required": false,
-      "evidence": [],
-      "notes": "Deterministic preflight implementation exists; current branch CI verification pending."
+      "evidence": [
+        "PR #36: Harness preflight passed on 2026-11-25."
+      ],
+      "notes": "Preflight passed in GitHub Actions; no secret values were printed."
     },
     {
       "id": "HARN-003",
       "title": "Automated CI harness gate",
-      "status": "implemented_unverified",
+      "status": "verified",
       "priority": "high",
       "acceptance_criteria": [
         "Pull requests run preflight, lint, build and API tests",
@@ -53,8 +55,11 @@
       ],
       "risk": "medium",
       "owner_approval_required": false,
-      "evidence": [],
-      "notes": "Harness and Playwright workflows cover preflight, lint, build, API, E2E and PWA checks; current branch CI verification pending."
+      "evidence": [
+        "PR #36: Harness CI passed (preflight, lint, API tests, production build).",
+        "PR #36: Playwright migration smoke test, E2E/visual regression and PWA/offline privacy tests passed."
+      ],
+      "notes": "All configured CI gates passed. Live customer-order acceptance remains separate."
     },
     {
       "id": "HARN-004",
@@ -77,7 +82,7 @@
     {
       "id": "HARN-005",
       "title": "Notification outbox dispatch recovery and deterministic evaluation",
-      "status": "implemented_unverified",
+      "status": "verified",
       "priority": "high",
       "acceptance_criteria": [
         "Claimed notifications are processed in a bounded batch using row locks and SKIP LOCKED",
@@ -91,8 +96,10 @@
       ],
       "risk": "medium",
       "owner_approval_required": false,
-      "evidence": [],
-      "notes": "Injectable sender seam and regression tests added; GitHub Actions verification pending."
+      "evidence": [
+        "PR #36: API test suite passed, including notification-dispatch.test.mjs."
+      ],
+      "notes": "Dispatcher behavior verified with synthetic sender tests only. SMS provider remains disabled pending API contract verification; no live SMS delivery is claimed."
     }
   ]
 }
