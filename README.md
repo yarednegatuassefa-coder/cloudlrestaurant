@@ -84,6 +84,7 @@ API handlers validate requests on the server. Do not bypass server-side price, a
 - Treat payment confirmation as a staff-controlled workflow unless a verified payment-provider callback is configured.
 - Do not use real customer data in automated tests or screenshots.
 
+- [Workflow governance and evaluation](docs/workflow-governance.md)
 ## Repository guides
 
 - [Order editing setup](ORDER_EDITING_SETUP.md)
