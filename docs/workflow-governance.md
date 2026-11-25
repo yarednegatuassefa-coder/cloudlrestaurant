@@ -27,6 +27,10 @@ This project follows the portfolio [Workflow Quality and Evaluation Standard](ht
 
 Human approval remains required for payment settlement exceptions, refunds, manual price overrides, supplier or provider commitments, customer-facing policy changes, production database changes and deployment. No AI workflow may mark a payment as settled based only on a customer statement or screenshot.
 
+## Notification delivery semantics
+
+The outbox guarantees durable, deduplicated enqueue by `event_key`; it does not by itself guarantee exactly-once delivery. A process can be interrupted after a provider accepts a message but before the outbox row is marked sent, so a retry may deliver a duplicate. Treat delivery as at-least-once unless the selected provider's idempotency contract is verified and used. Before enabling a provider, document its idempotency behavior, delivery receipts, timeout semantics, retry policy, duplicate handling, local operator coverage and cost. The current Uplink adapter remains disabled while its API contract is unverified.
+
 ## Operational review
 
 Review order completion, payment match rate, failed/duplicate notifications, order errors, repeat orders and contribution margin. Define each metric's source, denominator and observation window before comparing releases. Keep customer identifiers and message bodies out of external agent prompts and telemetry.
