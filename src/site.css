@@ -504,3 +504,34 @@ img{height:auto}
 .reservation-request__success{margin-top:14px;color:#fffaf2;font-size:12px;line-height:1.7}
 .reservation-request__success strong{color:#e7b08e}
 .reservation-request__success button{margin-top:8px;padding:8px 12px;border:1px solid rgba(255,255,255,.3);background:transparent;color:#fffaf2;cursor:pointer}
+
+/* Design-engineering hardening: touch devices must not retain sticky hover transforms. */
+@media (hover: none), (pointer: coarse) {
+  .site-brand:hover img,
+  .hero-visual:hover .hero-food,
+  .story-photo-wrap:hover img,
+  .featured-card:hover .featured-photo img,
+  .featured-card:hover,
+  .fm__add:hover {
+    transform: none;
+    filter: none;
+  }
+  .featured-card:hover { box-shadow: none; }
+}
+.button:active,
+.nav-cta:active,
+.mobile-nav-cta:active,
+.fm__add:active,
+.order-cart-trigger:active {
+  transform: scale(.985);
+}
+.order-cart-trigger {
+  bottom: max(22px, env(safe-area-inset-bottom));
+}
+@media (max-width: 680px) {
+  input, select, textarea { font-size: 16px; }
+  .order-cart-trigger {
+    right: max(18px, env(safe-area-inset-right));
+    bottom: max(14px, env(safe-area-inset-bottom));
+  }
+}
