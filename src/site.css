@@ -521,9 +521,11 @@ img{height:auto}
 .button:active,
 .nav-cta:active,
 .mobile-nav-cta:active,
-.fm__add:active,
-.order-cart-trigger:active {
+.fm__add:active {
   transform: scale(.985);
+}
+.order-cart-trigger:active {
+  filter: brightness(.94);
 }
 .order-cart-trigger {
   bottom: max(22px, env(safe-area-inset-bottom));
