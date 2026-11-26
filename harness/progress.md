@@ -19,3 +19,10 @@
 - **Not run / blocked:** No real SMS provider call, customer notification, production database access, migration, paid service, telemetry or deployment was performed.
 - **Decision:** Uplink remains disabled because its API contract is not verified. The test seam uses a synthetic sender only.
 - **Next action:** Review CI results and inspect the PR diff before merge.
+
+## 2026-11-25 — HARN-005 VERIFIED
+- **Merged PR:** #36 — notification outbox dispatch recovery and deterministic evaluation.
+- **Merge commit:** d2ec3ce58b5e8505f7a134d5a120f3bb1d76a526
+- **Verification:** CloudL Harness CI passed: harness preflight, lint, API tests and production build. Playwright workflow passed: migration smoke tests, API validation tests, E2E/visual regression and PWA/offline privacy smoke test.
+- **Scope:** Notification dispatcher regression tests use a synthetic injected sender. No real SMS was sent and no provider was enabled.
+- **Remaining:** Live customer-order acceptance and SMS provider contract verification remain outstanding. Do not describe SMS delivery as operational.
