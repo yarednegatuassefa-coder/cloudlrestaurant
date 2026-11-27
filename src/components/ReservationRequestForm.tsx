@@ -80,7 +80,7 @@ export default function ReservationRequestForm() {
           <button type="button" onClick={() => { setReference(""); setCustomerName(""); setCustomerPhone(""); setNotes(""); }}>Make another request</button>
         </div>
       ) : (
-        <form onSubmit={submit}>
+        <form {...({ toolname: "cloudl-prepare-reservation-request", tooldescription: "Help the customer fill a table reservation request. This is a request only, not a confirmed booking. The customer must review and submit." } as any)} onSubmit={submit}>
           <p className="reservation-request__note">Send your preferred date and time. A team member will confirm the table; submitting this form does not reserve a table automatically.</p>
           <label className="checkout-label">Your name
             <input required minLength={2} maxLength={120} autoComplete="name" value={customerName} onChange={(event) => setCustomerName(event.currentTarget.value)} placeholder="Name for the reservation" />
