@@ -68,7 +68,7 @@ export default function CheckoutForm({ items, subtotal, onPlaced, onSubmittingCh
 
   if (stage === "review") return <div className="checkout-intro"><p className="checkout-note">Place a request online. Cloud L will confirm availability and any delivery charge before preparing your order.</p><button className="order-cart__whatsapp checkout-primary" type="button" onClick={() => setStage("details")}>Continue to checkout <span aria-hidden="true">→</span></button><p className="checkout-secondary">No account needed. Your order is not confirmed until our team reviews it.</p></div>;
 
-  return <form className="checkout-form" onSubmit={submit}>
+  return <form {...({ toolname: "cloudl-prepare-order", tooldescription: "Help the customer prepare a Cloud L order for review. Do not place the order or authorize payment. The customer must review and submit the final order." } as any)} className="checkout-form" onSubmit={submit}>
     <div className="checkout-form__top"><button type="button" className="checkout-back" onClick={() => setStage("review")}>← Back to your order</button><p>GUEST CHECKOUT</p></div>
     <label className="checkout-label">Your name<input autoComplete="name" required minLength={2} maxLength={120} value={customerName} onChange={(e) => setCustomerName(e.currentTarget.value)} placeholder="Name for the order" /></label>
     <label className="checkout-label">Mobile number<input autoComplete="tel" type="tel" required value={customerPhone} onChange={(e) => setCustomerPhone(e.currentTarget.value)} placeholder="+251 9… or 09…" /><small>We’ll use this only if staff needs to clarify your order.</small></label>
