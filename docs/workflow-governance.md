@@ -38,3 +38,7 @@ Review order completion, payment match rate, failed/duplicate notifications, ord
 ## Current implementation status
 
 This document defines the evaluation and operating requirements. It does not assert that every metric is instrumented, that an SMS provider is connected, or that the workflows have passed these evaluations. Record actual evidence in the project harness and release notes.
+
+## Letter 5 implementation
+
+See the shared [Portfolio AI and Resilience Standard](https://github.com/yarednegatuassefa-coder/home/blob/main/standards/ai-resilience.md) and the Cloud L [AI/resilience rollout](ai-resilience-rollout.md). The first pilot is draft-only bilingual operations assistance; order, payment and customer-data authority remains deterministic and staff-controlled.
