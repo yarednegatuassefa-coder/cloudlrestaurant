@@ -1,8 +1,31 @@
 {
   "schema_version": 1,
   "project": "cloudlrestaurant",
-  "updated_at": "2026-11-25",
+  "updated_at": "2026-11-28",
   "features": [
+    {
+      "id": "LETTER5-001",
+      "title": "Bounded draft-only bilingual operations copilot policy",
+      "status": "implemented_unverified",
+      "priority": "high",
+      "acceptance_criteria": [
+        "Only allowlisted menu/support fields enter the draft contract",
+        "Payment, order, price, availability, messaging and tracking authority claims are rejected",
+        "Every accepted draft remains explicitly human-review-required"
+      ],
+      "verification": [
+        "node --check lib/server/draft-copilot-policy.mjs",
+        "node --test tests/api/draft-copilot-policy.test.mjs",
+        "npm run harness:check"
+      ],
+      "risk": "high",
+      "owner_approval_required": true,
+      "evidence": [
+        "Local synthetic targeted tests passed 4/4 on 2026-11-28.",
+        "Harness preflight passed on 2026-11-28."
+      ],
+      "notes": "Policy seam is not connected to production routes or a provider; no operational capability is claimed."
+    },
     {
       "id": "HARN-001",
       "title": "Project-specific harness contract and domain safety gates",

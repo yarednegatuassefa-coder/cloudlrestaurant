@@ -20,6 +20,15 @@
 - **Decision:** Uplink remains disabled because its API contract is not verified. The test seam uses a synthetic sender only.
 - **Next action:** Review CI results and inspect the PR diff before merge.
 
+## 2026-11-28 — LETTER5-PILOT-001
+- **Objective:** Add a bounded, draft-only bilingual operations-copilot policy seam without changing order, payment, price, availability, messaging or tracking authority.
+- **Branch:** feat/letter-5-ai-resilience
+- **Changed:** `lib/server/draft-copilot-policy.mjs` and `tests/api/draft-copilot-policy.test.mjs`; input allowlisting/redaction, size limits, refusal patterns and mandatory human review are covered with synthetic fixtures.
+- **Verification:** `node --check lib/server/draft-copilot-policy.mjs`; targeted Node test suite passed 4/4; `npm run harness:check` passed.
+- **Not run / blocked:** Architecture and lint checks require the repository's existing TypeScript/oxlint dev dependencies, which are not installed in this checkout. No provider, production data, migration, paid API, telemetry or deployment was used.
+- **Decision:** Keep the module unconnected to production routes until a separately approved provider contract and human-review workflow exist.
+- **Next action:** Review the branch diff and CI results before any merge or route integration.
+
 ## 2026-11-25 — HARN-005 VERIFIED
 - **Merged PR:** #36 — notification outbox dispatch recovery and deterministic evaluation.
 - **Merge commit:** d2ec3ce58b5e8505f7a134d5a120f3bb1d76a526
