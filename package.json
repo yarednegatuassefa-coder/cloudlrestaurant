@@ -13,7 +13,8 @@
     "gis:normalize-delivery-zones": "node scripts/terrio-normalize-delivery-zones.mjs",
     "ai:nemotron:smoke": "node scripts/nemotron-smoke.mjs",
     "preview": "vite preview",
-    "harness:check": "node scripts/harness-check.mjs"
+    "harness:check": "node scripts/harness-check.mjs",
+    "architecture:check": "node scripts/architecture-check.mjs"
   },
   "dependencies": {
     "@sentry/react": "^11.11.0",
